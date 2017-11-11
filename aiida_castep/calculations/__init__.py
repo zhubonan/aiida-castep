@@ -84,7 +84,7 @@ class BaseCastepInputGenerator(object):
             "pseudo": {
                 'valid_types': UpfData,
                 'additional_parameter': "kind",
-                'linkname': cls._get_linkname_pseudo,
+                'linkname': "pseudo",
                 'docstring': (
                     "Use a node for the UPF pseudopotential of one of "
                     "the elements in the structure. You have to pass "
@@ -142,7 +142,7 @@ class BaseCastepInputGenerator(object):
         # --------- CELL ----------
         cell_parameters_list = ["% BLOCK LATTICE_CART"]
         for vector in structure.cell:
-            cell_parameters_list.append( ("{0:18.10f} {1:180.10f} "
+            cell_parameters_list.append( ("{0:18.10f} {1:18.10f} "
                                           "{2:18.10f}".format(*vector)))
 
         cell_parameters_list.append("% ENDBLOCK LATTICE_CART")
@@ -156,10 +156,11 @@ class BaseCastepInputGenerator(object):
                 "{0} {1:18.10f} {2:18.10f} {3:18.10f}".format(
                     site.kind_name.ljust(6), site.position[0],
                     site.position[1], site.position[2]))
-        atomic_position_card_list.append(["% ENDBLOCK POSITIONS_ABS"])
+        atomic_position_card_list.append("% ENDBLOCK POSITIONS_ABS")
         atomic_position_card = "\n".join(atomic_position_card_list)
         del atomic_position_card_list  # Free memory
 
+        # SET KPOINTS
         if self._use_kpoints:
             try:
                 mesh, offset = kpoints.get_kpoints_mesh()
@@ -185,7 +186,7 @@ class BaseCastepInputGenerator(object):
 
             kpoints_card = ""
             if has_mesh is True:
-                input_params["CELL"]["kpoints_mp_grid"] = " ".join(mesh)
+                input_params["CELL"]["kpoints_mp_grid"] = "{} {} {}".format(*mesh)
             else:
                 kpoints_card_list = ["% BLOCK KPOINTS_LIST"]
                 for kpoint, weight in zip(kpoints_list, weights):
@@ -198,21 +199,23 @@ class BaseCastepInputGenerator(object):
                 kpoints_card = "\n".join(kpoints_card_list)
 
                 del kpoints_card_list
+
         ### Paramters for CELL file ###
         cell_entry_list = []
         for key, value in input_params["CELL"].iteritems():
 
             # Constructing block keywrods
-            if "BLOCK" in key:
-                key = key.replace("BLOCK", "").strip()
+            if "block" in key:
+                key = key.replace("block", "").strip()
                 lines = "\n".join(value)
-                entry = "% BLOCK {key}\n{content}\n% ENDBLOCK {key}".format(key=key,
+                entry = "\n% BLOCK {key}\n{content}\n% ENDBLOCK {key}\n".format(key=key,
                     content=lines)
             else:
                 entry = "{} : {}".format(key, value)
             cell_entry_list.append(entry)
-            cell_entries = "\n".join(cell_entry_list)
-            del cell_entry_list
+
+        cell_entries = "\n".join(cell_entry_list)
+        del cell_entry_list
 
         ### Parameters for PARAM files ###
 
@@ -227,9 +230,12 @@ class BaseCastepInputGenerator(object):
 
 
         #### PUT THINGS TOGETHER ####
-        cellfile = "\n".join([cell_parameters_card, atomic_position_card,
+        cellfile = "\n\n".join([cell_parameters_card, atomic_position_card,
                               kpoints_card, cell_entries])
         paramfile = param_entries
+
+        print(paramfile)
+        print(cellfile)
         return cellfile, paramfile
 
     def _prepare_for_submission(self, tempfolder, inputdict):
@@ -345,9 +351,9 @@ class BaseCastepInputGenerator(object):
         calculation_mode = parameters.get_dict().get("PARAM", {}).get("task")
 
         if calculation_mode in ["geometryoptimisation", "geometryoptimization"]:
-            settings_retrieve_list.append(self._SEED_NAME = ".geom")
+            settings_retrieve_list.append(self._SEED_NAME + ".geom")
             if parameters.get_dict().get("PARAM", {}).get("write_cell_structure"):
-                settings_retrieve_list.append(self._SEED_NAME = "-out.cell")
+                settings_retrieve_list.append(self._SEED_NAME + "-out.cell")
 
         calcinfo.retrieve_list += settings_retrieve_list
         calcinfo.retrieve_list += self._internal_retrieve_list
@@ -367,7 +373,6 @@ class BaseCastepInputGenerator(object):
                 ",".join(settings_dict.keys())))
 
         return calcinfo
-
 
 
 def _lowercase_dict(d, dict_name):
