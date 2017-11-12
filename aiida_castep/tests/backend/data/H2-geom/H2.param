@@ -1,0 +1,6 @@
+task=geometryoptimisation
+fix_occupancy=true
+opt_strategy=speed
+num_dump_cycles=0
+cut_off_energy=500 eV
+xc_functional=PBE

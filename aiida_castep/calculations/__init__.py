@@ -21,14 +21,16 @@ class BaseCastepInputGenerator(object):
     Baseclass for generating CASTEP inputs
     """
     # This may not apply to CASTEP runs
-    _PSEUDO_SUBFOLDER = './pseudo/'
-    _OUTPUT_SUBFOLDER = './out/'
+    _PSEUDO_SUBFOLDER = "./pseudo/"
+    # Castep output is in the
+    _OUTPUT_SUBFOLDER = "./"
     _PREFIX = 'aiida'
-    _SEED_NAME = 'aiida.cell'
-    _ENVIRON_INPUT_FILE_NAME = 'environ.in'
+    _INPUT_FILE_NAME = "aiida.cell"
+    _OUTPUT_FILE_NAME = "aiida.castep"
+    _SEED_NAME = 'aiida'
 
     # Additional files that should always be retrieved for the specific plugin
-    _internal_retrieve_list = [("^.+err$", ".", 1)]
+    _internal_retrieve_list = [("*.err", ".", 1)]
 
     ## Default PW output parser provided by AiiDA
     # to be defined in the subclass
@@ -79,8 +81,10 @@ class BaseCastepInputGenerator(object):
                 'docstring': ("Use a remote folder as parent folder (for "
                               "restarts and similar"),
             },
+            # TODO: Implement handling of pseduopoentials
             # Psudo potential is not not always necessary for CASTEP
-            # In addition 17 Version now support UPF files
+            # Since 16.1 Version now support UPF files so such function
+            # may be useful in the future
             "pseudo": {
                 'valid_types': UpfData,
                 'additional_parameter': "kind",
@@ -95,15 +99,6 @@ class BaseCastepInputGenerator(object):
                     "list of strings if more than one kind uses the "
                     "same pseudo"),
             },
-            "vdw_table": {
-                'valid_types': SinglefileData,
-                'additional_parameter': None,
-                'linkname': 'vdw_table',
-                'docstring': ("Use a Van der Waals kernel table. It should be "
-                              "a SinglefileData, with the table provided "
-                              "(note that the filename is not checked but it "
-                              "should be the name expected by QE."),
-            },
         }
 
     def _generate_CASTEPinputdata(self, parameters,
@@ -114,6 +109,7 @@ class BaseCastepInputGenerator(object):
         """
         This method creates the content of an input file in the
         CASTEP format
+        Generated input here should be generic to all castep calculations
         """
         from aiida.common.utils import get_unique_filename, get_suggestion
         import re
@@ -140,23 +136,23 @@ class BaseCastepInputGenerator(object):
 
         # ========= Start to preare input site data ======
         # --------- CELL ----------
-        cell_parameters_list = ["% BLOCK LATTICE_CART"]
+        cell_parameters_list = ["%BLOCK LATTICE_CART"]
         for vector in structure.cell:
             cell_parameters_list.append( ("{0:18.10f} {1:18.10f} "
                                           "{2:18.10f}".format(*vector)))
 
-        cell_parameters_list.append("% ENDBLOCK LATTICE_CART")
+        cell_parameters_list.append("%ENDBLOCK LATTICE_CART")
         cell_parameters_card = "\n".join(cell_parameters_list)
 
         # --------- ATOMIC POSITIONS---------
         # for kind in structure.kinds:
-        atomic_position_card_list = ["% BLOCK POSTIONS_ABS"]
+        atomic_position_card_list = ["%BLOCK POSITIONS_ABS"]
         for site in structure.sites:
             atomic_position_card_list.append(
                 "{0} {1:18.10f} {2:18.10f} {3:18.10f}".format(
                     site.kind_name.ljust(6), site.position[0],
                     site.position[1], site.position[2]))
-        atomic_position_card_list.append("% ENDBLOCK POSITIONS_ABS")
+        atomic_position_card_list.append("%ENDBLOCK POSITIONS_ABS")
         atomic_position_card = "\n".join(atomic_position_card_list)
         del atomic_position_card_list  # Free memory
 
@@ -188,13 +184,13 @@ class BaseCastepInputGenerator(object):
             if has_mesh is True:
                 input_params["CELL"]["kpoints_mp_grid"] = "{} {} {}".format(*mesh)
             else:
-                kpoints_card_list = ["% BLOCK KPOINTS_LIST"]
+                kpoints_card_list = ["%BLOCK KPOINTS_LIST"]
                 for kpoint, weight in zip(kpoints_list, weights):
                     kpoints_card_list.append("{:18.10f} {:18.10f} "
                          "{:18.10f} {:18.10f}".format(kpoint[0],
                                                       kpoint[1],
                                                       kpoint[2], weight))
-                kpoints_card_list.append("% ENDBLOCK KPOINTS_LIST")
+                kpoints_card_list.append("%ENDBLOCK KPOINTS_LIST")
 
                 kpoints_card = "\n".join(kpoints_card_list)
 
@@ -208,7 +204,7 @@ class BaseCastepInputGenerator(object):
             if "block" in key:
                 key = key.replace("block", "").strip()
                 lines = "\n".join(value)
-                entry = "\n% BLOCK {key}\n{content}\n% ENDBLOCK {key}\n".format(key=key,
+                entry = "\n%BLOCK {key}\n{content}\n%ENDBLOCK {key}\n".format(key=key,
                     content=lines)
             else:
                 entry = "{} : {}".format(key, value)
@@ -229,7 +225,7 @@ class BaseCastepInputGenerator(object):
         del param_entry_list
 
 
-        #### PUT THINGS TOGETHER ####
+        #### PUTTING THINGS TOGETHER ####
         cellfile = "\n\n".join([cell_parameters_card, atomic_position_card,
                               kpoints_card, cell_entries])
         paramfile = param_entries
@@ -373,6 +369,16 @@ class BaseCastepInputGenerator(object):
                 ",".join(settings_dict.keys())))
 
         return calcinfo
+
+    # TODO implement checking up of input parameters
+    @classmethod
+    def input_helper(cls, *args, **kwargs):
+        """
+        Validate if the keywords are valid castep keywords
+        Also try to convert the parameter diction in a
+        "standardized" form
+        """
+        pass
 
 
 def _lowercase_dict(d, dict_name):

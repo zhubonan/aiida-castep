@@ -20,13 +20,16 @@ class SinglePointCalculation(BaseCastepInputGenerator, JobCalculation):
 
         super(SinglePointCalculation, self)._init_internal_params()
 
-        self._defaut_parser = "castep.singlepoint"
+        self._default_parser = "castep.parser"
 
-        self._block_keywords = []
+        # Allowed value for keyword "task"
+        self._allowed_task_keywords = ["singlepoint"]
 
         self._use_kpoints = True
 
         self._SEED_NAME = "aiida"
+        self._DEFAULT_INPUT_FILE = "aiida.cell"
+        self._DEFAULT_OUTPUT_FILE = "aiida.castep"
 
 
     @classproperty
@@ -38,7 +41,7 @@ class SinglePointCalculation(BaseCastepInputGenerator, JobCalculation):
         retdict = JobCalculation._use_methods
         retdict.update(BaseCastepInputGenerator._baseclass_use_methods)
 
-        # Not all calculation need kpoints?
+        # Not all calculation need kpoints
         retdict['kpoints'] = {
             'valid_types': KpointsData,
             'additional_parameter': None,

@@ -1,0 +1,6 @@
+.eggs/*
+.eggs
+build
+build/*
+*.pyc
+*.workspace
