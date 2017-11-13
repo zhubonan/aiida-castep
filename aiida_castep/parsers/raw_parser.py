@@ -134,6 +134,7 @@ def parse_castep_text_output(out_lines, input_dict):
     during geometryoptimization
     :reutrn critical_messages: a list with critical messages.
     If any is found in parsed_data["warnings"] the calucaltion is failed.
+    Keys: cells, positions, forces, energies
     """
 
     psedu_files = {}
@@ -188,6 +189,9 @@ def parse_castep_text_output(out_lines, input_dict):
 
         if "MEMORY AND SCRATCH DISK ESTIMATES" in line:
             body_start = i
+            break
+
+    parsed_data.update(psedu_pots=psedu_files)
 
     # Parse non-repeating informaton e.g initialisation etc
     for count, line in enumerate(out_lines[body_start:]):
@@ -197,13 +201,13 @@ def parse_castep_text_output(out_lines, input_dict):
 
         # For dm and fixed occupancy runs
         if "Final energy" in line:
-            trajectory_data["total_energy"].append(line.strip().split()[-2])
+            trajectory_data["total_energy"].append(float(line.strip().split()[-2]))
 
         if "Final free" in line:
-            trajectory_data["free_energy"].append(line.strip().split()[-2])
+            trajectory_data["free_energy"].append(float(line.strip().split()[-2]))
 
         if "0K energy" in line:
-            trajectory_data["zero_K_energy"].append(line.strip().split()[-2])
+            trajectory_data["zero_K_energy"].append(float(line.strip().split()[-2]))
 
         if "finished iteration" in line:
             geom_H  = float(line.strip().split()[-2])
@@ -216,7 +220,7 @@ def parse_castep_text_output(out_lines, input_dict):
 
             parsed_data["warnings"].append(message)
 
-    return parsed_data, critical_warnings.values()
+    return parsed_data, trajectory_data, critical_warnings.values()
 
 
 # This function is modified from ase's geom reader
@@ -275,7 +279,7 @@ def parser_geom_text_output(out_lines, input_dict):
         raise CASTEPOutputParsingError("No data found in geom file")
 
     return dict(cells = np.array(cell_list),
-                positons = np.array(geom_list),
+                positions = np.array(geom_list),
                 forces = np.array(forces_list),
                 energies = np.array(energy_list),
                 symbols = species_list[0]
