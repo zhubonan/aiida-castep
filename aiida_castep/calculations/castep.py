@@ -2,7 +2,7 @@
 Calculations of CASTEP
 """
 import os
-from aiida_castep.calculations import BaseCastepInputGenerator
+from aiida_castep.calculations.base import BaseCastepInputGenerator
 
 from aiida.orm.calculation.job import JobCalculation
 from aiida.common.utils import classproperty
