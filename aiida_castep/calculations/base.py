@@ -180,7 +180,7 @@ class BaseCastepInputGenerator(object):
                 label=None
 
             line = get_castep_ion_line(name, pos, label=label, spin=spin,
-                occupation=kind.weights, num_mix=mixture_count)
+                occupation=kind.weights, mix_num=mixture_count)
 
             # Append the line to the list
             atomic_position_list.append(line)
@@ -215,14 +215,15 @@ class BaseCastepInputGenerator(object):
 
             if has_mesh is True:
                 input_params["CELL"]["kpoints_mp_grid"] = "{} {} {}".format(*mesh)
+                kpoints_line_list = []
             else:
-                kpoints_card_list = ["%BLOCK KPOINTS_LIST"]
+                kpoints_line_list = ["%BLOCK KPOINTS_LIST"]
                 for kpoint, weight in zip(kpoints_list, weights):
-                    kpoints_card_list.append("{:18.10f} {:18.10f} "
+                    kpoints_line_list.append("{:18.10f} {:18.10f} "
                          "{:18.10f} {:18.10f}".format(kpoint[0],
                                                       kpoint[1],
                                                       kpoint[2], weight))
-                kpoints_card_list.append("%ENDBLOCK KPOINTS_LIST")
+                kpoints_line_list.append("%ENDBLOCK KPOINTS_LIST")
 
         # --------- PSUDOPOTENTIALS --------
         # Check if we are using UPF pseudos
@@ -242,6 +243,9 @@ class BaseCastepInputGenerator(object):
                 local_copy_list_to_append.append((ps.get_file_abs_path(), ps.filename))
 
             species_pot_list.append("%ENDBLOCK SPECIES_POT")
+
+        else:
+            species_pot_list = []
 
         # --------- PARAMETERS in cell file---------
         cell_entry_list = []
@@ -269,9 +273,18 @@ class BaseCastepInputGenerator(object):
 
         #### PUTTING THINGS TOGETHER ####
         cellfile_list = []
+
+        # Cell vectors and positions in the cell file
         cellfile_list.extend(cell_vector_list + ["\n"])
         cellfile_list.extend(atomic_position_list + ["\n"])
-        cellfile_list.extend(kpoints_card_list + ["\n"])
+
+        # If not using mesh, add specified kpoints
+        cellfile_list.extend(kpoints_line_list + ["\n"])
+
+        # Pseudopotentials in cell file
+        cellfile_list.extend(species_pot_list + ["\n"])
+
+        # Keywords for cell ile
         cellfile_list.extend(cell_entry_list)
 
         # Final strings to be written to file
@@ -377,7 +390,7 @@ class BaseCastepInputGenerator(object):
         cell_input, param_input, pseudo_copy_list = self._generate_CASTEPinputdata(parameters,
             settings_dict, pseudos, structure, kpoints)
 
-        local_copy_list.append(pseudo_copy_list)
+        local_copy_list.extend(pseudo_copy_list)
 
         cell_input_filename = tempfolder.get_abs_path(self._SEED_NAME + ".cell")
         param_input_filename = tempfolder.get_abs_path(self._SEED_NAME + ".param")
