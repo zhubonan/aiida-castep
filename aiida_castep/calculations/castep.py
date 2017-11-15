@@ -9,7 +9,7 @@ from aiida.common.utils import classproperty
 from aiida.orm.data.array.kpoints import KpointsData
 
 
-class SinglePointCalculation(BaseCastepInputGenerator, JobCalculation):
+class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
     """
     Basic mode for CASTEP calculation
     """
@@ -18,12 +18,9 @@ class SinglePointCalculation(BaseCastepInputGenerator, JobCalculation):
 
     def _init_internal_params(self):
 
-        super(SinglePointCalculation, self)._init_internal_params()
+        super(CastepCalculation, self)._init_internal_params()
 
         self._default_parser = "castep.parser"
-
-        # Allowed value for keyword "task"
-        self._allowed_task_keywords = ["singlepoint"]
 
         self._use_kpoints = True
 

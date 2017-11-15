@@ -7,13 +7,13 @@ import os
 import aiida
 from aiida.common.exceptions import InputValidationError
 from aiida.common.folders import SandboxFolder
-from aiida.orm import CalculationFactory, DataFactory
+from aiida.orm import  DataFactory
 from aiida.backends.testbase import AiidaTestCase
 from aiida.orm import Code
-from aiida_castep.calculations.castep import SinglePointCalculation
+from aiida_castep.calculations.castep import CastepCalculation
 
 aiida.load_dbenv()
-CasCalc =  SinglePointCalculation
+CasCalc =  CastepCalculation
 StructureData = DataFactory("structure")
 ParameterData = DataFactory("parameter")
 KpointsData = DataFactory("array.kpoints")

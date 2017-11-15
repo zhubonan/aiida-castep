@@ -2,6 +2,10 @@
     "name": "aiida-castep",
     "author": "Bonan Zhu",
     "author_email": "bz240@cam.ac.uk",
+    "classifiers":[
+        "Programming Language:: Python :: 2.7",
+        "Development Status :: 4- Beta"
+    ],
     "description": "AiiDA plugin template for CASTEP",
     "url": "None",
     "license": "Creative Commons",
@@ -12,20 +16,19 @@
     "setup_requires": ["reentry"],
     "reentry_register": true,
     "install_requires": [
-        "aiida >= 0.9"
+        "aiida-core >= 0.10.0rc2"
     ],
     "entry_points": {
         "aiida.calculations": [
-            "castep.singlepoint = aiida_castep.calculations.castep:SinglePointCalculation"
+            "castep.castep = aiida_castep.calculations.castep:CastepCalculation"
         ],
         "aiida.parsers": [
             "castep.parser = aiida_castep.parsers.castep:CastepParser"
         ],
         "aiida.data": [
-            "template.factors = aiida_plugin_template.data.multiply:MultiplyParameters"
-        ],
-        "console_scripts": [
-            "aiida-template-factors = aiida_plugin_template.console_scripts.data_cli:cli"
+            "castep.uspdata = aiida_castep.data.usp:UspData",
+            "castep.otfgdata = aiida_castep.data.otfg:OTFGData"
         ]
+
     }
 }

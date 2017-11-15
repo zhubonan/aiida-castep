@@ -168,7 +168,7 @@ class UspData(SinglefileData):
                     raise ValueError("More than one copy of a pseudopotential"
                         " found. pks={}".format(pks))
             else:
-                return (pseudos, False)
+                return (pseudos[0], False)
 
     @classmethod
     def from_md5(cls, md5):
@@ -211,7 +211,7 @@ class UspData(SinglefileData):
 
         super(UspData, self).set_file(filename)
 
-        self._set_attr('element', str(element))
+        self._set_attr('element', str(element))  # For unicode/ascii ?
         self._set_attr('usp_md5', md5sum)
         self._set_attr('md5', md5sum)
 
