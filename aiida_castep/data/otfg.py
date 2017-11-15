@@ -1,12 +1,13 @@
 """
 Storing OTFG configuration as Data nodes
 """
+import re
 from aiida.orm import Data
 from aiida.common.utils import classproperty
 
 OTFGGROUP_TYPE = "data.castep.otfg.family"
 
-def create_otfg_family(entries, group_name, group_description,stop_if_existing=True):
+def upload_otfg_family(entries, group_name, group_description,stop_if_existing=True):
 
     """
     Set a family for the OTFG pseudo potential strings
@@ -104,7 +105,7 @@ class OTFGData(Data):
     """
 
     @classmethod
-    def get_or_create(cls, otfg_entry, use_first=True, store_otfg=True):
+    def get_or_create(cls, otfg_entry, use_first=False, store_otfg=True):
         """
         Create or retrive OTFG from database
         """
@@ -129,8 +130,9 @@ class OTFGData(Data):
             else:
                 return (in_db[0], False)
 
-
     def set_string(self, otfg_string):
+        if self.get_attr('element', None) is None:
+            self._set_attr("element", str("LIBRARY"))
         self._set_attr("otfg_string", str(otfg_string))
 
     def set_element(self, element):
@@ -149,6 +151,17 @@ class OTFGData(Data):
     def element(self):
         """Element of the OTFG. May not be avaliable"""
         return self.get_attr('element', None)
+
+    @property
+    def entry(self):
+        """Plain format of the OTFG"""
+        string =  self.string
+        element =  self.element
+        if element is None or element == "LIBRARY":
+            return string
+
+        else:
+            return element + " " + string
 
     @classmethod
     def from_entry(cls, entry):
@@ -179,7 +192,7 @@ class OTFGData(Data):
     def get_otfg_groups(cls, filter_elements=None, user=None):
 
         """
-        Return all names of groups of type UspFamily, possibly with some filters.
+        Return all names of groups of type otfg, possibly with some filters.
 
         :param filter_elements: A string or a list of strings.
                If present, returns only the groups that contains one Usp for
@@ -202,6 +215,8 @@ class OTFGData(Data):
 
         if filter_elements is not None:
             actual_filter_elements = {_.capitalize() for _ in filter_elements}
+            # LIBRARY is a wild card
+            actual_filter_elements.add("LBIRARY")
 
             group_query_params['node_attributes'] = {
                 'element': actual_filter_elements}
@@ -222,7 +237,7 @@ def split_otfg_entry(otfg):
     """
     otfg = otfg.strip()
     try:
-        element, setting = otfg.split("_", 1)
+        element, setting = re.split("[ _]+", otfg, 1)
     # Incase I pass a library e.g C9
     except ValueError:
         element = "LIBRARY"

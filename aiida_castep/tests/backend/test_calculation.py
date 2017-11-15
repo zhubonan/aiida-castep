@@ -36,6 +36,59 @@ class TestCastepInputGeneration(AiidaTestCase):
         cls.code.set_remote_computer_exec((cls.computer, "/x.x"))
         cls.code.store()
 
+    def make_H2_structure(self):
+
+        cell = ((5., 0., 0.), (0., 5., 0.), (0., 0., 5.))
+        s = StructureData(cell=cell)
+        s.append_atom(position=(0., 0., 0.), symbols=["H"])
+        s.append_atom(position=(1., 0., 0.), symbols=["H"])
+        self.H2 = s
+
+    def make_STO_structure(self):
+
+        a = 3.905
+
+        cell = ((a, 0., 0.), (0., a, 0.), (0., 0., a))
+        s = StructureData(cell=cell)
+        s.append_atom(position=(0., 0., 0.), symbols=["Sr"])
+        s.append_atom(position=(a/2, a/2, a/2), symbols=["Ti"])
+        s.append_atom(position=(a/2, a/2, 0.), symbols=["O"])
+        s.append_atom(position=(a/2, 0., a/2), symbols=["O"])
+        s.append_atom(position=(0., a/2, a/2), symbols=["O"])
+        self.STO = s
+
+    def make_pseudos(self):
+        """
+        Provide pseduo datas
+        """
+        from aiida.orm import DataFactory
+        OTFG = DataFactory("castep.otfgdata")
+        C9 = OTFG.get_or_create("C9")
+        Sr =
+
+    def test_pre_submit_checkings(self):
+        """
+        Test checkup before submission
+        """
+        pass
+
+    def test_using_OTFG(self):
+        """
+        Test using OTFG in the input
+        """
+        pass
+
+    def test_using_OTFG_mix(self):
+        """
+        Test using mixed OTFG library and manual values
+        """
+        pass
+
+    def test_using_UpfData(self):
+        """
+        Test using UpfData
+        """
+
     def test_inputs(self):
 
         cell = ((2., 0., 0.), (0., 2., 0.), (0., 0., 2.))
