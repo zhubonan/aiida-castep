@@ -69,6 +69,8 @@ class CastepParser(Parser):
         # look for other files
         has_dot_geom = False
         if self._calc._SEED_NAME + ".geom" in list_of_files:
+            out_geom_file = os.path.join(out_folder.get_abs_path("."),
+                self._calc._SEED_NAME + '.geom')
             has_dot_geom = True
 
         has_dot_bands = False
@@ -81,7 +83,15 @@ class CastepParser(Parser):
         # call the raw parsing function
         parsing_args = [out_file, input_dict, parser_opts]
 
+        # If there is a geom file then we parse it
         out_dict, trajectory_data, raw_sucessful = parse_raw_ouput(*parsing_args)
+
+        # Append the final value of trajectory_data into out_dict
+        for key in ["free_energy", "total_energy", "zero_K_energy"]:
+            add_last_if_exists(trajectory_data, key, out_dict)
+
+        # Save the new structure is exists
+        #TODO
 
         successful = raw_sucessful if successful else successful
 
@@ -96,3 +106,13 @@ class CastepParser(Parser):
                 pass
 
         return successful, new_nodes_list
+
+
+def add_last_if_exists(dict_of_iterable, key, dict_to_be_added):
+
+    try:
+        last = dict_of_iterable[key][-1]
+    except KeyError:
+        return
+    else:
+        dict_to_be_added[key] = last

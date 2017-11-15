@@ -104,6 +104,7 @@ def parse_raw_ouput(outfile, input_dict, parser_opts=None, geom_file=None):
             with open(geom_file) as gfile:
                 glines = gfile.readlines()
             geom_data = parser_geom_text_output(glines, None)
+            trajectory_data.update(geom_data)
 
     except CASTEPOutputParsingError as e:
         if not finished_run:
@@ -281,7 +282,7 @@ def parser_geom_text_output(out_lines, input_dict):
     return dict(cells = np.array(cell_list),
                 positions = np.array(geom_list),
                 forces = np.array(forces_list),
-                energies = np.array(energy_list),
+                geom_energy = np.array(energy_list),
                 symbols = species_list[0]
                 )
 
