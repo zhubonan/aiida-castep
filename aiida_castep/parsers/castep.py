@@ -3,7 +3,6 @@ Parsers for CASTEP
 """
 from aiida.orm.data.parameter import ParameterData
 from aiida.parsers.parser import Parser#, ParserParamManager
-from aiida_castep.calculations.castep import SinglePointCalculation
 from aiida_castep.parsers.raw_parser import parse_raw_ouput
 from aiida.common.datastructures import calc_states
 from aiida.common.exceptions import UniquenessError

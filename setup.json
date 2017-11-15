@@ -23,7 +23,7 @@
             "castep.castep = aiida_castep.calculations.castep:CastepCalculation"
         ],
         "aiida.parsers": [
-            "castep.parser = aiida_castep.parsers.castep:CastepParser"
+            "castep.castep = aiida_castep.parsers.castep:CastepParser"
         ],
         "aiida.data": [
             "castep.uspdata = aiida_castep.data.usp:UspData",

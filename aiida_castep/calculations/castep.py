@@ -20,7 +20,7 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
 
         super(CastepCalculation, self)._init_internal_params()
 
-        self._default_parser = "castep.parser"
+        self._default_parser = "castep.castep"
 
         self._use_kpoints = True
 
