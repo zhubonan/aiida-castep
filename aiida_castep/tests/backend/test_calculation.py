@@ -62,9 +62,10 @@ class TestCastepInputGeneration(AiidaTestCase):
         Provide pseduo datas
         """
         from aiida.orm import DataFactory
-        OTFG = DataFactory("castep.otfgdata")
+        from .test_data import Sr_otfg
+        otfg = DataFactory("castep.otfgdata")
         C9 = OTFG.get_or_create("C9")
-        Sr =
+        Sr = OTFG.get_or_create(Sr_otfg)
 
     def test_pre_submit_checkings(self):
         """
