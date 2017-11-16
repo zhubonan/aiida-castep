@@ -7,7 +7,6 @@ import os
 
 from aiida.common.exceptions import InputValidationError
 from aiida.common.datastructures import CalcInfo
-from aiida.orm.data.upf import get_pseudos_from_structure
 from aiida.common.utils import classproperty
 
 from aiida.orm.data.structure import StructureData
@@ -18,7 +17,12 @@ from aiida.orm.data.singlefile import SinglefileData
 from aiida.orm.data.remote import RemoteData
 from aiida.common.datastructures import CodeInfo
 from aiida.common.links import LinkType
+from aiida.common.exceptions import MultipleObjectsError
 from .utils import get_castep_ion_line
+from aiida_castep.data import OTFGData, UspData, get_pseudos_from_structure
+
+import logging
+logger = logging.getLogger("aiida.castepinput")
 
 
 class BaseCastepInputGenerator(object):
@@ -91,11 +95,11 @@ class BaseCastepInputGenerator(object):
             # Since 16.1 Version now support UPF files so such function
             # may be useful in the future
             "pseudo": {
-                'valid_types': UpfData,
+                'valid_types': (UpfData, OTFGData, UspData),
                 'additional_parameter': "kind",
                 'linkname': cls._get_linkname_pseudo,
                 'docstring': (
-                    "Use a node for the UPF pseudopotential of one of "
+                    "Use a node for the  pseudopotential of one of "
                     "the elements in the structure. You have to pass "
                     "an additional parameter ('kind') specifying the "
                     "name of the structure kind (i.e., the name of "
@@ -115,6 +119,11 @@ class BaseCastepInputGenerator(object):
         This method creates the content of an input file in the
         CASTEP format
         Generated input here should be generic to all castep calculations
+        :param parameters, ParameterData: Input goes to the .cell or .param file
+        :param settings_dict: A dictionary of the settings used for generation
+        :param pseudos: A dictionary of pseduo potential Data for each kind
+        :param structure: A StructureData instance
+        :param kpoints: A KpointsData node
         """
         local_copy_list_to_append = []
 
@@ -238,9 +247,16 @@ class BaseCastepInputGenerator(object):
             # Make symbols unique
             for s in symbols:
                 ps = pseudos[s]  # Get the pseupotential object
-                species_pot_list.append("{} {}".format(s, ps.filename))
-                # Add to the copy list
-                local_copy_list_to_append.append((ps.get_file_abs_path(), ps.filename))
+
+                # If we are dealing with a UpfData object
+                if isinstance(ps, (UpfData, UspData)):
+                    species_pot_list.append("{:5} {}".format(s, ps.filename))
+                    # Add to the copy list
+                    local_copy_list_to_append.append((ps.get_file_abs_path(), ps.filename))
+
+                # If we are using OTFG, just add the string property of it
+                if isinstance(ps, OTFGData):
+                    species_pot_list.append("{:5} {}".format(s, ps.string))
 
             species_pot_list.append("%ENDBLOCK SPECIES_POT")
 
@@ -250,6 +266,11 @@ class BaseCastepInputGenerator(object):
         # --------- PARAMETERS in cell file---------
         cell_entry_list = []
         for key, value in input_params["CELL"].iteritems():
+
+            if "species_pot" in key:
+                if pseudos:
+                    raise MultipleObjectsError("Both species_pot and pseudos are provided")
+                logger.warning("Pseudopotentials directly defined in CELL dictionary")
 
             # Constructing block keywrods
             if "block" in key:
@@ -356,9 +377,9 @@ class BaseCastepInputGenerator(object):
                 kindstring = link[len(self._get_linkname_pseudo_prefix()):]
                 kinds = kindstring.split('_')
                 the_pseudo = inputdict.pop(link)
-                if not isinstance(the_pseudo, UpfData):
+                if not isinstance(the_pseudo, (UpfData, UspData, OTFGData)):
                     raise InputValidationError("Pseudo for kind(s) {} is not of "
-                                               "type UpfData".format(",".join(kinds)))
+                                               "supoorted ".format(",".join(kinds)))
                 for kind in kinds:
                     if kind in pseudos:
                         raise InputValidationError("Pseudo for kind {} passed "
@@ -386,7 +407,6 @@ class BaseCastepInputGenerator(object):
         # END OF INITIAL INPUT CHECK #
         ##############################
 
-        pseudos = []
         cell_input, param_input, pseudo_copy_list = self._generate_CASTEPinputdata(parameters,
             settings_dict, pseudos, structure, kpoints)
 

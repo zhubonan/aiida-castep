@@ -1,14 +1,14 @@
 """
 Test for generating castep input
 """
-import aiida
-
 from aiida.common.exceptions import InputValidationError
 from aiida.common.folders import SandboxFolder
 from aiida.orm import  DataFactory
 from aiida.backends.testbase import AiidaTestCase
 from aiida.orm import Code
 from aiida_castep.calculations.castep import CastepCalculation
+from aiida.common.exceptions import MultipleObjectsError
+from .test_data import BaseDataCase
 
 CasCalc =  CastepCalculation
 StructureData = DataFactory("structure")
@@ -16,7 +16,32 @@ ParameterData = DataFactory("parameter")
 KpointsData = DataFactory("array.kpoints")
 
 
-class TestCastepInputGeneration(AiidaTestCase):
+class CalcTestBase(object):
+
+    def get_default_input(self):
+
+        input_params = {
+            "PARAM": {
+            "task" : "singlepoint",
+            "xc_functional" : "lda",
+            },
+            "CELL" : {
+            "fix_all_cell" : "true",
+            "block species_pot": ("Ba Ba_00.usp",)
+            }
+        }
+
+        return input_params
+
+    def get_kpoints_mesh(self, mesh=(4, 4, 4)):
+
+        k = KpointsData()
+        k.set_kpoints_mesh(mesh)
+        k.store()
+        return k
+
+
+class TestCastepInputGeneration(AiidaTestCase, CalcTestBase, BaseDataCase):
     """
     Test if the input is correctly generated
     """
@@ -44,40 +69,40 @@ class TestCastepInputGeneration(AiidaTestCase):
         s.append_atom(position=(1., 0., 0.), symbols=["H"])
         self.H2 = s
 
-    def make_STO_structure(self):
-
-        a = 3.905
-
-        cell = ((a, 0., 0.), (0., a, 0.), (0., 0., a))
-        s = StructureData(cell=cell)
-        s.append_atom(position=(0., 0., 0.), symbols=["Sr"])
-        s.append_atom(position=(a/2, a/2, a/2), symbols=["Ti"])
-        s.append_atom(position=(a/2, a/2, 0.), symbols=["O"])
-        s.append_atom(position=(a/2, 0., a/2), symbols=["O"])
-        s.append_atom(position=(0., a/2, a/2), symbols=["O"])
-        self.STO = s
-
-    def make_pseudos(self):
-        """
-        Provide pseduo datas
-        """
-        from aiida.orm import DataFactory
-        from .test_data import Sr_otfg
-        otfg = DataFactory("castep.otfgdata")
-        C9 = OTFG.get_or_create("C9")
-        Sr = OTFG.get_or_create(Sr_otfg)
-
     def test_pre_submit_checkings(self):
         """
         Test checkup before submission
         """
         pass
 
-    def test_using_OTFG(self):
+    def test_using_OTFG_family(self):
         """
         Test using OTFG in the input
         """
-        pass
+        from .utils import get_STO_structure
+        STO = get_STO_structure()
+        full, missing, C9 = self.create_family()
+        c = CasCalc()
+        pdict = self.get_default_input()
+        # pdict["CELL"].pop("block species_pot")
+        p = ParameterData(dict=pdict).store()
+        c.use_structure(STO)
+        c.use_pseudos_from_family(full)
+        c.use_pseudos_from_family(C9)
+        c.use_kpoints(self.get_kpoints_mesh())
+        c.use_code(self.code)
+
+        input_dict = c.get_inputs_dict()
+        # Check mixing libray with acutal entry
+        self.assertEqual(input_dict["pseudo_O"].entry, "C9")
+
+        with SandboxFolder() as f:
+
+            pdict["CELL"].pop("block species_pot")
+            p = ParameterData(dict=pdict)
+            c.use_parameters(p)
+            input_dict = c.get_inputs_dict()
+            c._prepare_for_submission(f, input_dict)
 
     def test_using_OTFG_mix(self):
         """
@@ -166,5 +191,4 @@ class TestCastepInputGeneration(AiidaTestCase):
         import os
         seed = os.path.join(folder.abspath, seed)
         call(["castep.serial", seed, "-dryrun"], cwd=folder.abspath)
-
 

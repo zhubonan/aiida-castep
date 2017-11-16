@@ -14,6 +14,7 @@ USPGROUP_TYPE = "data.castep.usp.family"
 # Extract element from filename
 re_fn = re.compile("^(\w+)_\w+\.(usp|recpot)$", flags=re.IGNORECASE)
 
+
 def upload_usp_family(folder, group_name, group_description,
                       stop_if_existing=True):
     """
@@ -175,13 +176,13 @@ class UspData(SinglefileData):
         """
         Return a list of all usp pseudopotentials that match a given MD5 hash.
 
-        Note that the hash has to be stored in a usp_md5 attribute, otherwise
+        Note that the hash has to be stored in a md5 attribute, otherwise
         the pseudo will not be found.
         We use a special md5 attribute to avoid searching through irrelavent data types.
         """
         from aiida.orm.querybuilder import QueryBuilder
         qb = QueryBuilder()
-        qb.append(cls, filters={'attributes.usp_md5': {'==': md5}})
+        qb.append(cls, filters={'attributes.md5': {'==': md5}})
         # This should be refectored for better readibility
         return [_ for [_] in qb.all()]
 
@@ -212,7 +213,6 @@ class UspData(SinglefileData):
         super(UspData, self).set_file(filename)
 
         self._set_attr('element', str(element))  # For unicode/ascii ?
-        self._set_attr('usp_md5', md5sum)
         self._set_attr('md5', md5sum)
 
     @property
@@ -222,7 +222,7 @@ class UspData(SinglefileData):
     @property
     def md5sum(self):
         """MD5 sum of the usp/recpot file"""
-        return self.get_attr('usp_md5', None)
+        return self.get_attr('md5', None)
 
     @classmethod
     def get_usp_group(cls, group_name):
@@ -295,17 +295,10 @@ class UspData(SinglefileData):
             raise ValidationError("attribute 'elememnt' not set.")
 
         try:
-            attr_usp_md5 = self.get_attr('usp_md5')
-        except AttributeError:
-            raise ValidationError("attribute 'usp_md5' not set." )
-
-        try:
             attr_md5 = self.get_attr('md5')
         except AttributeError:
             raise ValidationError("attribute 'md5' not set." )
 
-        if attr_usp_md5 != attr_md5:
-            raise ValidationError("Inconsistency between md5 and usp_md5")
 
         # Check matching of data and actual file
         if attr_element != element:
@@ -313,10 +306,6 @@ class UspData(SinglefileData):
                               "parsed instead.".format(
             attr_element, element))
 
-        if attr_usp_md5 != md5:
-            raise ValidationError("Attribute 'usp_md5' says '{}' but '{}' was "
-                                  "parsed instead.".format(
-                attr_md5, md5))
 
 
 def get_usp_element(filepath):

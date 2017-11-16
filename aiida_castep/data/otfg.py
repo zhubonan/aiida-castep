@@ -7,7 +7,8 @@ from aiida.common.utils import classproperty
 
 OTFGGROUP_TYPE = "data.castep.otfg.family"
 
-def upload_otfg_family(entries, group_name, group_description,stop_if_existing=True):
+
+def upload_otfg_family(entries, group_name, group_description, stop_if_existing=True):
 
     """
     Set a family for the OTFG pseudo potential strings
@@ -92,7 +93,6 @@ def upload_otfg_family(entries, group_name, group_description,stop_if_existing=T
     nuploaded = len([_ for _, created in otfg_and_created if created])
 
     return nentries, nuploaded
-
 
 
 class OTFGData(Data):
@@ -187,6 +187,15 @@ class OTFGData(Data):
     @classproperty
     def otfg_family_type_string(cls):
         return OTFGGROUP_TYPE
+
+    @classmethod
+    def get_otfg_group(cls, group_name):
+        """
+        Return the UpfFamily group with the given name.
+        """
+        from aiida.orm import Group
+
+        return Group.get(name=group_name, type_string=cls.otfg_family_type_string)
 
     @classmethod
     def get_otfg_groups(cls, filter_elements=None, user=None):
