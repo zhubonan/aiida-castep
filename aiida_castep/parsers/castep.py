@@ -139,10 +139,10 @@ class CastepParser(Parser):
 
             else:
                 traj = TrajectoryData()
-                traj.set_trajectory(stepids=stepids,
-                                    cells=cells,
-                                    symobls=symbols,
-                                    positions=positions)
+                traj.set_trajectory(stepids=np.asarray(stepids),
+                                    cells=np.asarray(cells),
+                                    symbols=np.asarray(symbols),
+                                    positions=np.asarray(positions))
                 # Save the rest
                 for name, value in trajectory_data.iteritems():
                     traj.set_array(name, np.asarray(value))

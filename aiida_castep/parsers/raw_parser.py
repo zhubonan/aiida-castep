@@ -139,6 +139,8 @@ def parse_raw_ouput(outfile, input_dict, parser_opts=None, geom_file=None):
 
 # Re for getting unit
 unit_re = re.compile("^ output\s+(\w+) unit\s+:\s+([^\s]+\s*$)")
+
+
 def parse_castep_text_output(out_lines, input_dict):
     """
     Parse ouput of .castep
@@ -224,7 +226,9 @@ def parse_castep_text_output(out_lines, input_dict):
 
     # Parse repeating information
     skip = 0
-    for count, line in enumerate(out_lines[body_start:]):
+
+    body_lines = out_lines[body_start:]
+    for count, line in enumerate(body_lines):
 
         # Allow sking certain number of lines
         if skip > 0:
@@ -263,7 +267,7 @@ def parse_castep_text_output(out_lines, input_dict):
             continue
 
         if "Stress Tensor" in line:
-            i, stress, pressure = parse_stress_box(out_lines[count:count+20])
+            i, stress, pressure = parse_stress_box(body_lines[count:count+20])
             assert len(stress) == 3
             if "Symmetrised" in line:
                 prefix = "symm_"
@@ -275,7 +279,7 @@ def parse_castep_text_output(out_lines, input_dict):
 
         if "Forces *******" in line:
             num_lines = parsed_data["num_ions"] + 20
-            i, forces = parse_force_box(out_lines[count:count+num_lines])
+            i, forces = parse_force_box(body_lines[count:count+num_lines])
 
             if "Constrained" in line:
                 forc_name = "cons_force"
@@ -284,12 +288,38 @@ def parse_castep_text_output(out_lines, input_dict):
             trajectory_data[forc_name].append(forces)
             skip = i
 
-
         if any(i in line for i in all_warnings):
             message = [ all_warnings[i] for i in all_warnings.keys() if i in line][0]
             if message is None:
                 message = line
             parsed_data["warnings"].append(message)
+
+    #### END OF LINE BY LINE PARSING ITERATION ####
+
+    # remove unrelated units
+    units_to_delete = []
+    for key in parsed_data:
+        if "unit_" in key:
+            unit_for = key.split("_", 1)[1]
+            delete = True
+            # Check the thing this unit refers do exists
+            for i in trajectory_data:
+                if i == key:
+                    continue
+                if unit_for in  i:
+                    delete = False
+
+            for i in parsed_data:
+                if i == key:
+                    continue
+                if unit_for in  i:
+                    delete = False
+
+            if delete is True:
+                units_to_delete.append(key)
+
+    for key in units_to_delete:
+        parsed_data.pop(key)
 
     return parsed_data, trajectory_data, critical_warnings.values()
 
@@ -378,7 +408,7 @@ def parse_force_box(lines):
             unit = unit[1:-2]
             continue
 
-        if "**********************" in line:
+        if "***********************" in line:
             break
 
         line = line.strip(" *")
@@ -387,6 +417,7 @@ def parse_force_box(lines):
 
         lsplit = line.split()
         if len(lsplit) == 5:
+            print(lsplit)
             forces.append([float(f) for f in lsplit[-3:]])
 
     return i, forces
