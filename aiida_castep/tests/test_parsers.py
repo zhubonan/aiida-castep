@@ -3,8 +3,6 @@ Test parsing data
 """
 from __future__ import print_function
 from aiida_castep.parsers.raw_parser import parse_castep_text_output, parser_geom_text_output
-from aiida_castep.parsers import
-
 import unittest
 
 

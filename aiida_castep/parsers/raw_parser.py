@@ -10,6 +10,7 @@ from aiida_castep.parsers import CASTEPOutputParsingError
 
 
 # TODO update CODATA for castep 16.1 and above
+
 # CODATA1986 (included herein for the sake of completeness)
 # taken from
 #    http://physics.nist.gov/cuu/Archive/1986RMP.pdf
@@ -58,8 +59,6 @@ def parse_raw_ouput(outfile, input_dict, parser_opts=None, geom_file=None):
     The first one should be empty unless the run is not failed or unfinished
     """
 
-    import copy
-
     parser_version = "0.1"
     parser_info = {}
     parser_info["parser_warnings"] = []
@@ -81,6 +80,7 @@ def parse_raw_ouput(outfile, input_dict, parser_opts=None, geom_file=None):
 
     finished_run = False
 
+
     # Use Total time as a mark for completed run
     for i, line in enumerate(reversed(out_lines)):
         # Check only the last 20 lines
@@ -100,11 +100,14 @@ def parse_raw_ouput(outfile, input_dict, parser_opts=None, geom_file=None):
     # Parse the data and store
     try:
         out_data, trajectory_data, critical_messages = parse_castep_text_output(out_lines, input_dict)
+
+        # Use data from geom file if avaliable.
         if geom_file is not None:
             with open(geom_file) as gfile:
                 glines = gfile.readlines()
             geom_data = parser_geom_text_output(glines, None)
             trajectory_data.update(geom_data)
+
 
     except CASTEPOutputParsingError as e:
         if not finished_run:
@@ -116,11 +119,23 @@ def parse_raw_ouput(outfile, input_dict, parser_opts=None, geom_file=None):
         else:  # Run finished but I have still have an error here
             raise CASTEPOutputParsingError("Error while parsing ouput. Exception message: {}".format(e.message))
 
+    # Construct a structure data from the last frame
+    try:
+        last_cell = trajectory_data["cells"][-1]
+        last_positions = trajectory_data["positions"][-1]
+        symbols = trajectory_data["symbols"]
+
+    except KeyError:
+        # Cannot find the last geometry data
+        structure_data = {}
+    else:
+        structure_data = dict(cell=last_cell, positions=last_positions, symbols=symbols)
+
     # Parameter data to be returned
     parameter_data = dict(out_data.items() + parser_info.items())
 
     # Todo Validation of ouput data
-    return parameter_data, trajectory_data, job_successful
+    return parameter_data, trajectory_data, structure_data, job_successful
 
 
 def parse_castep_text_output(out_lines, input_dict):

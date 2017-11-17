@@ -4,6 +4,7 @@ Parsers for CASTEP
 from aiida.orm.data.parameter import ParameterData
 from aiida.parsers.parser import Parser#, ParserParamManager
 from aiida_castep.parsers.raw_parser import parse_raw_ouput
+from aiida_castep.parsers import structure_from_input, add_last_if_exists
 from aiida.common.datastructures import calc_states
 from aiida.common.exceptions import UniquenessError
 from aiida.orm.data.array.bands import BandsData
@@ -72,6 +73,8 @@ class CastepParser(Parser):
             out_geom_file = os.path.join(out_folder.get_abs_path("."),
                 self._calc._SEED_NAME + '.geom')
             has_dot_geom = True
+        else:
+            out_geom_file = None
 
         has_dot_bands = False
         if self._calc._SEED_NAME + ".bands" in list_of_files:
@@ -81,23 +84,21 @@ class CastepParser(Parser):
             self._calc._OUTPUT_FILE_NAME)
 
         # call the raw parsing function
-        parsing_args = [out_file, input_dict, parser_opts]
+        parsing_args = [out_file, input_dict, parser_opts, out_geom_file]
 
         # If there is a geom file then we parse it
-        out_dict, trajectory_data, raw_sucessful = parse_raw_ouput(*parsing_args)
+        out_dict, trajectory_data, structure_data, raw_sucessful = parse_raw_ouput(*parsing_args)
 
         # Append the final value of trajectory_data into out_dict
         for key in ["free_energy", "total_energy", "zero_K_energy"]:
             add_last_if_exists(trajectory_data, key, out_dict)
-
-        # Save the new structure is exists
-        #TODO
 
         successful = raw_sucessful if successful else successful
 
         # Saving to nodes
         new_nodes_list = []
 
+        # Save the parameters parsed
         output_params = ParameterData(dict=out_dict)
         new_nodes_list.append((self.get_linkname_outparams(), output_params))
 
@@ -105,14 +106,53 @@ class CastepParser(Parser):
         # Add trajectory data. Not implemented for now
                 pass
 
+        # Save the new structure if exists
+        try:
+            cell = structure_data["cell"]
+            positions = structure_data["positions"]
+            symbols = structure_data["symbols"]
+
+        except KeyError:
+            # No final structure can be used
+            pass
+        else:
+            output_structure = structure_from_input(cell=cell, positions=positions, symbols=symbols)
+            new_nodes_list.append((self.get_linkname_outstructure(), output_structure))
+
         return successful, new_nodes_list
 
+    def get_parser_settings_key(self):
+        """
+        Return the name of the key to be used in the calculation settings, that
+        contains the dictionary with the parser_options
+        """
+        return 'parser_options'
 
-def add_last_if_exists(dict_of_iterable, key, dict_to_be_added):
+    def get_linkname_outstructure(self):
+        """
+        Returns the name of the link to the output_structure
+        Node exists if positions or cell changed.
+        """
+        return 'output_structure'
 
-    try:
-        last = dict_of_iterable[key][-1]
-    except KeyError:
-        return
-    else:
-        dict_to_be_added[key] = last
+    def get_linkname_outtrajectory(self):
+        """
+        Returns the name of the link to the output_trajectory.
+        Node exists in case of calculation='md', 'vc-md', 'relax', 'vc-relax'
+        """
+        return 'output_trajectory'
+
+    def get_linkname_outarray(self):
+        """
+        Returns the name of the link to the output_array
+        Node may exist in case of calculation='scf'
+        """
+        return 'output_array'
+
+    def get_linkname_out_kpoints(self):
+        """
+        Returns the name of the link to the output_kpoints
+        Node exists if cell has changed and no bands are stored.
+        """
+        return 'output_kpoints'
+

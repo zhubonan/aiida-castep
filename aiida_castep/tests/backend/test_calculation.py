@@ -41,6 +41,29 @@ class CalcTestBase(object):
         return k
 
 
+    def setup_calculation(self):
+        from .utils import get_STO_structure
+
+        code = Code()
+        code.set_remote_computer_exec((self.computer, "/x.x"))
+        code.store()
+        STO = get_STO_structure()
+
+        full, missing, C9 = self.create_family()
+        c = CasCalc()
+        pdict = self.get_default_input()
+        # pdict["CELL"].pop("block species_pot")
+        p = ParameterData(dict=pdict).store()
+        c.use_structure(STO)
+        c.use_pseudos_from_family(full)
+        c.use_pseudos_from_family(C9)
+        c.use_kpoints(self.get_kpoints_mesh())
+        c.use_code(code)
+        c.use_parameters(p)
+
+        # Check mixing libray with acutal entry
+        return c
+
 class TestCastepInputGeneration(AiidaTestCase, CalcTestBase, BaseDataCase):
     """
     Test if the input is correctly generated

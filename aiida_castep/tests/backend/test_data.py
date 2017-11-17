@@ -216,6 +216,7 @@ class TestUspData(AiidaTestCase, BaseDataCase):
         return  node
 
     def test_get_or_create(self):
+        """Testing the logic or get_or_create"""
         name  = "Sr_00.usp"
         with SandboxFolder() as f:
             fp = io.StringIO(u"foo bla 42")
@@ -224,6 +225,7 @@ class TestUspData(AiidaTestCase, BaseDataCase):
             node1, create = usp.UspData.get_or_create(fpath)
 
             self.assertTrue(create)
+            self.assertEqual(node1.element, "Sr")
 
             node2 = usp.UspData(file=fpath)
             node2.store()
@@ -235,7 +237,7 @@ class TestUspData(AiidaTestCase, BaseDataCase):
             # This should work now
             node4, create = usp.UspData.get_or_create(fpath, use_first=True)
             self.assertFalse(create)
-            self.assertEqual(node1.uuid, node4.uuid)
+            self.assertIn(node4.pk, (node1.pk, node2.pk))
 
     def test_upload(self):
         self.upload_usp_family()
