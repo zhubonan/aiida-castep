@@ -6,6 +6,8 @@ import subprocess as sbp
 import json
 import sys
 
+castep_exe_name = "castep.mpi"
+
 def dot_proc(iterable):
     """Provide a primitive progress bar"""
     print("Processing keywords")
@@ -109,7 +111,31 @@ def construct_full_dict():
     keywords and sub-keywords are in lower case except the key_tpye whcih is
     either CELL or PARAM
     """
-    cell, param = get_castep_commands()  # Dictonary with short help lines
+
+    castep_info = None
+    for exe_name in ["castep.mpi", "castep.serial", "castep"]:
+        try:
+            castep_info = sbp.check_output([exe_name, "--version"])
+        except OSError:
+            pass
+        else:
+            break
+
+    if castep_info is None:
+        raise RuntimeError("Cannot find castep binary")
+
+    version_num = None
+    for line in castep_info.split("\n"):
+        if "CASTEP version:" in line:
+            version_num = line.split(":")[-1].strip()
+
+    castep_exe_name = exe_name
+
+    print("######## Version info of CASTEP detected ########")
+    print(castep_info)
+
+    # Dictonary with short help lines
+    cell, param = get_castep_commands(castep_exe_name)
 
     # The full dictionary
     full_dict = {}
@@ -120,20 +146,14 @@ def construct_full_dict():
         help_string = get_help_string(key)
         lines, k_type, k_level, v_type = parse_help_string(help_string)
         full_dict[key.lower()] = dict(help_short = all[key],
-                                   help_full = "\n".join(lines),
-                                   key_type= k_type,
-                                   key_level= k_level,
-                                   value_type = v_type)
+                                      help_full = "\n".join(lines),
+                                      key_type= k_type,
+                                      key_level= k_level,
+                                      value_type = v_type)
+    full_dict["_CASTEP_VERSION"] =  version_num
 
     return full_dict
 
 
 if __name__ == "__main__":
-    cell, param = get_castep_commands()
-    with open("cell.json", "w") as fp:
-        json.dump(cell, fp)
-
-    with open("param.json", "w") as fp:
-        json.dump(param, fp)
-
     res  = construct_full_dict()
