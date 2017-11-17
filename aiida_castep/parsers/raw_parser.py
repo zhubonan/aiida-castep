@@ -137,7 +137,8 @@ def parse_raw_ouput(outfile, input_dict, parser_opts=None, geom_file=None):
     # Todo Validation of ouput data
     return parameter_data, trajectory_data, structure_data, job_successful
 
-
+# Re for getting unit
+unit_re = re.compile("^ output\s+(\w+) unit\s+:\s+([^\s]+\s*$)")
 def parse_castep_text_output(out_lines, input_dict):
     """
     Parse ouput of .castep
@@ -152,6 +153,7 @@ def parse_castep_text_output(out_lines, input_dict):
     If any is found in parsed_data["warnings"] the calucaltion is failed.
     Keys: cells, positions, forces, energies
     """
+    from collections import defaultdict
 
     psedu_files = {}
     parsed_data = {}
@@ -159,13 +161,7 @@ def parse_castep_text_output(out_lines, input_dict):
 
     # Initialise storage space for trajectory
     # Not all is needed. But we parse as much as we can here
-    trajectory_data = {"total_energy":[],
-                       "free_energy":[],
-                       "zero_K_energy":[],
-                       "forces": [],
-                       "stress_tensor":[],
-                       "enthalpy":[],
-                       }
+    trajectory_data = defaultdict(list)
 
     critical_warnings = {"Geometry optimization failed to converge":
     "Maximum geometry optimization cycle has been reached",
@@ -180,6 +176,13 @@ def parse_castep_text_output(out_lines, input_dict):
 
     # Split header and body
     for i, line in enumerate(out_lines):
+
+        unit_match = unit_re.match(line)
+        if unit_match:
+            uname = unit_match.group(1)
+            uvalue = unit_match.group(2)
+            parsed_data["unit_"+ uname] = uvalue
+
         if "Files used for pseudopotentials" in line:
             for line in out_lines[i+1:]:
                 if "---" in line:
@@ -191,6 +194,8 @@ def parse_castep_text_output(out_lines, input_dict):
                         break
                     else:
                         psedu_files.update({specie: psedu_file})
+        if "Total number of ions" in line:
+            parsed_data["num_ions"] = int(line.strip().split("=")[1].strip())
 
         if "Point group of crystal" in line:
             parsed_data["point_group"] = line.strip().split("=")[1].strip()
@@ -209,31 +214,81 @@ def parse_castep_text_output(out_lines, input_dict):
 
     parsed_data.update(psedu_pots=psedu_files)
 
-    # Parse non-repeating informaton e.g initialisation etc
+    def append_value_and_unit(line, name):
+        """
+        Generat extract data from = <value> <unit> line
+        """
+        elem = line.strip().split()
+        value  = float(elem[-2])
+        trajectory_data[name].append(value)
+
+    # Parse repeating information
+    skip = 0
     for count, line in enumerate(out_lines[body_start:]):
+
+        # Allow sking certain number of lines
+        if skip > 0:
+            skip -= 1
+            continue
+
         if "Calculation parallelised over" in line:
             num_cores = int(line.strip().split()[-2])
             parsed_data["parallel_procs"] = num_cores
+            continue
 
         # For dm and fixed occupancy runs
         if "Final energy" in line:
-            trajectory_data["total_energy"].append(float(line.strip().split()[-2]))
+            append_value_and_unit(line, "total_energy")
+            continue
 
         if "Final free" in line:
-            trajectory_data["free_energy"].append(float(line.strip().split()[-2]))
+            append_value_and_unit(line, "free_energy")
+            continue
 
         if "0K energy" in line:
-            trajectory_data["zero_K_energy"].append(float(line.strip().split()[-2]))
+            append_value_and_unit(line, "zero_K_energy")
+            continue
+
+        if "Integrated Spin" in line:
+            append_value_and_unit(line, "spin_density")
+            continue
+
+
+        if "Integrated |Spin" in line:
+            append_value_and_unit(line, "abs_spin_density")
+            continue
 
         if "finished iteration" in line:
-            geom_H  = float(line.strip().split()[-2])
-            trajectory_data["enthalpy"].append(geom_H)
+            append_value_and_unit(line, "enthalpy")
+            continue
+
+        if "Stress Tensor" in line:
+            i, stress, pressure = parse_stress_box(out_lines[count:count+20])
+            assert len(stress) == 3
+            if "Symmetrised" in line:
+                prefix = "symm_"
+            else:
+                prefix = ""
+            trajectory_data[prefix + "pressure"].append(pressure)
+            trajectory_data[prefix + "stress"].append(stress)
+            skip = i
+
+        if "Forces *******" in line:
+            num_lines = parsed_data["num_ions"] + 20
+            i, forces = parse_force_box(out_lines[count:count+num_lines])
+
+            if "Constrained" in line:
+                forc_name = "cons_force"
+            else:
+                forc_name = "force"
+            trajectory_data[forc_name].append(forces)
+            skip = i
+
 
         if any(i in line for i in all_warnings):
             message = [ all_warnings[i] for i in all_warnings.keys() if i in line][0]
             if message is None:
                 message = line
-
             parsed_data["warnings"].append(message)
 
     return parsed_data, trajectory_data, critical_warnings.values()
@@ -303,3 +358,74 @@ def parser_geom_text_output(out_lines, input_dict):
 
 
 
+
+def parse_force_box(lines):
+    """
+    Parse a box of the forces
+    :param lines: a list of upcoming lines
+
+    :returns line read: number of lines read
+    :return forces: forces parsed
+    """
+
+    forces = []
+    for i , line in enumerate(lines):
+
+        if "Forces" in line:
+            continue
+        if "Cartisian components" in line:
+            unit = line.strip().split()[-2]
+            unit = unit[1:-2]
+            continue
+
+        if "**********************" in line:
+            break
+
+        line = line.strip(" *")
+        if not line:
+            continue
+
+        lsplit = line.split()
+        if len(lsplit) == 5:
+            forces.append([float(f) for f in lsplit[-3:]])
+
+    return i, forces
+
+
+def parse_stress_box(lines):
+    """
+    Parse a box of the stress
+    :param lines: a list of upcoming lines
+
+    :returns line read: number of lines read
+    :return stress tensor: a 3 by 3 tensor
+    :return pressure: a float of pressure
+    """
+
+    stress = []
+    for i , line in enumerate(lines):
+        if "Stress" in line:
+            continue
+
+        if "Cartisian components" in line:
+            unit = line.strip().split()[-2]
+            unit = unit[1:-2]
+            continue
+
+        if "**********************" in line:
+            break
+
+        line = line.strip(" *")
+        if not line:
+            continue
+
+        lsplit = line.split()
+        if len(lsplit) == 4:
+            stress.append([float(s) for s in lsplit[-3:]])
+            continue
+
+        if "Pressure" in line:
+            pressure = float(lsplit[-1])
+
+
+    return i, stress, pressure

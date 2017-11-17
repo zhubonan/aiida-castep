@@ -98,26 +98,55 @@ class CastepParser(Parser):
         # Saving to nodes
         new_nodes_list = []
 
-        # Save the parameters parsed
+        ######## ---- PROCESSING OUTPUT DATA --- ########
         output_params = ParameterData(dict=out_dict)
         new_nodes_list.append((self.get_linkname_outparams(), output_params))
 
-        if trajectory_data:
-        # Add trajectory data. Not implemented for now
-                pass
 
-        # Save the new structure if exists
+        ######## --- PROCESSING STRUCTURE DATA --- ########
         try:
             cell = structure_data["cell"]
             positions = structure_data["positions"]
             symbols = structure_data["symbols"]
 
         except KeyError:
-            # No final structure can be used
+            # No final structure can be used - that is OK
             pass
         else:
             output_structure = structure_from_input(cell=cell, positions=positions, symbols=symbols)
             new_nodes_list.append((self.get_linkname_outstructure(), output_structure))
+
+        ######### --- PROCESSING TRAJECTORY DATA --- ########
+        if trajectory_data:
+
+            import numpy as np
+            from aiida.orm.data.array.trajectory import TrajectoryData
+            from aiida.orm.data.array import ArrayData
+
+            try:
+                positions = trajectory_data["positions"]
+                cells = trajectory_data["cells"]
+                symbols = trajectory_data["symbols"]
+                stepids = np.arange(len(positions))
+
+            except KeyError:
+                # Save as much as we can here
+                out_array = ArrayData()
+                # Note - not python3 compatible
+                for name, value in trajectory_data.iteritems():
+                    out_array.set_array(name, np.asarray(value))
+                new_nodes_list.append((self.get_linkname_outarray(), out_array))
+
+            else:
+                traj = TrajectoryData()
+                traj.set_trajectory(stepids=stepids,
+                                    cells=cells,
+                                    symobls=symbols,
+                                    positions=positions)
+                # Save the rest
+                for name, value in trajectory_data.iteritems():
+                    traj.set_array(name, np.asarray(value))
+                new_nodes_list.append((self.get_linkname_outtrajectory(), traj))
 
         return successful, new_nodes_list
 

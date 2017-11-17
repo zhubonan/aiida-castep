@@ -1,0 +1,8 @@
+task=geometryoptimisation
+fix_occupancy=false
+opt_strategy=speed
+num_dump_cycles=0
+cut_off_energy=300 eV
+xc_functional=PBE
+spin_polarised=true
+spin=2
