@@ -458,7 +458,8 @@ class BaseCastepInputGenerator(object):
         calcinfo.retrieve_list += settings_retrieve_list
         calcinfo.retrieve_list += self._internal_retrieve_list
 
-        # Checking parser options
+        # Remove parser options in the setting dictionary
+        # At the moment parser options are not used here
         try:
             Parserclass = self.get_paaserclass()
             parser = Parserclass(self)
