@@ -34,6 +34,7 @@ class TestHelper(unittest.TestCase):
         self.assertFalse(not_found)
 
     def test_check_dict_raw(self):
+        """Test the underlying check_dict function"""
 
         invalid, wrong = self.helper._check_dict(self.only_cell_dict)
         self.assertFalse(any([wrong, invalid]))
@@ -52,6 +53,7 @@ class TestHelper(unittest.TestCase):
         self.assertIn(("snap_to_symmetry", "CELL"), wrong)
 
     def test_check_dict(self):
+        """Test top level check dict function"""
 
         # Pass a good dictionary
         comb = self.input_dict

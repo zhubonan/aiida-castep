@@ -6,7 +6,9 @@ import subprocess as sbp
 import json
 import sys
 
+
 castep_exe_name = "castep.mpi"
+
 
 def dot_proc(iterable):
     """Provide a primitive progress bar"""

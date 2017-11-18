@@ -20,6 +20,9 @@ from aiida.common.links import LinkType
 from aiida.common.exceptions import MultipleObjectsError
 from .utils import get_castep_ion_line
 from aiida_castep.data import OTFGData, UspData, get_pseudos_from_structure
+from .helper import CastepHelper
+
+import numpy as np
 
 import logging
 logger = logging.getLogger("aiida.castepinput")
@@ -32,7 +35,7 @@ class BaseCastepInputGenerator(object):
     # This may not apply to CASTEP runs
     _PSEUDO_SUBFOLDER = "./pseudo/"
     # Castep output is in the
-    _OUTPUT_SUBFOLDER = "./"
+    _PARENT_CALC_SUBFOLDER = "./parent"
     _PREFIX = 'aiida'
     _INPUT_FILE_NAME = "aiida.cell"
     _OUTPUT_FILE_NAME = "aiida.castep"
@@ -50,10 +53,10 @@ class BaseCastepInputGenerator(object):
     _default_symlink_usage = True
 
     # in restarts, it will copy from the parent the following
-    _restart_copy_from = "*"
+    _restart_copy_from = "./*"
 
     # in restarts, it will copy the previous folder in the following one
-    _restart_copy_to = _OUTPUT_SUBFOLDER
+    _restart_copy_to = _PARENT_CALC_SUBFOLDER
 
     # Default verbosity; change in subclasses
     _default_verbosity = 1
@@ -90,10 +93,7 @@ class BaseCastepInputGenerator(object):
                 'docstring': ("Use a remote folder as parent folder (for "
                               "restarts and similar"),
             },
-            # TODO: Implement handling of pseduopoentials
-            # Psudo potential is not not always necessary for CASTEP
-            # Since 16.1 Version now support UPF files so such function
-            # may be useful in the future
+
             "pseudo": {
                 'valid_types': (UpfData, OTFGData, UspData),
                 'additional_parameter': "kind",
@@ -137,6 +137,11 @@ class BaseCastepInputGenerator(object):
                                        dict_name="parameters")
         input_params = {k: _lowercase_dict(v, dict_name=k)
                         for k, v in input_params.iteritems()}
+
+        helper = CastepHelper()
+
+        # Check and auto fix the keyword names
+        input_params = helper.check_dict(input_params, auto_fix=True)
 
         # Check if there are keywrods that need to be blocked
         # TODO implementation. See QE's input generatetor
@@ -273,8 +278,8 @@ class BaseCastepInputGenerator(object):
                 logger.warning("Pseudopotentials directly defined in CELL dictionary")
 
             # Constructing block keywrods
-            if "block" in key:
-                key = key.replace("block", "").strip()
+            # We identify the key should be treated as a block it is not a string and has len() > 0
+            if isinstance(value, (list, tuple)):
                 lines = "\n".join(value)
                 entry = "\n%BLOCK {key}\n{content}\n%ENDBLOCK {key}\n".format(key=key,
                     content=lines)
@@ -328,11 +333,12 @@ class BaseCastepInputGenerator(object):
         local_copy_list = []
 
         # TODO implement remote copy for restart calculations
-        #remote_copy_list = []
-        #remote_symlink_list = []
+        remote_copy_list = []
+        remote_symlink_list = []
 
         try:
             parameters = inputdict.pop(self.get_linkname('parameters'))
+
         except KeyError:
             raise InputValidationError("No parameters specified for this calculation")
         if not isinstance(parameters, ParameterData):
@@ -394,6 +400,7 @@ class BaseCastepInputGenerator(object):
                 raise InputValidationError("parent_calc_folder, if specified, "
                                            "must be of type RemoteData")
 
+        # Check if a code is specified
         try:
             code = inputdict.pop(self.get_linkname('code'))
         except KeyError:
@@ -407,6 +414,7 @@ class BaseCastepInputGenerator(object):
         # END OF INITIAL INPUT CHECK #
         ##############################
 
+        # Generate input file
         cell_input, param_input, pseudo_copy_list = self._generate_CASTEPinputdata(parameters,
             settings_dict, pseudos, structure, kpoints)
 
@@ -421,13 +429,30 @@ class BaseCastepInputGenerator(object):
         with open(param_input_filename, "w") as inparam:
             inparam.write(param_input)
 
-        # TODO: IMPLEMENT OPERATIONS FOR RESTART
+        # IMPLEMENT OPERATIONS FOR RESTART
+        symlink = settings_dict.pop('PARENT_FOLDER_SYMLINK', self._default_symlink_usage)
+
+        if parent_calc_folder is not None:
+            if symlink:
+                remote_list = remote_symlink_list
+            else:
+                remote_list = remote_copy_list
+            remote_list.append(
+                    (parent_calc_folder.get_computer().uuid,
+                        os.path.join(parent_calc_folder.get_remote_path(),
+                                     self._restart_copy_from),
+                        self._restart_copy_to))
 
         calcinfo = CalcInfo()
 
         calcinfo.uuid = self.uuid
-        calcinfo.local_copy_list = local_copy_list
 
+        # COPY/SYMLINK LISTS
+        calcinfo.local_copy_list = local_copy_list
+        calcinfo.remote_copy_list = remote_copy_list
+        calcinfo.remote_symlink_list = remote_symlink_list
+
+        # SET UP extra CMDLINE arguments
         cmdline_params = settings_dict.pop("CMDLINE", [])
 
         # Extra parameters are added after the seed for CASTEP
@@ -444,8 +469,11 @@ class BaseCastepInputGenerator(object):
 
         # Retrieve by default the .castep file only
         calcinfo.retrieve_list = []
+
         calcinfo.retrieve_list.append(self._SEED_NAME + ".castep")
+
         settings_retrieve_list = settings_dict.pop("ADDITIONAL_RETRIEVE_LIST", [])
+        calcinfo.retrieve_list.extend(settings_retrieve_list)
 
         # If we are doing geometryoptimisation retrived the geom file and -out.cell file
         calculation_mode = parameters.get_dict().get("PARAM", {}).get("task")
@@ -475,6 +503,122 @@ class BaseCastepInputGenerator(object):
 
         return calcinfo
 
+    def _set_parent_remotedata(self, remotedata):
+        """
+        Used to set a parent remotefolder
+        """
+        from aiida.common.exceptions import ValidationError
+
+        if not isinstance(remotedata, RemoteData):
+            raise ValueError('remotedata must be a RemoteData')
+
+        # complain if another remotedata is already found
+        input_remote = self.get_inputs(node_type=RemoteData)
+        if input_remote:
+            raise ValidationError("Cannot set several parent calculation to a "
+                                  "{} calculation".format(
+                self.__class__.__name__))
+
+        self.use_parent_folder(remotedata)
+
+    def create_restart(self, ignore_state=False, restart_type="restart", reuse=False, use_symlink=False, use_output_structure=False, use_castep_bin=False):
+        """
+        Method to restart the calculation by creating a new one.
+        Return a new calculation with all the essential input nodes in the unstored stated.
+
+        CASTEP has two modes of 'restart', activated by setting CONTINUATION or REUSE keywords in .param file.
+
+        CONTINUATION
+        ------------
+        Restart from the end of the last run. Only limited set of parameters can be modified. If unmodifiable parameters were changed, they are ignored. E.g changes of task, nextra_bands, cut_off_energy will be ignored. This is often used for geometry optimisation or md runs.
+
+        REUSE
+        -----
+        Essentially making a new calculation with parameters read from .cell and .param file.
+        Data from *.castep_bin or *.check will be used to initialise te model of the new run. This is often used for bandstructure, dos, spectral calculation.
+
+        Note both castep_bin and check file may be used.
+        They are almost the same except castep_bin does not have wavefunctions stored.
+
+
+        :param bool ignore_state: Ignore the state of parent calculation
+        :param str restart_type: "continuation" or "restart". If set to continuation the child calculation has keyword 'continuation' set.
+        :param book parent_folder_symlink: if True, symlink are used instead of hard copies of the files. Default given be self._default_symlink_usage
+        :param bool use_output_structure: if True, the output structure of parent calculation is used as the input of the child calculation.
+        This is useful for photon/bs calculation.
+        """
+
+        from aiida.common.datastructures import calc_states
+
+        if self.get_state(from_attribute=True) != calc_states.FINISHED:
+            if not ignore_state:
+                raise InputValidationError(
+                    "Calculation to be restarted must be in the {} state."
+                    "use ignore_state keyword to override this".format(calc_states.FINISHED))
+
+        if use_symlink is None:
+            use_symlink = self._default_symlink_usage
+
+        calc_inp = self.get_inputs_dict()  # Input nodes of parent calculation
+
+        remote_folders = self.get_outputs(type=RemoteData)
+        if len(remote_folders) != 1:
+            raise InputValidationError("More than one output RemoteData found "
+                                       "in calculation {}".format(self.pk))
+        remote_folder = remote_folders[0]
+
+        c2 = self.copy()
+
+        if use_output_structure:
+            try:
+                c2.use_structure(self.out.use_output_structure)
+            except AttributeError:
+                c2.use_structure(calc_inp[self.get_linkname('structure')])
+        else:
+            c2.use_structure(calc_inp[self.get_linkname('structure')])
+
+        if self._use_kpoints:
+            c2.use_kpoints(calc_inp[self.get_linkname('kpoints')])
+        c2.use_code(calc_inp[self.get_linkname('node')])
+
+        try:
+            old_settings_dict = calc_inp[self.get_linkname('settings')].get_dict()
+        except KeyError:
+            old_settings_dict = {}
+
+        if use_symlink is not None:
+            old_settings_dict['PARENT_FOLDER_SYMLINK'] = use_symlink
+
+        if old_settings_dict:
+            settings = ParameterData(dict=old_settings_dict)
+            c2.use_settings(settings)
+
+        c2._set_parent_remotedata(remote_folder)
+
+
+        # SETUP the keyword in PARAM file
+        parent_param = calc_inp[self.get_linkname('parameters')]
+        if restart_type == "continuation":
+            reuse = True
+        if reuse:
+            in_param_dict = parent_param.get_dict()
+            if restart_type == "restart":
+                in_param_dict['PARAM'].pop('continuation', None)
+                # Define the name of reuse here
+                in_param_dict['PARAM']["reuse"] = self._get_restart_file_relative_path()
+            else:
+                in_param_dict['PARAM'].pop('reuse', None)
+                in_param_dict['PARAM']['continuation'] = self._get_restart_file_relative_path()
+        else:
+                c2.use_parameters(parent_param)
+
+        # Use exactly the same pseudopotential data
+        for linkname, input_node in self.get_inputs_dict().iteritems():
+            if isinstance(input_node, (UpfData, UspData, OTFGData)):
+                c2.add_link_from(input_node, label=linkname)
+
+
+
     # TODO implement checking up of input parameters
     @classmethod
     def input_helper(cls, *args, **kwargs):
@@ -484,7 +628,6 @@ class BaseCastepInputGenerator(object):
         "standardized" form
         """
         pass
-
 
     @classmethod
     def _get_linkname_pseudo_prefix(cls):
@@ -516,6 +659,20 @@ class BaseCastepInputGenerator(object):
             raise TypeError("The parameter 'kind' of _get_linkname_pseudo can "
                             "only be a string or a list of strings")
         return "{}{}".format(cls._get_linkname_pseudo_prefix(), suffix_string)
+
+    def _get_restart_file_relative_path(self, param_data_dict, use_castep_bin=False):
+        """
+        Returns a relative path of the restart file
+        """
+        parent_check_name = param_data_dict["PARAM"].get("check_point",  None)
+        if parent_check_name is None:
+            if use_castep_bin:
+                parent_check_name = self._SEED_NAME + ".castep_bin"
+            else:
+                parent_check_name = self._SEED_NAME + ".check"
+
+        return os.path.join(self._PARENT_CALC_SUBFOLDER, parent_check_name)
+
 
     def use_pseudos_from_family(self, family_name):
         """

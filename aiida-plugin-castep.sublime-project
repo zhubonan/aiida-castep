@@ -17,7 +17,7 @@
 			"path": "/home/bonan/aiida-quantumespresso"
 		},
 		{
-			"path": "../aiida-quantumespresso"
+			"path": "/home/bonan/appdir/aiida_core/aiida"
 		}
 	],
 	"settings":

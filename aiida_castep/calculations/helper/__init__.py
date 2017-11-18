@@ -10,6 +10,9 @@ import subprocess
 import json
 from .generate import construct_full_dict
 
+import logging
+logger = logging.getLogger("aiida")
+
 path = os.path.abspath(__file__)
 module_path = os.path.dirname(path)
 
@@ -177,9 +180,11 @@ class CastepHelper(object):
             if auto_fix is True:
                 for key, should_be in wrong:
                     if should_be == "PARAM":
+                        logger.warning("Key {} moved to PARAM".format(key))
                         value = input_dict["CELL"].pop(key)
                         input_dict["PARAM"].update({key: value})
                     else:
+                        logger.warning("Key {} moved to CELL".format(key))
                         value = input_dict["PARAM"].pop(key)
                         input_dict["CELL"].update({key: value})
             else:

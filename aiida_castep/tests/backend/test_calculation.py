@@ -27,7 +27,7 @@ class CalcTestBase(object):
             },
             "CELL" : {
             "fix_all_cell" : "true",
-            "block species_pot": ("Ba Ba_00.usp",)
+            "species_pot": ("Ba Ba_00.usp",)
             }
         }
 
@@ -121,7 +121,7 @@ class TestCastepInputGeneration(AiidaTestCase, CalcTestBase, BaseDataCase):
 
         with SandboxFolder() as f:
 
-            pdict["CELL"].pop("block species_pot")
+            pdict["CELL"].pop("species_pot")
             p = ParameterData(dict=pdict)
             c.use_parameters(p)
             input_dict = c.get_inputs_dict()
@@ -149,7 +149,7 @@ class TestCastepInputGeneration(AiidaTestCase, CalcTestBase, BaseDataCase):
             },
             "CELL" : {
             "fix_all_cell" : "true",
-            "block species_pot": ("Ba Ba_00.usp",)
+            "species_pot": ("Ba Ba_00.usp",)
             }
         }
 

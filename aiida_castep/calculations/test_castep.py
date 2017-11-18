@@ -1,3 +1,0 @@
-"""
-Test generation of inputs
-"""

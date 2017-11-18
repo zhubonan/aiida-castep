@@ -7,6 +7,7 @@ TODOS
 * parsers add processing
 * calculations add more than singlepoint
 * write tests
+* Implement methods to restart a calculation
 
 How to test
 ===========
