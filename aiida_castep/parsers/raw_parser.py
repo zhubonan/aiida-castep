@@ -166,7 +166,7 @@ def parse_castep_text_output(out_lines, input_dict):
 
     critical_warnings = {"Geometry optimization failed to converge":
     "Maximum geometry optimization cycle has been reached",
-    "SCF cycles performed but system has not reached the groundstate":"SCF cycles failed to converge"}
+    "SCF cycles performed but system has not reached the groundstate":"SCF cycles failed to converge", "NOSTART": "Can not find start of the calculation."}
 
     minor_warnings = {"Warning": None}
     all_warnings = dict(critical_warnings.items() + minor_warnings.items())
@@ -176,6 +176,7 @@ def parse_castep_text_output(out_lines, input_dict):
         lines.strip().split(spliter)
 
     # Split header and body
+    body_start = None
     for i, line in enumerate(out_lines):
 
         unit_match = unit_re.match(line)
@@ -212,6 +213,11 @@ def parse_castep_text_output(out_lines, input_dict):
         if "MEMORY AND SCRATCH DISK ESTIMATES" in line:
             body_start = i
             break
+
+    # If we don't find a start of body then there is something wrong
+    if body_start is None:
+        parsed_data["warnings"].append(critical_warnings["NOSTART"])
+        return parsed_data, {}, critical_warnings.values()
 
     parsed_data.update(psedu_pots=psedu_files)
 

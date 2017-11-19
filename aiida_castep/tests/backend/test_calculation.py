@@ -287,7 +287,7 @@ class TestRestartGeneration(AiidaTestCase, CalcTestBase, BaseDataCase):
         c1_param = c1_inp[c1.get_linkname("parameters")].get_dict()['PARAM']
 
         reuse = c2_param.pop("reuse")
-        self.assertEqual(reuse, c2._restart_copy_to + "/{}.check".format(c2._SEED_NAME))
+        self.assertEqual(reuse, os.path.join(c2._restart_copy_to, "{}.check".format(c2._SEED_NAME)))
 
         with SandboxFolder() as f:
             print(c2._prepare_for_submission(f, c2_inp))

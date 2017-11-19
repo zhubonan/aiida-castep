@@ -62,7 +62,7 @@ class BaseCastepInputGenerator(object):
     _default_verbosity = 1
 
     # whether we are automaticall validating the input paramters
-    _auto_input_validation = False
+    _auto_input_validation = True
 
     @classproperty
     def _baseclass_use_methods(cls):
@@ -644,7 +644,6 @@ class BaseCastepInputGenerator(object):
         "standardized" form
         """
         helper = cls.get_input_helper()
-        helper = CastepHelper()
         helper.check_dict(input_dict, auto_fix)
 
     @classmethod
