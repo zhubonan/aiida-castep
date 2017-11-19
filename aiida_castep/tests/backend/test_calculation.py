@@ -1,6 +1,8 @@
 """
 Test for generating castep input
 """
+import os
+
 from aiida.common.exceptions import InputValidationError
 from aiida.common.folders import SandboxFolder
 from aiida.orm import  DataFactory
@@ -9,6 +11,7 @@ from aiida.orm import Code
 from aiida_castep.calculations.castep import CastepCalculation
 from aiida.common.exceptions import MultipleObjectsError
 from .test_data import BaseDataCase
+from .utils import get_data_abs_path
 
 CasCalc =  CastepCalculation
 StructureData = DataFactory("structure")
@@ -27,7 +30,7 @@ class CalcTestBase(object):
             },
             "CELL" : {
             "fix_all_cell" : "true",
-            "species_pot": ("Ba Ba_00.usp",)
+            #"species_pot": ("Ba Ba_00.usp",)
             }
         }
 
@@ -40,13 +43,10 @@ class CalcTestBase(object):
         k.store()
         return k
 
-
     def setup_calculation(self):
         from .utils import get_STO_structure
 
-        code = Code()
-        code.set_remote_computer_exec((self.computer, "/x.x"))
-        code.store()
+        code = self.code
         STO = get_STO_structure()
 
         full, missing, C9 = self.create_family()
@@ -58,11 +58,41 @@ class CalcTestBase(object):
         c.use_pseudos_from_family(full)
         c.use_pseudos_from_family(C9)
         c.use_kpoints(self.get_kpoints_mesh())
-        c.use_code(code)
+        c.use_code(self.code)
+        c.set_computer(self.localhost)
+        c.set_resources({"num_machines":1, "num_mpiprocs_per_machine":2})
         c.use_parameters(p)
 
         # Check mixing libray with acutal entry
         return c
+
+    @classmethod
+    def setup_localhost(cls):
+        from aiida.orm.computer import Computer
+        l = Computer()
+        l.set_name("localhost")
+        l.set_hostname("localhost")
+        l.set_transport_type("local")
+        l.set_workdir("/home/bonan/aiida_test_run/")
+        l.set_scheduler_type("direct")
+        l.store()
+        cls.localhost = l
+
+    @classmethod
+    def setup_code_castep(cls):
+        from aiida.orm.code import Code
+        code = Code()
+        code.set_remote_computer_exec((cls.localhost, "/home/bonan/appdir/CASTEP-17.2/bin/linux_x86_64_gfortran5.0--mpi/castep.mpi"))
+        code.set_input_plugin_name("castep.castep")
+        code.store()
+        cls.code = code
+
+    def get_remote_data(self, rel_path):
+        RemoteData = DataFactory("remote")
+        rmd = RemoteData()
+        rmd.set_computer(self.localhost)
+        rmd.set_remote_path(os.path.join(get_data_abs_path(), rel_path))
+        return rmd
 
 class TestCastepInputGeneration(AiidaTestCase, CalcTestBase, BaseDataCase):
     """
@@ -120,8 +150,6 @@ class TestCastepInputGeneration(AiidaTestCase, CalcTestBase, BaseDataCase):
         self.assertEqual(input_dict["pseudo_O"].entry, "C9")
 
         with SandboxFolder() as f:
-
-            pdict["CELL"].pop("species_pot")
             p = ParameterData(dict=pdict)
             c.use_parameters(p)
             input_dict = c.get_inputs_dict()
@@ -214,4 +242,54 @@ class TestCastepInputGeneration(AiidaTestCase, CalcTestBase, BaseDataCase):
         import os
         seed = os.path.join(folder.abspath, seed)
         call(["castep.serial", seed, "-dryrun"], cwd=folder.abspath)
+
+
+class TestRestartGeneration(AiidaTestCase, CalcTestBase, BaseDataCase):
+
+    @classmethod
+    def setUpClass(cls, *args, **kwargs):
+        super(TestRestartGeneration, cls).setUpClass(*args, **kwargs)
+        cls.clean_db()
+        cls.setup_localhost()
+        cls.setup_code_castep()
+
+    def test_restart(self):
+
+        # Initial logic of creation
+        c1 = self.setup_calculation()
+        c1.store_all()
+        with self.assertRaises(InputValidationError):
+            c2 = c1.create_restart(ignore_state=False)
+        with self.assertRaises(InputValidationError):
+            c2 = c1.create_restart(ignore_state=True)
+
+        rmd = self.get_remote_data("H2-geom")
+        rmd.store()
+        c1._set_state("RETRIEVING")
+        from aiida.common.links import LinkType
+        rmd.add_link_from(c1, link_type=LinkType.CREATE)
+
+        # This simply create a copy of c1
+        c2 = c1.create_restart(ignore_state=True)
+        c2_inp = c2.get_inputs_dict()
+        c1_inp = c1.get_inputs_dict()
+
+        # Check all inputs of c1 are indeed present in c2
+        for key in c1_inp:
+            self.assertIn(key, c2_inp)
+            self.assertEqual(c2_inp[key].pk, c1_inp[key].pk)
+
+        c2 = c1.create_restart(ignore_state=True, reuse=True)
+        c2_inp = c2.get_inputs_dict()
+        c1_inp = c1.get_inputs_dict()
+
+        c2_param = c2_inp[c2.get_linkname("parameters")].get_dict()['PARAM']
+        c1_param = c1_inp[c1.get_linkname("parameters")].get_dict()['PARAM']
+
+        reuse = c2_param.pop("reuse")
+        self.assertEqual(reuse, c2._restart_copy_to + "/{}.check".format(c2._SEED_NAME))
+
+        with SandboxFolder() as f:
+            print(c2._prepare_for_submission(f, c2_inp))
+
 

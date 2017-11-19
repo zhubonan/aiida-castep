@@ -1,9 +1,8 @@
 """
 Utility functions
 """
-
+import os
 from aiida.orm.data.structure import StructureData
-
 
 def get_STO_structure():
     """Return a STO structure"""
@@ -17,3 +16,10 @@ def get_STO_structure():
     s.append_atom(position=(a/2, 0., a/2), symbols=["O"])
     s.append_atom(position=(0., a/2, a/2), symbols=["O"])
     return s
+
+
+def get_data_abs_path():
+    """Get the data folder path for the backend module"""
+    test_moudule = os.path.split(os.path.abspath(__file__))[0]
+    data_folder = os.path.join(test_moudule, "data")
+    return data_folder
