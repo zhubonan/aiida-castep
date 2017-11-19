@@ -108,7 +108,6 @@ def parse_raw_ouput(outfile, input_dict, parser_opts=None, geom_file=None):
             geom_data = parser_geom_text_output(glines, None)
             trajectory_data.update(geom_data)
 
-
     except CASTEPOutputParsingError as e:
         if not finished_run:
             parser_info["parser_warnings"].append("Error while parsing the output file")
@@ -125,7 +124,7 @@ def parse_raw_ouput(outfile, input_dict, parser_opts=None, geom_file=None):
         last_positions = trajectory_data["positions"][-1]
         symbols = trajectory_data["symbols"]
 
-    except KeyError:
+    except (KeyError, IndexError):
         # Cannot find the last geometry data
         structure_data = {}
     else:
@@ -289,7 +288,7 @@ def parse_castep_text_output(out_lines, input_dict):
             skip = i
 
         if any(i in line for i in all_warnings):
-            message = [ all_warnings[i] for i in all_warnings.keys() if i in line][0]
+            message = [all_warnings[i] for i in all_warnings.keys() if i in line][0]
             if message is None:
                 message = line
             parsed_data["warnings"].append(message)

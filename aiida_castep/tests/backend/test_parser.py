@@ -17,6 +17,9 @@ FolderData = DataFactory("folder")
 
 class TestCastepParser(AiidaTestCase, CalcTestBase, BaseDataCase):
 
+    def setUp(self):
+        self.clean_db()
+
     def get_data_abs_path(self):
         test_moudule = os.path.split(backend.__file__)[0]
         data_folder = os.path.join(test_moudule, "data")
@@ -30,6 +33,8 @@ class TestCastepParser(AiidaTestCase, CalcTestBase, BaseDataCase):
         return retrieved
 
     def test_parser_retrieved(self):
+        self.setup_localhost()
+        self.setup_code_castep()
         calc = self.setup_calculation()
 
         parser = ParserFactory("castep.castep")(calc)

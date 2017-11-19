@@ -35,7 +35,7 @@ class BaseCastepInputGenerator(object):
     # This may not apply to CASTEP runs
     _PSEUDO_SUBFOLDER = "./pseudo/"
     # Castep output is in the
-    _PARENT_CALC_SUBFOLDER = "./parent"
+    _PARENT_CALC_SUBFOLDER = "./parent/"
     _PREFIX = 'aiida'
     _INPUT_FILE_NAME = "aiida.cell"
     _OUTPUT_FILE_NAME = "aiida.castep"
@@ -53,7 +53,7 @@ class BaseCastepInputGenerator(object):
     _default_symlink_usage = True
 
     # in restarts, it will copy from the parent the following
-    _restart_copy_from = _SEED_NAME + ".*"
+    _restart_copy_from = "./"
 
     # in restarts, it will copy the previous folder in the following one
     _restart_copy_to = _PARENT_CALC_SUBFOLDER
@@ -243,7 +243,7 @@ class BaseCastepInputGenerator(object):
         # Now only support simple elemental pseudopotentials
         if pseudos:
             symbols = set()  # All of the symbols
-            species_pot_list = ["%BLOCK SPECEIS_POT"]
+            species_pot_list = ["%BLOCK SPECIES_POT"]
             for kind in structure.kinds:
                 for s in kind.symbols:
                     symbols.add(s)

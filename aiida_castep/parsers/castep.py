@@ -98,10 +98,6 @@ class CastepParser(Parser):
         # Saving to nodes
         new_nodes_list = []
 
-        ######## ---- PROCESSING OUTPUT DATA --- ########
-        output_params = ParameterData(dict=out_dict)
-        new_nodes_list.append((self.get_linkname_outparams(), output_params))
-
 
         ######## --- PROCESSING STRUCTURE DATA --- ########
         try:
@@ -117,37 +113,45 @@ class CastepParser(Parser):
             new_nodes_list.append((self.get_linkname_outstructure(), output_structure))
 
         ######### --- PROCESSING TRAJECTORY DATA --- ########
+        # If there is anything to save
         if trajectory_data:
 
             import numpy as np
             from aiida.orm.data.array.trajectory import TrajectoryData
             from aiida.orm.data.array import ArrayData
 
-            try:
-                positions = trajectory_data["positions"]
-                cells = trajectory_data["cells"]
-                symbols = trajectory_data["symbols"]
-                stepids = np.arange(len(positions))
+            if has_dot_geom:
+                try:
+                    positions = trajectory_data["positions"]
+                    cells = trajectory_data["cells"]
+                    symbols = trajectory_data["symbols"]
+                    stepids = np.arange(len(positions))
 
-            except KeyError:
-                # Save as much as we can here
-                out_array = ArrayData()
-                # Note - not python3 compatible
-                for name, value in trajectory_data.iteritems():
-                    out_array.set_array(name, np.asarray(value))
-                new_nodes_list.append((self.get_linkname_outarray(), out_array))
+                except KeyError:
+                    out_dict["parser_warning"].append("Cannot "
+                        "extract data from .geom file.")
+                    pass
 
-            else:
-                traj = TrajectoryData()
-                traj.set_trajectory(stepids=np.asarray(stepids),
-                                    cells=np.asarray(cells),
-                                    symbols=np.asarray(symbols),
-                                    positions=np.asarray(positions))
-                # Save the rest
-                for name, value in trajectory_data.iteritems():
-                    traj.set_array(name, np.asarray(value))
-                new_nodes_list.append((self.get_linkname_outtrajectory(), traj))
+                else:
+                    traj = TrajectoryData()
+                    traj.set_trajectory(stepids=np.asarray(stepids),
+                                        cells=np.asarray(cells),
+                                        symbols=np.asarray(symbols),
+                                        positions=np.asarray(positions))
+                    # Save the rest
+                    for name, value in trajectory_data.iteritems():
+                        traj.set_array(name, np.asarray(value))
+                    new_nodes_list.append((self.get_linkname_outtrajectory(), traj))
 
+            out_array = ArrayData()
+            # Note - not python3 compatible
+            for name, value in trajectory_data.iteritems():
+                out_array.set_array(name, np.asarray(value))
+            new_nodes_list.append((self.get_linkname_outarray(), out_array))
+
+        ######## ---- PROCESSING OUTPUT DATA --- ########
+        output_params = ParameterData(dict=out_dict)
+        new_nodes_list.append((self.get_linkname_outparams(), output_params))
         return successful, new_nodes_list
 
     def get_parser_settings_key(self):

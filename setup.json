@@ -7,8 +7,8 @@
         "Development Status :: 4- Beta"
     ],
     "description": "AiiDA plugin template for CASTEP",
-    "url": "None",
-    "license": "Creative Commons",
+    "url": "https://gitlab.com/bz1/aiida-castep",
+    "license": "MIT License",
     "classifiers": [
         "Programming Language :: Python"
     ],
@@ -16,7 +16,7 @@
     "setup_requires": ["reentry"],
     "reentry_register": true,
     "install_requires": [
-        "aiida-core >= 0.10.0rc2"
+        "aiida-core >= 0.10.0rc1"
     ],
     "entry_points": {
         "aiida.calculations": [
