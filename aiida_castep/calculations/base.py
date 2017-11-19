@@ -164,6 +164,10 @@ class BaseCastepInputGenerator(object):
         # for kind in structure.kinds:
         atomic_position_list = ["%BLOCK POSITIONS_ABS"]
         mixture_count = 0
+        # deal with initial spins
+        spin_array = settings_dict.get("SPINS")
+        label_array = settings_dict.get("LABELS")
+
         for i, site in enumerate(structure.sites):
             # get  the kind of the site
             kind = structure.get_kind(site.kind_name)
@@ -177,23 +181,21 @@ class BaseCastepInputGenerator(object):
                 name = kind.symols
                 mixture_count += 1
 
-            # deal with initial spins
-            spin_array = settings_dict.get("SPINS")
-
             if spin_array:
                 spin = spin_array[i]
             else:
                 spin = None
 
             # deal with labels
-            label_array = settings_dict.get("LABELS")
             if label_array:
                 label = label_array[i]
             else:
-                label=None
+                label = None
 
-            line = get_castep_ion_line(name, pos, label=label, spin=spin,
-                occupation=kind.weights, mix_num=mixture_count)
+            line = get_castep_ion_line(name, pos,
+                                       label=label, spin=spin,
+                                       occupation=kind.weights,
+                                       mix_num=mixture_count)
 
             # Append the line to the list
             atomic_position_list.append(line)
