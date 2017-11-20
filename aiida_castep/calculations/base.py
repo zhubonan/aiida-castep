@@ -564,22 +564,34 @@ class BaseCastepInputGenerator(object):
                     "Calculation to be restarted must be in the {} state."
                     "use ignore_state keyword to override this".format(calc_states.FINISHED))
 
+        if restart_type == "continuation":
+            # If we do a conitniuation we actually have to re-use the file from previous run
+            reuse = True
+
         if use_symlink is None:
             use_symlink = self._default_symlink_usage
 
         calc_inp = self.get_inputs_dict()  # Input nodes of parent calculation
 
         remote_folders = self.get_outputs(type=RemoteData)
-        if len(remote_folders) > 1:
-            raise InputValidationError("More than one output RemoteData found "
-                                       "in calculation {}".format(self.pk))
-        if len(remote_folders) == 0:
-            raise InputValidationError("No output RemoteData found "
-                                       "in calculation {}".format(self.pk))
-        remote_folder = remote_folders[0]
 
+        if reuse:
+            if len(remote_folders) > 1:
+                raise InputValidationError("More than one output RemoteData found "
+                                       "in calculation {}".format(self.pk))
+            if len(remote_folders) == 0:
+                raise InputValidationError("No output RemoteData found "
+                                       "in calculation {}".format(self.pk))
+
+        # Duplicate the calculation
         c2 = self.copy()
 
+        # Setup remote folderes
+        if reuse:
+            remote_folder = remote_folders[0]
+            c2._set_parent_remotedata(remote_folder)
+
+        # Use the out_put structure if required
         if use_output_structure:
             try:
                 c2.use_structure(self.out.use_output_structure)
@@ -588,10 +600,14 @@ class BaseCastepInputGenerator(object):
         else:
             c2.use_structure(calc_inp[self.get_linkname('structure')])
 
+        # Copy the kpoints
+        # NOTE this need to be changed for restarting BS with bs_kpoints etc
+        # Move to another method to allow subclass modification
         if self._use_kpoints:
             c2.use_kpoints(calc_inp[self.get_linkname('kpoints')])
         c2.use_code(calc_inp[self.get_linkname('code')])
 
+        # copy the settings dictionary
         try:
             old_settings_dict = calc_inp[self.get_linkname('settings')].get_dict()
         except KeyError:
@@ -604,14 +620,8 @@ class BaseCastepInputGenerator(object):
             settings = ParameterData(dict=old_settings_dict)
             c2.use_settings(settings)
 
-        c2._set_parent_remotedata(remote_folder)
-
         # SETUP the keyword in PARAM file
         parent_param = calc_inp[self.get_linkname('parameters')]
-
-        if restart_type == "continuation":
-            # If we do a conitniuation we actually have to re-use the file from previous run
-            reuse = True
 
         if reuse:
             in_param_dict = parent_param.get_dict()
