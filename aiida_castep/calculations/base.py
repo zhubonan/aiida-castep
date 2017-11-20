@@ -165,8 +165,8 @@ class BaseCastepInputGenerator(object):
         atomic_position_list = ["%BLOCK POSITIONS_ABS"]
         mixture_count = 0
         # deal with initial spins
-        spin_array = settings_dict.get("SPINS")
-        label_array = settings_dict.get("LABELS")
+        spin_array = settings_dict.pop("SPINS", None)
+        label_array = settings_dict.pop("LABELS", None)
 
         for i, site in enumerate(structure.sites):
             # get  the kind of the site

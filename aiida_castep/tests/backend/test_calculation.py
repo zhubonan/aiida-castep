@@ -193,8 +193,10 @@ class TestCastepInputGeneration(AiidaTestCase, CalcTestBase, BaseDataCase):
         k.set_kpoints_mesh([4, 4, 4])
         k.store()
 
-
+        settings_dict = {"SPINS": [0, 0]}
+        c.use_settings(ParameterData(dict=settings_dict))
         inputdict = c.get_inputs_dict()
+
         inputdict.pop("code", None)
 
         with SandboxFolder() as f:
@@ -261,7 +263,7 @@ class TestRestartGeneration(AiidaTestCase, CalcTestBase, BaseDataCase):
         with self.assertRaises(InputValidationError):
             c2 = c1.create_restart(ignore_state=False)
         with self.assertRaises(InputValidationError):
-            c2 = c1.create_restart(ignore_state=True)
+            c2 = c1.create_restart(ignore_state=True, reuse=True)
 
         rmd = self.get_remote_data("H2-geom")
         rmd.store()
