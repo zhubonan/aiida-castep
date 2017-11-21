@@ -8,6 +8,9 @@ import re
 import numpy as np
 from aiida_castep.parsers import CASTEPOutputParsingError
 
+import logging
+logger = logging.getLogger("aiida")
+
 
 # TODO update CODATA for castep 16.1 and above
 
@@ -284,12 +287,15 @@ def parse_castep_text_output(out_lines, input_dict):
 
         if "Forces *******" in line:
             num_lines = parsed_data["num_ions"] + 20
-            i, forces = parse_force_box(body_lines[count:count+num_lines])
+            box = body_lines[count: (count+ num_lines)]
+            i, forces = parse_force_box(box)
 
             if "Constrained" in line:
-                forc_name = "cons_force"
+                forc_name = "cons_forces"
             else:
-                forc_name = "force"
+                forc_name = "forces"
+            if not forces:
+                logger.error("Cannot parse force lines {}".format(box))
             trajectory_data[forc_name].append(forces)
             skip = i
 
@@ -345,7 +351,6 @@ def parser_geom_text_output(out_lines, input_dict):
     Bohr = units['a0']
 
     # Yeah, we know that...
-    # print('N.B.: Energy in .geom file is not 0K extrapolated.')
     cell_list = []
     species_list = []
     geom_list  = []
@@ -393,6 +398,8 @@ def parser_geom_text_output(out_lines, input_dict):
 
 
 
+force_match =  re.compile("^ +\* +(\w+) +([0-9]+) +([0-9.\-+]+) +([0-9.\-+]+) +([0-9.\-+]+) +\*")
+stress_match =  re.compile("^ +\* +(\w+) +([0-9.\-+]+) +([0-9.\-+]+) +([0-9.\-+]+) +\*")
 
 def parse_force_box(lines):
     """
@@ -408,22 +415,16 @@ def parse_force_box(lines):
 
         if "Forces" in line:
             continue
-        if "Cartisian components" in line:
-            unit = line.strip().split()[-2]
-            unit = unit[1:-2]
-            continue
 
         if "***********************" in line:
             break
 
-        line = line.strip(" *")
-        if not line:
+        match = force_match.match(line)
+        if not match:
             continue
 
-        lsplit = line.split()
-        if len(lsplit) == 5:
-            print(lsplit)
-            forces.append([float(f) for f in lsplit[-3:]])
+        else:
+            forces.append([float(match.group(i)) for i in range(3,6)])
 
     return i, forces
 
@@ -439,6 +440,7 @@ def parse_stress_box(lines):
     """
 
     stress = []
+    pressure = []
     for i , line in enumerate(lines):
         if "Stress" in line:
             continue
@@ -451,17 +453,16 @@ def parse_stress_box(lines):
         if "**********************" in line:
             break
 
-        line = line.strip(" *")
-        if not line:
+        match = stress_match.match(line)
+        if not match:
             continue
 
-        lsplit = line.split()
-        if len(lsplit) == 4:
-            stress.append([float(s) for s in lsplit[-3:]])
-            continue
+        else:
+            stress.append([float(match.group(i)) for i in range(3,6)])
 
         if "Pressure" in line:
-            pressure = float(lsplit[-1])
+            lsplit = line.split()
+            pressure.append(float(lsplit[-1]))
 
 
     return i, stress, pressure
