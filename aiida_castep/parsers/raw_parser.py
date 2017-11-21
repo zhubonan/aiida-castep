@@ -55,11 +55,11 @@ def parse_raw_ouput(outfile, input_dict, parser_opts=None, geom_file=None):
     :param geom_file: path to the .geom file
 
     :returns out_dict: a dictionary with parsed data
-    :return trajectory_data: dictionary of trajectory data
-    :return successful: a boolean that is False in case of failed calculations
+    :return dict trajectory_data: dictionary of trajectory data
+    :return dict structure data: dictionary of cell, positions and symbols
+    :return bool successful: a boolean that is False in case of failed calculations
 
     2 different keys to check in ouput : parser_warning and warnings.
-    The first one should be empty unless the run is not failed or unfinished
     """
 
     parser_version = "0.1"
@@ -97,7 +97,7 @@ def parse_raw_ouput(outfile, input_dict, parser_opts=None, geom_file=None):
     # Warn if the run is not finished
     if not finished_run:
         warning = "CASTEP run did not reach the end of execution."
-        parser_info["parser_warnings"].append(warning)
+        parser_info["warnnigs"].append(warning)
         job_successful = False
 
     # Parse the data and store
@@ -120,6 +120,14 @@ def parse_raw_ouput(outfile, input_dict, parser_opts=None, geom_file=None):
 
         else:  # Run finished but I have still have an error here
             raise CASTEPOutputParsingError("Error while parsing ouput. Exception message: {}".format(e.message))
+
+
+    # Check if any critical messages has been passed
+    # If there is any cricial message we should make the run marked as FAILED
+    for w in out_data["warnings"]:
+        if w in critical_messages:
+            finished_run = False
+            break
 
     # Construct a structure data from the last frame
     try:
@@ -148,7 +156,8 @@ def parse_castep_text_output(out_lines, input_dict):
     Parse ouput of .castep
 
     :param out_lines: a list of lines from readlines function
-    :param input_dict: not used here
+    :param input_dict: Control some variables. Currently support
+       'n_warning_lines'- number of the lines to include for a general warning.
 
     :return parsed_data: dictionary with key values, reffering to the last occuring quanties
     :return trajectory_data: key, values of the intermediate scf steps, such as
@@ -163,15 +172,24 @@ def parse_castep_text_output(out_lines, input_dict):
     parsed_data = {}
     parsed_data["warnings"] = []
 
+    if not input_dict:
+        input_dict = {}
+
+    # Some parameters can be controlled
+    n_warning_lines = input_dict.get("n_warning_lines", 10)
+
     # Initialise storage space for trajectory
     # Not all is needed. But we parse as much as we can here
     trajectory_data = defaultdict(list)
 
+    # In the formatof {<keywords in line>:<message to pass>}
     critical_warnings = {"Geometry optimization failed to converge":
     "Maximum geometry optimization cycle has been reached",
-    "SCF cycles performed but system has not reached the groundstate":"SCF cycles failed to converge", "NOSTART": "Can not find start of the calculation."}
+    "SCF cycles performed but system has not reached the groundstate": "SCF cycles failed to converge", "NOSTART": "Can not find start of the calculation."}
 
     minor_warnings = {"Warning": None}
+
+    # A dictionary witch keys we should check at each line
     all_warnings = dict(critical_warnings.items() + minor_warnings.items())
 
     def pair_split(lines, spliter):
@@ -300,9 +318,12 @@ def parse_castep_text_output(out_lines, input_dict):
             skip = i
 
         if any(i in line for i in all_warnings):
-            message = [all_warnings[i] for i in all_warnings.keys() if i in line][0]
+            message = [all_warnings[k] for k in all_warnings if k in line][0]
             if message is None:
-                message = line
+                # CASTEP often have multiline warnings
+                # Add extra lines for detail
+                message = body_lines[count:count + n_warning_lines]
+                message = "\n".join(message)
             parsed_data["warnings"].append(message)
 
     #### END OF LINE BY LINE PARSING ITERATION ####

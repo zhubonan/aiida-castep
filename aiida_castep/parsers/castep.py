@@ -67,6 +67,8 @@ class CastepParser(Parser):
             successful = False
             return successful, ()
 
+        # TODO include *err files in the output and check error messages
+
         # look for other files
         has_dot_geom = False
         if self._calc._SEED_NAME + ".geom" in list_of_files:
@@ -76,6 +78,7 @@ class CastepParser(Parser):
         else:
             out_geom_file = None
 
+        # TODO implement function handling bands
         has_dot_bands = False
         if self._calc._SEED_NAME + ".bands" in list_of_files:
             has_bands = True
@@ -93,7 +96,7 @@ class CastepParser(Parser):
         for key in ["free_energy", "total_energy", "zero_K_energy"]:
             add_last_if_exists(trajectory_data, key, out_dict)
 
-        successful = raw_sucessful if successful else successful
+        successful = all([raw_sucessful, successful])
 
         # Saving to nodes
         new_nodes_list = []

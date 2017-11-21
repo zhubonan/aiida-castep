@@ -142,6 +142,8 @@ class CastepHelper(object):
         Check input dictionary. Apply and warn about errors
         :param input_dict dicionary: a dictionary as the input, contain "CELL", "PARAM" and other keywords
         :param auto_fix bool: Wethere we should fix error automatically
+
+        :returns dict: A fixed dictionary
         """
         input_dict = input_dict.copy() # this is a shallow copy
 
