@@ -625,11 +625,11 @@ class BaseCastepInputGenerator(object):
                 # Set keyword reuse, pop any continuation keywords
                 in_param_dict['PARAM'].pop('continuation', None)
                 # Define the name of reuse here
-                in_param_dict['PARAM']["reuse"] = self._get_restart_file_relative_path(in_param_dict, use_castep_bin)
+                in_param_dict['PARAM']["reuse"] = self.get_restart_file_relative_path(in_param_dict, use_castep_bin)
             elif restart_type == "continuation":
                 # Do the opposite
                 in_param_dict['PARAM'].pop('reuse', None)
-                in_param_dict['PARAM']['continuation'] = self._get_restart_file_relative_path(in_param_dict, use_castep_bin)
+                in_param_dict['PARAM']['continuation'] = self.get_restart_file_relative_path(in_param_dict, use_castep_bin)
             c2.use_parameters(ParameterData(dict=in_param_dict))
         else:
             # In this case we simply create a identical calculation
@@ -690,18 +690,19 @@ class BaseCastepInputGenerator(object):
                             "only be a string or a list of strings")
         return "{}{}".format(cls._get_linkname_pseudo_prefix(), suffix_string)
 
-    def _get_restart_file_relative_path(self, param_data_dict, use_castep_bin=False):
+    @classmethod
+    def get_restart_file_relative_path(cls, param_data_dict, use_castep_bin=False):
         """
         Returns a relative path of the restart file
         """
         parent_check_name = param_data_dict["PARAM"].get("check_point",  None)
         if parent_check_name is None:
             if use_castep_bin:
-                parent_check_name = self._SEED_NAME + ".castep_bin"
+                parent_check_name = cls._SEED_NAME + ".castep_bin"
             else:
-                parent_check_name = self._SEED_NAME + ".check"
+                parent_check_name = cls._SEED_NAME + ".check"
 
-        return os.path.join(self._PARENT_CALC_SUBFOLDER, parent_check_name)
+        return os.path.join(cls._PARENT_CALC_SUBFOLDER, parent_check_name)
 
 
     def use_pseudos_from_family(self, family_name):
