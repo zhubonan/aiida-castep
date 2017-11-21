@@ -42,7 +42,7 @@ def upload_usp_family(folder, group_name, group_description,
     files = [os.path.realpath(os.path.join(folder, i))
              for i in os.listdir(folder) if
              os.path.isfile(os.path.join(folder, i)) and
-             (i.lower().endswith('.usp') or i.lower().endswith('recpot'))]
+             (i.lower().endswith('.usp') or i.lower().endswith('recpot') or i.lower().endswith('.uspcc'))]
 
     nfiles = len(files)
 
@@ -299,6 +299,8 @@ class UspData(SinglefileData):
         except AttributeError:
             raise ValidationError("attribute 'md5' not set." )
 
+        if md5 != attr_md5:
+            raise ValidationError("Mis-match between store md5 and actual md5 value")
 
         # Check matching of data and actual file
         if attr_element != element:

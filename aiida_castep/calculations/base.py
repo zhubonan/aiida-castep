@@ -4,6 +4,7 @@ Base module for calculations
 """
 
 import os
+import logging
 
 from aiida.common.exceptions import InputValidationError
 from aiida.common.datastructures import CalcInfo
@@ -13,19 +14,14 @@ from aiida.orm.data.structure import StructureData
 from aiida.orm.data.parameter import ParameterData
 from aiida.orm.data.array.kpoints import KpointsData
 from aiida.orm.data.upf import UpfData
-from aiida.orm.data.singlefile import SinglefileData
 from aiida.orm.data.remote import RemoteData
 from aiida.common.datastructures import CodeInfo
-from aiida.common.links import LinkType
 from aiida.common.exceptions import MultipleObjectsError
 from .utils import get_castep_ion_line
 from aiida_castep.data import OTFGData, UspData, get_pseudos_from_structure
 from .helper import CastepHelper
 
-import numpy as np
-
-import logging
-logger = logging.getLogger("aiida.castepinput")
+logger = logging.getLogger("aiida")
 
 
 class BaseCastepInputGenerator(object):
