@@ -31,4 +31,6 @@ def add_last_if_exists(dict_of_iterable, key, dict_to_be_added):
     except (KeyError, IndexError):
         return
     else:
-        dict_to_be_added[key] = last
+        # Check if last exist - in case of defaultdict being passed
+        if last:
+            dict_to_be_added[key] = last

@@ -48,6 +48,9 @@ units = units_CODATA2002
 
 unit_suffix = "_units"
 
+SCF_FAILURE_MESSAGE = "SCF cycles failed to converge"
+GEOM_FAILURE_MESSAGE = "Maximum geometry optimization cycle has been reached"
+END_NOT_FOUND_MESSAGE = "CASTEP run did not reach the end of execution."
 def parse_raw_ouput(outfile, input_dict, parser_opts=None, geom_file=None):
     """
     Parser an dot_castep file
@@ -66,6 +69,7 @@ def parse_raw_ouput(outfile, input_dict, parser_opts=None, geom_file=None):
     parser_info = {}
     parser_info["parser_warnings"] = []
     parser_info["parser_info"] = "AiiDA CASTEP basic Parser v{}".format(parser_version)
+    parser_info["warnings"] = []
 
 
     job_successful = True
@@ -96,8 +100,8 @@ def parse_raw_ouput(outfile, input_dict, parser_opts=None, geom_file=None):
 
     # Warn if the run is not finished
     if not finished_run:
-        warning = "CASTEP run did not reach the end of execution."
-        parser_info["warnnigs"].append(warning)
+        warning = END_NOT_FOUND_MESSAGE
+        parser_info["warnings"].append(warning)
         job_successful = False
 
     # Parse the data and store
@@ -126,7 +130,7 @@ def parse_raw_ouput(outfile, input_dict, parser_opts=None, geom_file=None):
     # If there is any cricial message we should make the run marked as FAILED
     for w in out_data["warnings"]:
         if w in critical_messages:
-            finished_run = False
+            job_successful = False
             break
 
     # Construct a structure data from the last frame
@@ -143,6 +147,10 @@ def parse_raw_ouput(outfile, input_dict, parser_opts=None, geom_file=None):
 
     # Parameter data to be returned
     parameter_data = dict(out_data.items() + parser_info.items())
+
+    # Combine the warnings
+    all_warnings  = out_data["warnings"] + parser_info["warnings"]
+    parameter_data['warnings'] = all_warnings
 
     # Todo Validation of ouput data
     return parameter_data, trajectory_data, structure_data, job_successful
@@ -183,9 +191,10 @@ def parse_castep_text_output(out_lines, input_dict):
     trajectory_data = defaultdict(list)
 
     # In the formatof {<keywords in line>:<message to pass>}
-    critical_warnings = {"Geometry optimization failed to converge":
-    "Maximum geometry optimization cycle has been reached",
-    "SCF cycles performed but system has not reached the groundstate": "SCF cycles failed to converge", "NOSTART": "Can not find start of the calculation."}
+    critical_warnings = {
+    "Geometry optimization failed to converge": GEOM_FAILURE_MESSAGE,
+    "SCF cycles performed but system has not reached the groundstate": SCF_FAILURE_MESSAGE,
+    "NOSTART": "Can not find start of the calculation."}
 
     minor_warnings = {"Warning": None}
 

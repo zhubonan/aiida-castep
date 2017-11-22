@@ -22,9 +22,12 @@ from aiida.orm.utils import WorkflowFactory
 from aiida.common.exceptions import AiidaException, NotExistent
 from aiida.common.datastructures import calc_states
 from aiida.work.run import submit
-from aiida.work.workchain import WorkChain, ToContext, if_, while_, append_
+from aiida.work.workchain import WorkChain, if_, while_, append_
 from aiida.orm.utils import CalculationFactory
-from aiida.common.datastructures import calc_states
+
+from aiida_castep.parsers.raw_parser import (END_NOT_FOUND_MESSAGE,
+ GEOM_FAILURE_MESSAGE, SCF_FAILURE_MESSAGE)
+from aiida_castep.data import get_pseudos_from_structure
 
 CastepCalculation = CalculationFactory('castep.castep')
 
@@ -38,24 +41,25 @@ class CastepRelaxWorkChain(WorkChain):
     Try to restart calculations unti convergence is reached
     """
     SUBMISSION_RETRY_SECONDS = 60
+    MAX_ITERATIONS = 5
 
     @classmethod
     def define(cls, spec):
         super(CastepRelaxWorkChain, cls).define(spec)
         spec.input('structure', valid_type=StructureData)
         spec.input('parameters', valid_type=ParameterData)
-        spec.input('settings', valid_type=ParameterData)
+        spec.input('settings', valid_type=ParameterData, required=False)
         spec.input('pseudo_family', valid_type=Str, required=False)
         spec.input_group('pseudos', valid_type=Str, required=False)
         spec.input('kpoints', valid_type=KpointsData)
-        spec.input('options', valid_type=ParameterData)
-        spec.input('final_restart', valid_type=Bool)
+        spec.input('options', valid_type=ParameterData, required=False)
+        spec.input('final_restart', valid_type=Bool, required=False, default=Bool(False))
         spec.input('geom_method', valid_type=Str, default=Str('LBFGS'))
         spec.outline(
-            cls.intialise,
+            cls.initialise,
             cls.validate_inputs,
-            while_(cls.show_run)(
-                cls.relax,
+            while_(cls.should_run_relax)(
+                cls.run_relax,
                 cls.check_relax,
             ),
             if_(cls.should_do_final_restart)(
@@ -75,22 +79,29 @@ class CastepRelaxWorkChain(WorkChain):
         self.ctx.current_parent_folder = None
         self.ctx.is_converged = False
         self.ctx.iteration = 0
+        self.ctx.max_iterations = self.MAX_ITERATIONS
+        self.ctx.restart_calc = None
 
         self.ctx.inputs = {
             'code': self.inputs.code,
             'structure': self.inputs.structure,
             'parameters': self.inputs.parameters.get_dict(),
-            'settings': self.inputs.settings,
             'kpoints': self.inputs.kpoints,
-            '_options': self.inputs.options
+            '_options': self.inputs.options.get_dict()
         }
+
+        if "settings" in self.inputs:
+            self.ctx.inputs.update(settings=self.inputs.settings)
 
         # Check if a pseudo family has been passed
 
         if self.inputs.pseudo_family:
-            self.ctx.inputs["pseudo_family"] = self.input.pseudo_family
+            self.ctx.inputs['pseudo'] = get_pseudos_from_structure(
+                self.inputs.structure, self.inputs.pseudo_family.value
+                )
+
         elif self.inputs.pseudos:
-            self.ctx.inputs['pseudos'] = self.inputs.pseudos
+            self.ctx.inputs['pseudo'] = self.inputs.pseudos
         else:
             self.abort_nowait('No valida pseudo data passed. Both pseudo_family and pseudos are not specified')
 
@@ -109,9 +120,6 @@ class CastepRelaxWorkChain(WorkChain):
                 and param_dict['task'] != 'geometryoptimization':
             self.abort_nowait('Wrong task value passed {}'.format(param_dict['task']))
 
-        # Add options to the context
-        if 'options' in self.inputs:
-            self.ctx.inputs['options'] = self.inputs.options
 
         # Add correct geom method
         geom_method = param_dict.get('geom_method', None)
@@ -119,9 +127,10 @@ class CastepRelaxWorkChain(WorkChain):
             param_dict['geom_method'] = self.inputs.geom_method.value
         elif geom_method != self.inputs.geom_method:
             self.abort_nowait('Inconsistent geom_method passed. In PARAM it is {} but the input is {}'.format(geom_method, self.inputs.geom_method))
+
         return
 
-    def vaildate_inputs(self):
+    def validate_inputs(self):
         """
         A more detailed check
         """
@@ -129,11 +138,30 @@ class CastepRelaxWorkChain(WorkChain):
         helper = CastepHelper()
         # Automatic fix
         out = helper.check_dict(self.ctx.inputs['parameters'], auto_fix=True)
+        if out != self.ctx.inputs['parameters']:
+            self.report("Auto fixed input parameters. New parameters {}".format(out))
+
         self.ctx.inputs['parameters'] = out
+
+        # Check if write_checkpoint is disabled
+        check_point = out['PARAM'].get("write_checkpoint")
+        if check_point:
+            if check_point == "none":
+                self.report("Warning: checkpointing disabled!")
+
+        opt_strategy  = out['PARAM'].get('opt_strategy')
+
+        if not opt_strategy:
+            out['PARAM']['opt_strategy'] = "speed"
+            self.report("Automatically set opt_strategy : speed.")
+
+        # Converge back into ParameterData
+        # Make a new ParameterData node for calculation
+
         return
 
     def should_run_relax(self):
-        return not self.is_converged
+        return not self.ctx.is_converged
 
     def should_run_final_restart(self):
         return self.inputs.final_restart
@@ -153,10 +181,13 @@ class CastepRelaxWorkChain(WorkChain):
                     self.ctx.inputs['parameters'], False)
             inputs['parent_folder'] = self.ctx.restart_calc.out.remote_folder
 
+        # Finall make a ParameterData from the inputs
+        inputs["parameters"] = ParameterData(dict=inputs["parameters"])
         process = CastepCalculation.process()
         calc = submit(process, **inputs)
 
-        self.report('Launching CastepCalculation <{}> iteraiton #{}'.format(calc.pid, self.ctx.iteraiton))
+        self.report('Launching CastepCalculation <{}> iteration #{}'.format(calc.pid, self.ctx.iteration))
+
 
         return self.to_context(calcs=append_(calc))
 
@@ -173,7 +204,7 @@ class CastepRelaxWorkChain(WorkChain):
             return
 
         # Possible states that we can fix
-        acceptable_states = [calc_states.FINISHED, calc_states.FAILD,
+        acceptable_states = [calc_states.FINISHED, calc_states.FAILED,
                              calc_states.SUBMISSIONFAILED ]
 
         # If the calculation is finished
@@ -181,7 +212,6 @@ class CastepRelaxWorkChain(WorkChain):
         calc_state = calc.get_state()
         if calc.has_finished_ok():
             self.report('Geometry optimisation succesful after {} WorkChain iterations'.format(self.ctx.iteration))
-            self.ctx.restart_calc = calc
             self.ctx.is_converged = True
 
         elif self.ctx.iteration >= self.ctx.max_iterations:
@@ -205,6 +235,8 @@ class CastepRelaxWorkChain(WorkChain):
                 self.abort_nowait(e.args)
 
             if handler_out == "CAN RESTART":
+                # Use the last calculation to restart
+                self.ctx.restart_calc = calc
                 return
             else:
                 self.abort_nowait("Abort due to failure at iteration {} with CastepCalculation <{}> Message: {}".format(self.ctx.iteration, calc.pk, handler_out))
@@ -216,10 +248,13 @@ class CastepRelaxWorkChain(WorkChain):
         pass
 
     def process_results(self):
+        """
+        Process the outputs
+        """
         last_calc = self.ctx.calcs[-1]
         output_dict = last_calc.get_outputs_dict()
         self.out('output_structure', output_dict["output_structure"])
-        self.out('output_parameters', output_dict["output_structure"])
+        self.out('output_parameters', output_dict["output_parameters"])
         self.out('remote_folder', output_dict["remote_folder"])
         self.out('retrieved', output_dict["retrieved"])
 
@@ -236,7 +271,7 @@ class CastepRelaxWorkChain(WorkChain):
         Handle a failed calculation
         """
         try:
-            output_parameters = calc.get_outputs_dict()["output_parameters"]
+            output_parameters = calc.get_outputs_dict()["output_parameters"].get_dict()
         except KeyError:
             raise UnexpectedFailure("No ouput ParameterData find")
         try:
@@ -244,23 +279,28 @@ class CastepRelaxWorkChain(WorkChain):
         except KeyError:
             raise UnexpectedFailure("Cannot find warnings")
 
-        if any(["SCF" in w for w in warnings]):
+        if any([SCF_FAILURE_MESSAGE in w for w in warnings]):
+
             return "SCF CONVERGE FAILURE"
 
-        if  any(["end of execusion" in w for w in warnings]):
+        if any([GEOM_FAILURE_MESSAGE in w for w in warnings]):
+            self.report("Run finished but geom convergence not reached")
+            return "CAN RESTART"
+
+        # Calculation gets killed
+        if  any([END_NOT_FOUND_MESSAGE in w for w in warnings]):
             try:
                 output_array = calc.get_outputs_dict()["output_array"]
                 total_energy = output_array.get_array("total_energy")
             except KeyError:
+                self.report("First SCF not finished")
                 return "FIRST SCF UNFINISHED"
             else:
-                self.report("Run did not finished after {} iterations".format(len(total_energy)))
-                return "CAN RESTART"
-
-
-
-
-
-
-
-
+                # Check if we have valid energies
+                if len(total_energy) > 0:
+                    self.report("Run did not finished after {} iterations".format(len(total_energy)))
+                    return "CAN RESTART"
+                else:
+                    return "FIRST SCF UNFINISHED"
+        else:
+            return "CANNOT FIND VALID WARNINGS"

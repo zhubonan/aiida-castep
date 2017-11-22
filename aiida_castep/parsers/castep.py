@@ -143,13 +143,16 @@ class CastepParser(Parser):
                                         positions=np.asarray(positions))
                     # Save the rest
                     for name, value in trajectory_data.iteritems():
-                        traj.set_array(name, np.asarray(value))
+                        # Skip saving empty arrays
+                        if len(value) > 0:
+                            traj.set_array(name, np.asarray(value))
                     new_nodes_list.append((self.get_linkname_outtrajectory(), traj))
 
             out_array = ArrayData()
-            # Note - not python3 compatible
             for name, value in trajectory_data.iteritems():
-                out_array.set_array(name, np.asarray(value))
+                # Skip saving empty arrays
+                if len(value) > 0:
+                    out_array.set_array(name, np.asarray(value))
             new_nodes_list.append((self.get_linkname_outarray(), out_array))
 
         ######## ---- PROCESSING OUTPUT DATA --- ########
