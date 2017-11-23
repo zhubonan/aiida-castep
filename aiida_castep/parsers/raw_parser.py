@@ -150,6 +150,10 @@ def parse_raw_ouput(outfile, input_dict, parser_opts=None, geom_file=None):
 
     # Combine the warnings
     all_warnings  = out_data["warnings"] + parser_info["warnings"]
+
+    # Make the warnings set-like e.g we don't want to repeat messages
+    # Save a bit of the storage space
+    all_warnings = list(set(all_warnings))
     parameter_data['warnings'] = all_warnings
 
     # Todo Validation of ouput data
