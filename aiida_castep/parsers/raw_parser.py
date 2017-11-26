@@ -204,6 +204,10 @@ def parse_castep_text_output(out_lines, input_dict):
 
     # A dictionary witch keys we should check at each line
     all_warnings = dict(critical_warnings.items() + minor_warnings.items())
+    # Create a list of keys, the order is important here
+    # specific warnings can be matched first
+
+    all_warnings_keys = list(critical_warnings.keys()) + list(minor_warnings.keys())
 
     def pair_split(lines, spliter):
         """Split the line in to two. Ignore space around spliter"""
@@ -331,7 +335,8 @@ def parse_castep_text_output(out_lines, input_dict):
             skip = i
 
         if any(i in line for i in all_warnings):
-            message = [all_warnings[k] for k in all_warnings if k in line][0]
+            message = [all_warnings[k] for k in all_warnings_keys
+                         if k in line][0]
             if message is None:
                 # CASTEP often have multiline warnings
                 # Add extra lines for detail

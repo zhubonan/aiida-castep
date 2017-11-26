@@ -5,7 +5,7 @@
 			"file_regex": "^[ ]*File \"(...*?)\", line ([0-9]*)",
 			"name": "Anaconda Python Builder",
 			"selector": "source.python",
-			"shell_cmd": "\"/home/bonan/.virtualenvs/aiida/bin/python\" -u \"$file\""
+			"shell_cmd": "\"/home/bonan/miniconda3/envs/aiida/bin/python\" -u \"$file\""
 		}
 	],
 	"folders":
@@ -22,6 +22,6 @@
 	],
 	"settings":
 	{
-		"python_interpreter": "/home/bonan/.virtualenvs/aiida/bin/python"
+		"python_interpreter": "/home/bonan/miniconda3/envs/aiida/bin/python"
 	}
 }

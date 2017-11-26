@@ -170,28 +170,27 @@ class CastepParser(Parser):
     def get_linkname_outstructure(self):
         """
         Returns the name of the link to the output_structure
-        Node exists if positions or cell changed.
+        Only exists if it is a geometry optimisation run.
         """
         return 'output_structure'
 
     def get_linkname_outtrajectory(self):
         """
         Returns the name of the link to the output_trajectory.
-        Node exists in case of calculation='md', 'vc-md', 'relax', 'vc-relax'
+        Node exists in case of calculation = "geometryoptimsiation"
         """
         return 'output_trajectory'
 
     def get_linkname_outarray(self):
         """
-        Returns the name of the link to the output_array
-        Node may exist in case of calculation='scf'
+        Returns the name of the link to the output_array.
+        Exist if trajectory data cannot be created e.g not a optimisation run.
         """
         return 'output_array'
 
     def get_linkname_out_kpoints(self):
         """
-        Returns the name of the link to the output_kpoints
-        Node exists if cell has changed and no bands are stored.
+        Not implemented for now
         """
         return 'output_kpoints'
 
