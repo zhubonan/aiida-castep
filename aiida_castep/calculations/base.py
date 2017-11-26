@@ -469,10 +469,12 @@ class BaseCastepInputGenerator(object):
         codeinfo.code_uuid = code.uuid
         calcinfo.codes_info = [codeinfo]
 
-        # Retrieve by default the .castep file only
+        # Retrieve by default the .castep file and the bands file
         calcinfo.retrieve_list = []
 
         calcinfo.retrieve_list.append(self._SEED_NAME + ".castep")
+        calcinfo.retrieve_list.append(self._SEED_NAME + ".bands")
+
 
         settings_retrieve_list = settings_dict.pop("ADDITIONAL_RETRIEVE_LIST", [])
         calcinfo.retrieve_list.extend(settings_retrieve_list)
