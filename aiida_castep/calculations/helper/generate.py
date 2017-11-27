@@ -7,7 +7,7 @@ import json
 import sys
 
 
-castep_exe_name = "castep.mpi"
+castep_exe_name = "castep.serial"
 
 
 def dot_proc(iterable):
