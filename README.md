@@ -4,10 +4,10 @@ AIIDA plugin for interface with CASTEP
 TODOS
 =====
 
-* parsers add processing
-* calculations add more than singlepoint
-* write tests
-* Implement methods to restart a calculation
+* Allow helper to be used without CASTEP binary
+* Parsing of the .bands file
+* Test the `CastepRelaxWorkChain`
+* Write docs
 
 How to test
 ===========

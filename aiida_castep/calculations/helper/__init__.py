@@ -3,6 +3,8 @@ CASTEP HELPER
 Check for errorer in input dictionary
 {"CELL": {...},
  "PARAM": {...}
+
+ # TODO allow this to use without castep
 """
 
 import os

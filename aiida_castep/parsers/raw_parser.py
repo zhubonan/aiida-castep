@@ -1,7 +1,6 @@
 """
 Module for parsing .castep file
 """
-# TODO Parse more properties
 
 import os
 import re
@@ -497,7 +496,7 @@ def parse_stress_box(lines):
             continue
 
         else:
-            stress.append([float(match.group(i)) for i in range(3,6)])
+            stress.append([float(match.group(i)) for i in range(2,5)])
 
         if "Pressure" in line:
             lsplit = line.split()
