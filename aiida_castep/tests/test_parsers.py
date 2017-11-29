@@ -5,7 +5,6 @@ from __future__ import print_function
 from aiida_castep.parsers.raw_parser import parse_castep_text_output, parser_geom_text_output
 import unittest
 
-import aiida_castep.tests.backend as backend
 import os
 
 
@@ -13,7 +12,7 @@ class TestParsers(unittest.TestCase):
 
     @property
     def data_abs_path(self):
-        test_moudule = os.path.split(backend.__file__)[0]
+        test_moudule = os.path.split(__file__)[0]
         data_folder = os.path.join(test_moudule, "data")
         return data_folder
 
@@ -44,6 +43,10 @@ class TestParsers(unittest.TestCase):
         self.assertTrue(trajectory_data["total_energy"])
         self.assertLess(trajectory_data["total_energy"][0] - trajectory_data["enthalpy"][0], 1e-5)
         self.assertFalse(parsed_data["warnings"])
+        self.assertEqual(parsed_data["total_time"], 14.53)
+        self.assertEqual(parsed_data["initialisation_time"], 1.02)
+        self.assertEqual(parsed_data["parallel_efficiency"], 90)
+        self.assertEqual(parsed_data["castep_version"], "17.2")
 
     def test_warnings(self):
         # Test assertion of warnings

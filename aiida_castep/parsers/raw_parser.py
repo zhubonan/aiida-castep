@@ -160,7 +160,9 @@ def parse_raw_ouput(outfile, input_dict, parser_opts=None, geom_file=None):
 
 # Re for getting unit
 unit_re = re.compile("^ output\s+(\w+) unit\s+:\s+([^\s]+\s*$)")
-
+time_re = re.compile("^(\w+) time += +([0-9.]+) s$")
+parallel_re = re.compile("^Overall parallel efficiency rating: \w+ \(([0-9]+)%\)")
+version_re = re.compile("CASTEP version ([0-9.]+)")
 
 def parse_castep_text_output(out_lines, input_dict):
     """
@@ -214,8 +216,17 @@ def parse_castep_text_output(out_lines, input_dict):
 
     # Split header and body
     body_start = None
+    version = None
     for i, line in enumerate(out_lines):
 
+        # Find the castep version
+        if version is None:
+            vmatch = version_re.search(line)
+            if vmatch:
+                version = vmatch.group(1)
+                parsed_data["castep_version"] = version
+
+        # Finding the units we used
         unit_match = unit_re.match(line)
         if unit_match:
             uname = unit_match.group(1)
@@ -235,17 +246,23 @@ def parse_castep_text_output(out_lines, input_dict):
                         psedu_files.update({specie: psedu_file})
         if "Total number of ions" in line:
             parsed_data["num_ions"] = int(line.strip().split("=")[1].strip())
+            continue
 
         if "Point group of crystal" in line:
             parsed_data["point_group"] = line.strip().split("=")[1].strip()
+            continue
 
         if "Space group of crystal" in line:
             parsed_data["space_group"] = line.strip().split("=")[1].strip()
+            continue
 
         if "Cell constraints" in line:
             parsed_data["cell_constraints"] = line.strip().split(":")[1].strip()
+            continue
+
         if "Number of kpoints used" in line:
             parsed_data["n_kpoints"] = line.strip().split("=")[1].strip()
+            continue
 
         if "MEMORY AND SCRATCH DISK ESTIMATES" in line:
             body_start = i
@@ -309,7 +326,7 @@ def parse_castep_text_output(out_lines, input_dict):
             continue
 
         if "Stress Tensor" in line:
-            i, stress, pressure = parse_stress_box(body_lines[count:count+20])
+            i, stress, pressure = parse_stress_box(body_lines[count:count+10])
             assert len(stress) == 3
             if "Symmetrised" in line:
                 prefix = "symm_"
@@ -320,7 +337,7 @@ def parse_castep_text_output(out_lines, input_dict):
             skip = i
 
         if "Forces *******" in line:
-            num_lines = parsed_data["num_ions"] + 20
+            num_lines = parsed_data["num_ions"] + 10
             box = body_lines[count: (count+ num_lines)]
             i, forces = parse_force_box(box)
 
@@ -332,6 +349,7 @@ def parse_castep_text_output(out_lines, input_dict):
                 logger.error("Cannot parse force lines {}".format(box))
             trajectory_data[forc_name].append(forces)
             skip = i
+            continue
 
         if any(i in line for i in all_warnings):
             message = [all_warnings[k] for k in all_warnings_keys
@@ -342,6 +360,20 @@ def parse_castep_text_output(out_lines, input_dict):
                 message = body_lines[count:count + n_warning_lines]
                 message = "\n".join(message)
             parsed_data["warnings"].append(message)
+
+        time_line = time_re.match(line)
+
+        # Save information about time usage
+        if time_line:
+            time_name = time_line.group(1).lower() + "_time"
+            parsed_data[time_name] = float(time_line.group(2))
+            continue
+
+        para_line = parallel_re.match(line)
+
+        if para_line:
+            parsed_data["parallel_efficiency"] = int(para_line.group(1))
+
 
     #### END OF LINE BY LINE PARSING ITERATION ####
 
