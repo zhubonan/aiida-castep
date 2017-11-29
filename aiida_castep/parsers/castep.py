@@ -117,12 +117,14 @@ class CastepParser(Parser):
 
         ######### --- PROCESSING TRAJECTORY DATA --- ########
         # If there is anything to save
+        # It should...
         if trajectory_data:
 
             import numpy as np
             from aiida.orm.data.array.trajectory import TrajectoryData
             from aiida.orm.data.array import ArrayData
 
+            # If we have .geom file, save as in a trajectory data
             if has_dot_geom:
                 try:
                     positions = trajectory_data["positions"]
@@ -148,12 +150,15 @@ class CastepParser(Parser):
                             traj.set_array(name, np.asarray(value))
                     new_nodes_list.append((self.get_linkname_outtrajectory(), traj))
 
-            out_array = ArrayData()
-            for name, value in trajectory_data.iteritems():
-                # Skip saving empty arrays
-                if len(value) > 0:
-                    out_array.set_array(name, np.asarray(value))
-            new_nodes_list.append((self.get_linkname_outarray(), out_array))
+            # Otherwise, save data into a ArrayData node
+            else:
+                out_array = ArrayData()
+                for name, value in trajectory_data.iteritems():
+                    # Skip saving empty arrays
+                    if len(value) > 0:
+                        out_array.set_array(name, np.asarray(value))
+                new_nodes_list.append((self.get_linkname_outarray(),
+                                       out_array))
 
         ######## ---- PROCESSING OUTPUT DATA --- ########
         output_params = ParameterData(dict=out_dict)
