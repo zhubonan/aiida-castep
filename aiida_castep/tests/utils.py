@@ -2,7 +2,9 @@
 Utility functions
 """
 import os
-from aiida.orm.data.structure import StructureData
+from aiida.orm import DataFactory
+
+StructureData = DataFactory('structure')
 
 def get_STO_structure():
     """Return a STO structure"""

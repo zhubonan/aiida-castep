@@ -4,46 +4,24 @@ Data for data plugins
 
 
 import io
-import aiida
 
+import aiida
 from aiida.common.exceptions import InputValidationError
 from aiida.common.folders import SandboxFolder
 from aiida.orm import  DataFactory
 from aiida.backends.testbase import AiidaTestCase
 from aiida.orm import Code
-from aiida_castep.calculations.castep import CastepCalculation
 import aiida_castep.data.otfg as otf
 import aiida_castep.data.usp as usp
 import os
+
+from .dbcommon import BaseDataCase
 
 Ti_otfg = "Ti 3|1.8|9|10|11|30U:40:31:32(qc=5.5)"
 Sr_otfg = "Sr 3|2.0|5|6|7|40U:50:41:42"
 O_otfg = "O 2|1.1|15|18|20|20:21(qc=7)"
 
 otfg = DataFactory("castep.otfgdata")
-
-
-class BaseDataCase(object):
-    """Base to include some useful things"""
-
-    def create_family(self):
-        """Creat families for testsing"""
-        Ti, Sr, O, C9 = self.get_otfgs()
-        otf.upload_otfg_family([Ti.entry, Sr.entry, O.entry], "STO_FULL", "TEST", False)
-        otf.upload_otfg_family([Ti.entry, Sr.entry], "STO_O_missing", "TEST", False)
-
-        # Missing O but that's OK we have a C9 wild card here
-        otf.upload_otfg_family([Ti.entry, Sr.entry, "C9"], "STO_O_C9", "TEST", False)
-
-        return "STO_FULL", "STO_O_missing", "STO_O_C9"
-
-    def get_otfgs(self):
-
-        Ti, _ = otfg.get_or_create(Ti_otfg, store_otfg=False)
-        Sr, _ = otfg.get_or_create(Sr_otfg, store_otfg=False)
-        O, _ = otfg.get_or_create(O_otfg, store_otfg=False)
-        C9, _ = otfg.get_or_create("C9", store_otfg=False)
-        return Ti, Sr, O, C9
 
 
 class TestOTFGData(AiidaTestCase, BaseDataCase):

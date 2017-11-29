@@ -28,6 +28,11 @@
         "aiida.data": [
             "castep.uspdata = aiida_castep.data.usp:UspData",
             "castep.otfgdata = aiida_castep.data.otfg:OTFGData"
+        ],
+        "aiida.tests": [
+            "castep.calculation = aiida_castep.tests.dbtestcalculation",
+            "castep.data = aiida_castep.tests.dbtestdata",
+            "castep.parser = aiida_castep.tests.dbtestparser"
         ]
 
     }

@@ -5,96 +5,22 @@ import os
 
 from aiida.common.exceptions import InputValidationError
 from aiida.common.folders import SandboxFolder
-from aiida.orm import  DataFactory
+from aiida.orm import  DataFactory, CalculationFactory
 from aiida.backends.testbase import AiidaTestCase
 from aiida.orm import Code
 from aiida_castep.calculations.castep import CastepCalculation
 from aiida.common.exceptions import MultipleObjectsError
-from .test_data import BaseDataCase
+
+from .dbcommon import BaseDataCase, BaseCalcCase
 from .utils import get_data_abs_path
 
-CasCalc =  CastepCalculation
+CasCalc =  CalculationFactory("castep.castep")
 StructureData = DataFactory("structure")
 ParameterData = DataFactory("parameter")
 KpointsData = DataFactory("array.kpoints")
 
 
-class CalcTestBase(object):
-
-    def get_default_input(self):
-
-        input_params = {
-            "PARAM": {
-            "task" : "singlepoint",
-            "xc_functional" : "lda",
-            },
-            "CELL" : {
-            "fix_all_cell" : "true",
-            #"species_pot": ("Ba Ba_00.usp",)
-            }
-        }
-
-        return input_params
-
-    def get_kpoints_mesh(self, mesh=(4, 4, 4)):
-
-        k = KpointsData()
-        k.set_kpoints_mesh(mesh)
-        k.store()
-        return k
-
-    def setup_calculation(self):
-        from .utils import get_STO_structure
-
-        code = self.code
-        STO = get_STO_structure()
-
-        full, missing, C9 = self.create_family()
-        c = CasCalc()
-        pdict = self.get_default_input()
-        # pdict["CELL"].pop("block species_pot")
-        p = ParameterData(dict=pdict).store()
-        c.use_structure(STO)
-        c.use_pseudos_from_family(full)
-        c.use_pseudos_from_family(C9)
-        c.use_kpoints(self.get_kpoints_mesh())
-        c.use_code(self.code)
-        c.set_computer(self.localhost)
-        c.set_resources({"num_machines":1, "num_mpiprocs_per_machine":2})
-        c.use_parameters(p)
-
-        # Check mixing libray with acutal entry
-        return c
-
-    @classmethod
-    def setup_localhost(cls):
-        from aiida.orm.computer import Computer
-        l = Computer()
-        l.set_name("localhost")
-        l.set_hostname("localhost")
-        l.set_transport_type("local")
-        l.set_workdir("/home/bonan/aiida_test_run/")
-        l.set_scheduler_type("direct")
-        l.store()
-        cls.localhost = l
-
-    @classmethod
-    def setup_code_castep(cls):
-        from aiida.orm.code import Code
-        code = Code()
-        code.set_remote_computer_exec((cls.localhost, "/home/bonan/appdir/CASTEP-17.2/bin/linux_x86_64_gfortran5.0--mpi/castep.mpi"))
-        code.set_input_plugin_name("castep.castep")
-        code.store()
-        cls.code = code
-
-    def get_remote_data(self, rel_path):
-        RemoteData = DataFactory("remote")
-        rmd = RemoteData()
-        rmd.set_computer(self.localhost)
-        rmd.set_remote_path(os.path.join(get_data_abs_path(), rel_path))
-        return rmd
-
-class TestCastepInputGeneration(AiidaTestCase, CalcTestBase, BaseDataCase):
+class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
     """
     Test if the input is correctly generated
     """
@@ -246,7 +172,7 @@ class TestCastepInputGeneration(AiidaTestCase, CalcTestBase, BaseDataCase):
         call(["castep.serial", seed, "-dryrun"], cwd=folder.abspath)
 
 
-class TestRestartGeneration(AiidaTestCase, CalcTestBase, BaseDataCase):
+class TestRestartGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
 
     @classmethod
     def setUpClass(cls, *args, **kwargs):

@@ -2,26 +2,26 @@
 Testing the parsers
 """
 
+import os
 from aiida.common.exceptions import InputValidationError
 from aiida.common.folders import SandboxFolder, Folder
 from aiida.orm import  DataFactory, Calculation
 from aiida.parsers import ParserFactory
 from aiida.backends.testbase import AiidaTestCase
 from aiida.orm import Code
-from .test_calculation import CalcTestBase
-from .test_data import BaseDataCase
-import aiida_castep.tests.backend as backend
-import os
+
+from .dbcommon import BaseCalcCase, BaseDataCase
+
 
 FolderData = DataFactory("folder")
 
-class TestCastepParser(AiidaTestCase, CalcTestBase, BaseDataCase):
+class TestCastepParser(AiidaTestCase, BaseCalcCase, BaseDataCase):
 
     def setUp(self):
         self.clean_db()
 
     def get_data_abs_path(self):
-        test_moudule = os.path.split(backend.__file__)[0]
+        test_moudule = os.path.split(__file__)[0]
         data_folder = os.path.join(test_moudule, "data")
         return data_folder
 
