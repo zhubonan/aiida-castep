@@ -161,7 +161,7 @@ def parse_raw_ouput(outfile, input_dict, parser_opts=None, geom_file=None):
 # Re for getting unit
 unit_re = re.compile("^ output\s+(\w+) unit\s+:\s+([^\s]+\s*$)")
 time_re = re.compile("^(\w+) time += +([0-9.]+) s$")
-parallel_re = re.compile("^Overall parallel efficiency rating: \w+ \(([0-9]+)%\)")
+parallel_re = re.compile("^Overall parallel efficiency rating: [\w ]+ \(([0-9]+)%\)")
 version_re = re.compile("CASTEP version ([0-9.]+)")
 
 def parse_castep_text_output(out_lines, input_dict):
