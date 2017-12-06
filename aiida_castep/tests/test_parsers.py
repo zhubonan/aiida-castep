@@ -2,7 +2,8 @@
 Test parsing data
 """
 from __future__ import print_function
-from aiida_castep.parsers.raw_parser import parse_castep_text_output, parser_geom_text_output
+import aiida_castep
+from aiida_castep.parsers.raw_parser import parse_castep_text_output, parse_geom_text_output, parse_dot_bands
 import unittest
 
 import os
@@ -25,7 +26,7 @@ class TestParsers(unittest.TestCase):
         pass
 
     def test_parse_geom(self):
-        res = parser_geom_text_output(self.geom_lines, None)
+        res = parse_geom_text_output(self.geom_lines, None)
         self.assertEqual(res["symbols"], ["H", "H"])
         self.assertEqual(res["geom_energy"].shape[0], 5)
         self.assertEqual(res["positions"].shape[0], 5)
@@ -61,6 +62,15 @@ class TestParsers(unittest.TestCase):
         parsed_data, trajectory_data, critical = parse_castep_text_output(with_warning, None)
         self.assertTrue(parsed_data["warnings"])
         self.assertIn(parsed_data["warnings"][0], critical)
+
+    def test_parse_bands(self):
+        """
+        Test the function to parse *.bands file
+        """
+        res = parse_dot_bands(os.path.join(self.data_abs_path, "Si-geom-stress/aiida.bands"))
+        self.assertEqual(res[0]['nspins'], 1)
+        self.assertEqual(res[0]['nkpts'], len(res[1]))
+        self.assertEqual(res[0]['neigns'], len(res[2][0][0]))
 
 
 if __name__ == "__main__":

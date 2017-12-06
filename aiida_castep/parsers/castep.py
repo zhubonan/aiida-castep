@@ -2,13 +2,14 @@
 Parsers for CASTEP
 """
 from aiida.orm.data.parameter import ParameterData
-from aiida.parsers.parser import Parser#, ParserParamManager
+from aiida.parsers.parser import Parser  # , ParserParamManager
 from aiida_castep.parsers.raw_parser import parse_raw_ouput
 from aiida_castep.parsers import structure_from_input, add_last_if_exists
 from aiida.common.datastructures import calc_states
 from aiida.common.exceptions import UniquenessError
 from aiida.orm.data.array.bands import BandsData
 from aiida.orm.data.array.bands import KpointsData
+
 
 class CastepParser(Parser):
     """
@@ -19,7 +20,6 @@ class CastepParser(Parser):
     """
 
     _setting_key = 'parser_options'
-
 
     def __init__(self, calc):
         """
@@ -38,12 +38,13 @@ class CastepParser(Parser):
         import os
         import glob
 
-
         successful = True
+        seed_name = self._calc._SEED_NAME
 
         # Look for lags of the parser
         try:
-            parser_opts = self._calc.inp.settings.get_dict()[self.get_parser_settings_key()]
+            parser_opts = self._calc.inp.settings.get_dict()[
+                self.get_parser_settings_key()]
         except (AttributeError, KeyError):
             parser_opts = {}
 
@@ -71,26 +72,34 @@ class CastepParser(Parser):
 
         # look for other files
         has_dot_geom = False
-        if self._calc._SEED_NAME + ".geom" in list_of_files:
-            out_geom_file = os.path.join(out_folder.get_abs_path("."),
-                self._calc._SEED_NAME + '.geom')
+        if seed_name + ".geom" in list_of_files:
+            out_geom_file = os.path.join(
+                out_folder.get_abs_path('.'), seed_name + '.geom')
             has_dot_geom = True
         else:
             out_geom_file = None
+            has_dot_geom = False
 
         # TODO implement function handling bands
-        has_dot_bands = False
         if self._calc._SEED_NAME + ".bands" in list_of_files:
             has_bands = True
+            out_bands_file = os.path.join(out_folder.get_abs_path('.'),
+                                          seed_name + '.bands')
+        else:
+            has_bands = False
+            out_bands_file = None
 
-        out_file = os.path.join(out_folder.get_abs_path("."),
-            self._calc._OUTPUT_FILE_NAME)
+        out_file = os.path.join(out_folder.get_abs_path(
+            '.'), self._calc._OUTPUT_FILE_NAME)
 
         # call the raw parsing function
-        parsing_args = [out_file, input_dict, parser_opts, out_geom_file]
+        parsing_args = [out_file, input_dict,
+                        parser_opts, out_geom_file,
+                        out_bands_file]
 
         # If there is a geom file then we parse it
-        out_dict, trajectory_data, structure_data, raw_sucessful = parse_raw_ouput(*parsing_args)
+        out_dict, trajectory_data, structure_data, bands_data, raw_sucessful\
+            = parse_raw_ouput(*parsing_args)
 
         # Append the final value of trajectory_data into out_dict
         for key in ["free_energy", "total_energy", "zero_K_energy"]:
@@ -101,6 +110,10 @@ class CastepParser(Parser):
         # Saving to nodes
         new_nodes_list = []
 
+        ######## --- PROCESSING BANDS DATA -- ########
+        if has_bands:
+            bands = bands_to_bandsdata(bands_data)
+            new_nodes_list.append((self.get_linkname_outbands(), bands))
 
         ######## --- PROCESSING STRUCTURE DATA --- ########
         try:
@@ -112,8 +125,10 @@ class CastepParser(Parser):
             # No final structure can be used - that is OK
             pass
         else:
-            output_structure = structure_from_input(cell=cell, positions=positions, symbols=symbols)
-            new_nodes_list.append((self.get_linkname_outstructure(), output_structure))
+            output_structure = structure_from_input(
+                cell=cell, positions=positions, symbols=symbols)
+            new_nodes_list.append(
+                (self.get_linkname_outstructure(), output_structure))
 
         ######### --- PROCESSING TRAJECTORY DATA --- ########
         # If there is anything to save
@@ -134,7 +149,7 @@ class CastepParser(Parser):
 
                 except KeyError:
                     out_dict["parser_warning"].append("Cannot "
-                        "extract data from .geom file.")
+                                                      "extract data from .geom file.")
                     pass
 
                 else:
@@ -148,7 +163,8 @@ class CastepParser(Parser):
                         # Skip saving empty arrays
                         if len(value) > 0:
                             traj.set_array(name, np.asarray(value))
-                    new_nodes_list.append((self.get_linkname_outtrajectory(), traj))
+                    new_nodes_list.append(
+                        (self.get_linkname_outtrajectory(), traj))
 
             # Otherwise, save data into a ArrayData node
             else:
@@ -199,3 +215,35 @@ class CastepParser(Parser):
         """
         return 'output_kpoints'
 
+    def get_linkname_outbands(self):
+        """
+        Returns the name of the link to the output band data.
+        Exists if we retrived the bands file
+        """
+        return 'output_bands'
+
+
+def bands_to_bandsdata(bands_res):
+    """Convert the result of parser_dot_bands into a BandsData object """
+
+    bands = BandsData()
+    kpts = [k[1:-1] for k in bands_res[1]]
+    _weights = [k[-1] for k in bands_res[1]]
+    bands.set_kpoints(kpts, weights=_weights)
+    # We need to swap the axes from kpt,spin,engs to spin,kpt,engs
+    import numpy as np
+
+    bands_array = np.array(bands_res[2]).swapaxes(0, 1)
+    # Squeeze the first dimension e.g when there is a single spin
+    if bands_array.shape[0] == 1:
+        bands_array = bands_array[0]
+
+    bands.set_bands(bands_array)
+    bands.set_cell(bands_res[0]['cell'], pbc=(True, True, True))
+
+    # Store information from *.bands in the attributes
+    # This is needes as we need to know the number of electrons
+    # and the fermi energy
+    for key, value in bands_res[0].items():
+        bands._set_attr(key, value)
+    return bands

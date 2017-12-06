@@ -50,9 +50,13 @@ unit_suffix = "_units"
 SCF_FAILURE_MESSAGE = "SCF cycles failed to converge"
 GEOM_FAILURE_MESSAGE = "Maximum geometry optimization cycle has been reached"
 END_NOT_FOUND_MESSAGE = "CASTEP run did not reach the end of execution."
-def parse_raw_ouput(outfile, input_dict, parser_opts=None, geom_file=None):
+
+
+def parse_raw_ouput(outfile, input_dict,
+                    parser_opts=None, geom_file=None,
+                    bands_file=None):
     """
-    Parser an dot_castep file
+    Parse an dot_castep file
     :param outfile: path to .castep file
     :param geom_file: path to the .geom file
 
@@ -67,25 +71,25 @@ def parse_raw_ouput(outfile, input_dict, parser_opts=None, geom_file=None):
     parser_version = "0.1"
     parser_info = {}
     parser_info["parser_warnings"] = []
-    parser_info["parser_info"] = "AiiDA CASTEP basic Parser v{}".format(parser_version)
+    parser_info["parser_info"] = "AiiDA CASTEP basic Parser v{}".format(
+        parser_version)
     parser_info["warnings"] = []
-
 
     job_successful = True
 
     try:
-        with open(outfile , "r") as f:
+        with open(outfile, "r") as f:
             # Store ouput lines in list
             # OK if the file is not huge
             out_lines = f.readlines()
     except IOError:
-            raise CASTEPOutputParsingError("Failed to open file: {}".format(outfile))
+        raise CASTEPOutputParsingError(
+            "Failed to open file: {}".format(outfile))
 
     if not out_lines:  # The file is empty
         job_successful = False
 
     finished_run = False
-
 
     # Use Total time as a mark for completed run
     for i, line in enumerate(reversed(out_lines)):
@@ -105,25 +109,32 @@ def parse_raw_ouput(outfile, input_dict, parser_opts=None, geom_file=None):
 
     # Parse the data and store
     try:
-        out_data, trajectory_data, critical_messages = parse_castep_text_output(out_lines, input_dict)
+        out_data, trajectory_data, critical_messages = parse_castep_text_output(
+            out_lines, input_dict)
 
         # Use data from geom file if avaliable.
         if geom_file is not None:
             with open(geom_file) as gfile:
                 glines = gfile.readlines()
-            geom_data = parser_geom_text_output(glines, None)
+            geom_data = parse_geom_text_output(glines, None)
             trajectory_data.update(geom_data)
+
+        if bands_file is not None:
+            bands_data = parse_dot_bands(bands_file)
+        else:
+            bands_data = None
 
     except CASTEPOutputParsingError as e:
         if not finished_run:
-            parser_info["parser_warnings"].append("Error while parsing the output file")
+            parser_info["parser_warnings"].append(
+                "Error while parsing the output file")
             out_data = {}
             trajectory_data = {}
             critical_messages = []
 
         else:  # Run finished but I have still have an error here
-            raise CASTEPOutputParsingError("Error while parsing ouput. Exception message: {}".format(e.message))
-
+            raise CASTEPOutputParsingError(
+                "Error while parsing ouput. Exception message: {}".format(e.message))
 
     # Check if any critical messages has been passed
     # If there is any cricial message we should make the run marked as FAILED
@@ -142,13 +153,14 @@ def parse_raw_ouput(outfile, input_dict, parser_opts=None, geom_file=None):
         # Cannot find the last geometry data
         structure_data = {}
     else:
-        structure_data = dict(cell=last_cell, positions=last_positions, symbols=symbols)
+        structure_data = dict(
+            cell=last_cell, positions=last_positions, symbols=symbols)
 
     # Parameter data to be returned
     parameter_data = dict(out_data.items() + parser_info.items())
 
     # Combine the warnings
-    all_warnings  = out_data["warnings"] + parser_info["warnings"]
+    all_warnings = out_data["warnings"] + parser_info["warnings"]
 
     # Make the warnings set-like e.g we don't want to repeat messages
     # Save a bit of the storage space
@@ -156,13 +168,18 @@ def parse_raw_ouput(outfile, input_dict, parser_opts=None, geom_file=None):
     parameter_data['warnings'] = all_warnings
 
     # Todo Validation of ouput data
-    return parameter_data, trajectory_data, structure_data, job_successful
+    return [parameter_data,
+            trajectory_data, structure_data,
+            bands_data, job_successful]
+
 
 # Re for getting unit
 unit_re = re.compile("^ output\s+(\w+) unit\s+:\s+([^\s]+\s*$)")
 time_re = re.compile("^(\w+) time += +([0-9.]+) s$")
-parallel_re = re.compile("^Overall parallel efficiency rating: [\w ]+ \(([0-9]+)%\)")
+parallel_re = re.compile(
+    "^Overall parallel efficiency rating: [\w ]+ \(([0-9]+)%\)")
 version_re = re.compile("CASTEP version ([0-9.]+)")
+
 
 def parse_castep_text_output(out_lines, input_dict):
     """
@@ -197,9 +214,9 @@ def parse_castep_text_output(out_lines, input_dict):
 
     # In the formatof {<keywords in line>:<message to pass>}
     critical_warnings = {
-    "Geometry optimization failed to converge": GEOM_FAILURE_MESSAGE,
-    "SCF cycles performed but system has not reached the groundstate": SCF_FAILURE_MESSAGE,
-    "NOSTART": "Can not find start of the calculation."}
+        "Geometry optimization failed to converge": GEOM_FAILURE_MESSAGE,
+        "SCF cycles performed but system has not reached the groundstate": SCF_FAILURE_MESSAGE,
+        "NOSTART": "Can not find start of the calculation."}
 
     minor_warnings = {"Warning": None}
 
@@ -208,7 +225,8 @@ def parse_castep_text_output(out_lines, input_dict):
     # Create a list of keys, the order is important here
     # specific warnings can be matched first
 
-    all_warnings_keys = list(critical_warnings.keys()) + list(minor_warnings.keys())
+    all_warnings_keys = list(critical_warnings.keys()) + \
+        list(minor_warnings.keys())
 
     def pair_split(lines, spliter):
         """Split the line in to two. Ignore space around spliter"""
@@ -231,10 +249,10 @@ def parse_castep_text_output(out_lines, input_dict):
         if unit_match:
             uname = unit_match.group(1)
             uvalue = unit_match.group(2)
-            parsed_data["unit_"+ uname] = uvalue
+            parsed_data["unit_" + uname] = uvalue
 
         if "Files used for pseudopotentials" in line:
-            for line in out_lines[i+1:]:
+            for line in out_lines[i + 1:]:
                 if "---" in line:
                     break
                 else:
@@ -257,7 +275,8 @@ def parse_castep_text_output(out_lines, input_dict):
             continue
 
         if "Cell constraints" in line:
-            parsed_data["cell_constraints"] = line.strip().split(":")[1].strip()
+            parsed_data["cell_constraints"] = line.strip().split(":")[
+                1].strip()
             continue
 
         if "Number of kpoints used" in line:
@@ -280,7 +299,7 @@ def parse_castep_text_output(out_lines, input_dict):
         Generat extract data from = <value> <unit> line
         """
         elem = line.strip().split()
-        value  = float(elem[-2])
+        value = float(elem[-2])
         trajectory_data[name].append(value)
 
     # Parse repeating information
@@ -316,7 +335,6 @@ def parse_castep_text_output(out_lines, input_dict):
             append_value_and_unit(line, "spin_density")
             continue
 
-
         if "Integrated |Spin" in line:
             append_value_and_unit(line, "abs_spin_density")
             continue
@@ -326,7 +344,8 @@ def parse_castep_text_output(out_lines, input_dict):
             continue
 
         if "Stress Tensor" in line:
-            i, stress, pressure = parse_stress_box(body_lines[count:count+10])
+            i, stress, pressure = parse_stress_box(
+                body_lines[count:count + 10])
             assert len(stress) == 3
             if "Symmetrised" in line:
                 prefix = "symm_"
@@ -338,7 +357,7 @@ def parse_castep_text_output(out_lines, input_dict):
 
         if "Forces *******" in line:
             num_lines = parsed_data["num_ions"] + 10
-            box = body_lines[count: (count+ num_lines)]
+            box = body_lines[count: (count + num_lines)]
             i, forces = parse_force_box(box)
 
             if "Constrained" in line:
@@ -353,7 +372,7 @@ def parse_castep_text_output(out_lines, input_dict):
 
         if any(i in line for i in all_warnings):
             message = [all_warnings[k] for k in all_warnings_keys
-                         if k in line][0]
+                       if k in line][0]
             if message is None:
                 # CASTEP often have multiline warnings
                 # Add extra lines for detail
@@ -374,7 +393,6 @@ def parse_castep_text_output(out_lines, input_dict):
         if para_line:
             parsed_data["parallel_efficiency"] = int(para_line.group(1))
 
-
     #### END OF LINE BY LINE PARSING ITERATION ####
 
     # remove unrelated units
@@ -387,13 +405,13 @@ def parse_castep_text_output(out_lines, input_dict):
             for i in trajectory_data:
                 if i == key:
                     continue
-                if unit_for in  i:
+                if unit_for in i:
                     delete = False
 
             for i in parsed_data:
                 if i == key:
                     continue
-                if unit_for in  i:
+                if unit_for in i:
                     delete = False
 
             if delete is True:
@@ -406,7 +424,7 @@ def parse_castep_text_output(out_lines, input_dict):
 
 
 # This function is modified from ase's geom reader
-def parser_geom_text_output(out_lines, input_dict):
+def parse_geom_text_output(out_lines, input_dict):
     """
     Parse output of .geom file
 
@@ -423,7 +441,7 @@ def parser_geom_text_output(out_lines, input_dict):
     # Yeah, we know that...
     cell_list = []
     species_list = []
-    geom_list  = []
+    geom_list = []
     forces_list = []
     energy_list = []
 
@@ -459,17 +477,19 @@ def parser_geom_text_output(out_lines, input_dict):
     if len(species_list) == 0:
         raise CASTEPOutputParsingError("No data found in geom file")
 
-    return dict(cells = np.array(cell_list),
-                positions = np.array(geom_list),
-                forces = np.array(forces_list),
-                geom_energy = np.array(energy_list),
-                symbols = species_list[0]
+    return dict(cells=np.array(cell_list),
+                positions=np.array(geom_list),
+                forces=np.array(forces_list),
+                geom_energy=np.array(energy_list),
+                symbols=species_list[0]
                 )
 
 
+force_match = re.compile(
+    "^ +\* +(\w+) +([0-9]+) +([0-9.\-+]+) +([0-9.\-+]+) +([0-9.\-+]+) +\*")
+stress_match = re.compile(
+    "^ +\* +(\w+) +([0-9.\-+]+) +([0-9.\-+]+) +([0-9.\-+]+) +\*")
 
-force_match =  re.compile("^ +\* +(\w+) +([0-9]+) +([0-9.\-+]+) +([0-9.\-+]+) +([0-9.\-+]+) +\*")
-stress_match =  re.compile("^ +\* +(\w+) +([0-9.\-+]+) +([0-9.\-+]+) +([0-9.\-+]+) +\*")
 
 def parse_force_box(lines):
     """
@@ -481,7 +501,7 @@ def parse_force_box(lines):
     """
 
     forces = []
-    for i , line in enumerate(lines):
+    for i, line in enumerate(lines):
 
         if "Forces" in line:
             continue
@@ -494,7 +514,7 @@ def parse_force_box(lines):
             continue
 
         else:
-            forces.append([float(match.group(i)) for i in range(3,6)])
+            forces.append([float(match.group(i)) for i in range(3, 6)])
 
     return i, forces
 
@@ -511,7 +531,7 @@ def parse_stress_box(lines):
 
     stress = []
     pressure = []
-    for i , line in enumerate(lines):
+    for i, line in enumerate(lines):
         if "Stress" in line:
             continue
 
@@ -528,18 +548,16 @@ def parse_stress_box(lines):
             continue
 
         else:
-            stress.append([float(match.group(i)) for i in range(2,5)])
+            stress.append([float(match.group(i)) for i in range(2, 5)])
 
         if "Pressure" in line:
             lsplit = line.split()
             pressure.append(float(lsplit[-1]))
 
-
     return i, stress, pressure
 
 
 def parse_dot_bands(filepath):
-
     """
     Parse an CASTEP bands file
     Extract Kpoints and each bands for each kpoints.
@@ -550,7 +568,7 @@ def parse_dot_bands(filepath):
     :returns kpoints, list: A list of kpoints. In the format [kpoint index,
     coordinats x 3, kpoint weight]
     :returns bands: A list of bands. Each band has a list of actual eigenvalues
-    for each spin components.
+    for each spin components. E.g nkpoints, nspins, neigns
     """
     fh = open(filepath)
 
@@ -562,11 +580,11 @@ def parse_dot_bands(filepath):
             continue
         if "Number of k-points" in line:
             nkps = line.strip().split()[-1]
-            bands_info['nkpts'] = float(nkps)
+            bands_info['nkpts'] = int(float(nkps))
             continue
         if "Number of spin components" in line:
             nspin = line.strip().split()[-1]
-            bands_info['nspins'] = float(nspin)
+            bands_info['nspins'] = int(float(nspin))
             continue
         if "Number of electrons" in line:
             nelec = line.strip().split()[-1]
@@ -574,7 +592,7 @@ def parse_dot_bands(filepath):
             continue
         if "Number of eigenvalues" in line:
             neigns = line.strip().split()[-1]
-            bands_info['neigns'] = float(neigns)
+            bands_info['neigns'] = int(float(neigns))
             continue
         if "Fermi energy" in line:
             efermi = line.strip().split()[-1]
@@ -631,14 +649,10 @@ def parse_dot_bands(filepath):
     assert len(bands) == len(kpoints), "Missing bands for certain kpoints"
 
     for n, b in enumerate(bands):
-        assert len(b) == int(nspin), "Missing spins for kpoint {}".format(n+1)
+        assert len(b) == int(
+            nspin), "Missing spins for kpoint {}".format(n + 1)
         for i, s in enumerate(b):
             assert len(s) == int(neigns), ("Missing eigenvalues "
-                "for kpoint {} spin {}".format(n+1, i+1))
+                                           "for kpoint {} spin {}".format(n + 1, i + 1))
 
     return bands_info, kpoints, bands
-
-
-
-
-

@@ -25,11 +25,14 @@ class TestCastepParser(AiidaTestCase, BaseCalcCase, BaseDataCase):
         data_folder = os.path.join(test_moudule, "data")
         return data_folder
 
-    def get_dummpy_output(self):
+    def get_dummy_outputs(self):
 
-        folderdata = FolderData()
-        folderdata.replace_with_folder(self.get_data_abs_path() + "/H2-geom")
-        retrieved = dict(retrieved=folderdata)
+        retrieved = {}
+        for folder in ["H2-geom", "O2-geom-spin", "Si-geom-stress"]:
+            folderdata = FolderData()
+            folderdata.replace_with_folder(
+                os.path.join(self.get_data_abs_path(), folder))
+            retrieved[folder] = dict(retrieved=folderdata)
         return retrieved
 
     def test_parser_retrieved(self):
@@ -38,16 +41,27 @@ class TestCastepParser(AiidaTestCase, BaseCalcCase, BaseDataCase):
         calc = self.setup_calculation()
 
         parser = ParserFactory("castep.castep")(calc)
-        retrived_dict = self.get_dummpy_output()
+        retrived_folders = self.get_dummy_outputs()
 
-        success, out = parser.parse_with_retrieved(retrived_dict)
-        self.assertTrue(success)
-        out = dict(out)
+        for name, r in retrived_folders.items():
+            success, out = parser.parse_with_retrieved(r)
+            out = dict(out)
 
-        out_structure = out[parser.get_linkname_outstructure()]
-        out_param_dict = out[parser.get_linkname_outparams()].get_dict()
-        out_traj = out[parser.get_linkname_outtrajectory()]
-        self.assertIn("total_energy", out_param_dict)
-        self.assertIn("unit_energy", out_param_dict)
-        # Check the length of sites are consistent
-        self.assertEqual(len(out_structure.sites), len(out_traj.get_symbols()))
+            out_structure = out[parser.get_linkname_outstructure()]
+            out_param_dict = out[parser.get_linkname_outparams()].get_dict()
+            out_traj = out[parser.get_linkname_outtrajectory()]
+            self.assertIn("total_energy", out_param_dict)
+            self.assertIn("unit_energy", out_param_dict)
+            # Check the length of sites are consistent
+            self.assertEqual(len(out_structure.sites), len(out_traj.get_symbols()))
+
+            if name == "O2-geom-spin" or name == "Si-geom-stress":
+                self.assertIn(parser.get_linkname_outbands(), out)
+                bands = out[parser.get_linkname_outbands()]
+
+                # Check if spins are handled correctly
+                self.assertIn(bands.get_attr('nspins'), [1, 2])
+                if bands.get_attr('nspins') == 1:
+                    self.assertEqual(bands.get_attr('nkpts'), len(bands.get_bands()))
+                elif bands.get_attr('nspins') == 2:
+                    self.assertEqual(bands.get_attr('nkpts'), len(bands.get_bands()[0]))
