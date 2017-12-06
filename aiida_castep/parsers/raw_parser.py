@@ -536,3 +536,109 @@ def parse_stress_box(lines):
 
 
     return i, stress, pressure
+
+
+def parse_dot_bands(filepath):
+
+    """
+    Parse an CASTEP bands file
+    Extract Kpoints and each bands for each kpoints.
+    This is a generic parsing function. Return python builtin types.
+
+    :param filepath, str: Path of the file to parse
+    :returns bands_info, dict: A dictionary of info in the *.bands file
+    :returns kpoints, list: A list of kpoints. In the format [kpoint index,
+    coordinats x 3, kpoint weight]
+    :returns bands: A list of bands. Each band has a list of actual eigenvalues
+    for each spin components.
+    """
+    fh = open(filepath)
+
+    i_finish = None
+    cell = []
+    bands_info = {}
+    for i, line in enumerate(fh):
+        if not line.strip():
+            continue
+        if "Number of k-points" in line:
+            nkps = line.strip().split()[-1]
+            bands_info['nkpts'] = float(nkps)
+            continue
+        if "Number of spin components" in line:
+            nspin = line.strip().split()[-1]
+            bands_info['nspins'] = float(nspin)
+            continue
+        if "Number of electrons" in line:
+            nelec = line.strip().split()[-1]
+            bands_info['nelecs'] = float(nelec)
+            continue
+        if "Number of eigenvalues" in line:
+            neigns = line.strip().split()[-1]
+            bands_info['neigns'] = float(neigns)
+            continue
+        if "Fermi energy" in line:
+            efermi = line.strip().split()[-1]
+            bands_info['efermi'] = float(efermi) * units['Eh']
+            continue
+        if "Unit cell" in line:
+            i_finish = i + 3
+            continue
+
+        # Added the cell
+        if i_finish:
+            cell.append([float(n) for n in line.strip().split()])
+        if i == i_finish:
+            break
+    bands_info['cell'] = cell
+
+    # Now parser the body
+    kpoints = []
+    bands = []
+    this_band = []
+    this_spin = []
+    for line in fh:
+        if "K-point" in line:
+            # We are not at the first kpoints
+            if kpoints:
+                # Save the result from previous block
+                this_band.append(this_spin)
+                bands.append(this_band)
+                this_spin = []
+                this_band = []
+            kline = line.strip().split()
+            kpoints.append([float(n) for n in kline[1:]])
+            continue
+        if "Spin component" in line:
+            # Check if we are at the second spin
+            if this_spin:
+                this_band.append(this_spin)
+                this_spin = []
+            continue
+
+        ls = line.strip()
+        if not ls:
+            continue
+        this_spin.append(float(ls))
+
+    fh.close()
+
+    # Save the last set of results
+    this_band.append(this_spin)
+    bands.append(this_band)
+
+    # Do some sanity checks
+    assert int(nkps) == len(kpoints), "Missing kpoints"
+    assert len(bands) == len(kpoints), "Missing bands for certain kpoints"
+
+    for n, b in enumerate(bands):
+        assert len(b) == int(nspin), "Missing spins for kpoint {}".format(n+1)
+        for i, s in enumerate(b):
+            assert len(s) == int(neigns), ("Missing eigenvalues "
+                "for kpoint {} spin {}".format(n+1, i+1))
+
+    return bands_info, kpoints, bands
+
+
+
+
+
