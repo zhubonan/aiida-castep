@@ -16,7 +16,8 @@
     "setup_requires": ["reentry"],
     "reentry_register": true,
     "install_requires": [
-        "aiida-core >= 0.10.0rc1"
+        "aiida-core >= 0.10.0rc1",
+        "deepdiff"
     ],
     "entry_points": {
         "aiida.calculations": [

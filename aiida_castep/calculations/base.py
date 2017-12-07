@@ -764,6 +764,27 @@ class BaseCastepInputGenerator(object):
         in_dict = in_param.get_dict()
         return in_dict
 
+    def compare_with(self, the_other_calc):
+        """
+        Compare with another calculation
+        Look for difference in the input dicitonary
+        Only supports comparing parameters for now
+        :params pk: pk or uuid, will be u
+        """
+        # Compare the input dictionary
+        calc2 = the_other_calc
+        from deepdiff import DeepDiff
+        this_param = self.get_castep_inputs()
+        other_param = calc2.get_castep_inputs()
+        res = DeepDiff(this_param, other_param)
+
+        # Compare the kpoints
+#        this_kpt = self.get_inputs_dict()[self.get_linkname('kpoints')]
+#        other_kpy = calc2.get_inputs_dict()[calc2.get_linkname('kpoints')]
+
+        # Compare psudo
+        return res
+
 
 def _lowercase_dict(d, dict_name):
     """Make sure the dictionary's keys are in lower case"""
