@@ -6,9 +6,7 @@ from aiida.parsers.parser import Parser  # , ParserParamManager
 from aiida_castep.parsers.raw_parser import parse_raw_ouput
 from aiida_castep.parsers import structure_from_input, add_last_if_exists
 from aiida.common.datastructures import calc_states
-from aiida.common.exceptions import UniquenessError
 from aiida.orm.data.array.bands import BandsData
-from aiida.orm.data.array.bands import KpointsData
 
 
 class CastepParser(Parser):
@@ -34,9 +32,7 @@ class CastepParser(Parser):
         Top level logic of operation
         """
 
-        from aiida.common.exceptions import InvalidOperation
         import os
-        import glob
 
         successful = True
         seed_name = self._calc._SEED_NAME
@@ -181,41 +177,49 @@ class CastepParser(Parser):
         new_nodes_list.append((self.get_linkname_outparams(), output_params))
         return successful, new_nodes_list
 
-    def get_parser_settings_key(self):
+    # getter method for various names
+    @classmethod
+    def get_parser_settings_key(cls):
         """
         Return the name of the key to be used in the calculation settings, that
-        contains the dictionary with the parser_options
+        contains the dictionary with the parser_options.
+        Not used for now
         """
         return 'parser_options'
 
-    def get_linkname_outstructure(self):
+    @classmethod
+    def get_linkname_outstructure(cls):
         """
         Returns the name of the link to the output_structure
         Only exists if it is a geometry optimisation run.
         """
         return 'output_structure'
 
-    def get_linkname_outtrajectory(self):
+    @classmethod
+    def get_linkname_outtrajectory(cls):
         """
         Returns the name of the link to the output_trajectory.
         Node exists in case of calculation = "geometryoptimsiation"
         """
         return 'output_trajectory'
 
-    def get_linkname_outarray(self):
+    @classmethod
+    def get_linkname_outarray(cls):
         """
         Returns the name of the link to the output_array.
         Exist if trajectory data cannot be created e.g not a optimisation run.
         """
         return 'output_array'
 
-    def get_linkname_out_kpoints(self):
+    @classmethod
+    def get_linkname_out_kpoints(cls):
         """
         Not implemented for now
         """
         return 'output_kpoints'
 
-    def get_linkname_outbands(self):
+    @classmethod
+    def get_linkname_outbands(cls):
         """
         Returns the name of the link to the output band data.
         Exists if we retrived the bands file

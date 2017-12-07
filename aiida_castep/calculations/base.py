@@ -337,7 +337,7 @@ class BaseCastepInputGenerator(object):
             parameters = inputdict.pop(self.get_linkname('parameters'))
             # Validate the parameters
             if self._auto_input_validation is True:
-                self.check_input(parameters.get_dict(), auto_fix=False)
+                self.check_castep_input(parameters.get_dict(), auto_fix=False)
 
         except KeyError:
             raise InputValidationError("No parameters specified for this calculation")
@@ -647,7 +647,7 @@ class BaseCastepInputGenerator(object):
 
 
     @classmethod
-    def check_input(cls, input_dict, auto_fix=False):
+    def check_castep_input(cls, input_dict, auto_fix=False):
         """
         Validate if the keywords are valid castep keywords
         Also try to convert the parameter diction in a
@@ -757,6 +757,12 @@ class BaseCastepInputGenerator(object):
                to specify which is the reference structure to consider.
         """
         return self.get_inputs_dict()[self.get_linkname('structure')]
+
+    def get_castep_inputs(self):
+        """Convenient fuction for getting the input parameters"""
+        in_param = self.get_inputs_dict()[self.get_linkname('parameters')]
+        in_dict = in_param.get_dict()
+        return in_dict
 
 
 def _lowercase_dict(d, dict_name):
