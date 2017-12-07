@@ -345,7 +345,7 @@ def parse_castep_text_output(out_lines, input_dict):
 
         if "Stress Tensor" in line:
             i, stress, pressure = parse_stress_box(
-                body_lines[count:count + 10])
+                body_lines[count:count + 20])
             assert len(stress) == 3
             if "Symmetrised" in line:
                 prefix = "symm_"
@@ -510,10 +510,7 @@ def parse_force_box(lines):
             break
 
         match = force_match.match(line)
-        if not match:
-            continue
-
-        else:
+        if match:
             forces.append([float(match.group(i)) for i in range(3, 6)])
 
     return i, forces
@@ -530,7 +527,7 @@ def parse_stress_box(lines):
     """
 
     stress = []
-    pressure = []
+    pressure = None
     for i, line in enumerate(lines):
         if "Stress" in line:
             continue
@@ -544,15 +541,11 @@ def parse_stress_box(lines):
             break
 
         match = stress_match.match(line)
-        if not match:
-            continue
-
-        else:
+        if  match:
             stress.append([float(match.group(i)) for i in range(2, 5)])
-
-        if "Pressure" in line:
-            lsplit = line.split()
-            pressure.append(float(lsplit[-1]))
+        elif "Pressure" in line:
+            lsplit = line.strip().split()
+            pressure = float(lsplit[-2])
 
     return i, stress, pressure
 

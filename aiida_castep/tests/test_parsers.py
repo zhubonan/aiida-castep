@@ -72,6 +72,15 @@ class TestParsers(unittest.TestCase):
         self.assertEqual(res[0]['nkpts'], len(res[1]))
         self.assertEqual(res[0]['neigns'], len(res[2][0][0]))
 
+    def test_parser_stress(self):
+        with open(self.data_abs_path + "/Si-geom-stress/aiida.castep") as cs:
+            lines = cs.readlines()
+        parsed_data, trajectory_data, warnings = parse_castep_text_output(lines, None)
+
+        self.assertIn('symm_stress', trajectory_data)
+        self.assertIn('symm_pressure', trajectory_data)
+        self.assertTrue(trajectory_data['symm_pressure'])
+        print(trajectory_data['symm_pressure'])
 
 if __name__ == "__main__":
     unittest.main()
