@@ -764,19 +764,27 @@ class BaseCastepInputGenerator(object):
         in_dict = in_param.get_dict()
         return in_dict
 
-    def compare_with(self, the_other_calc):
+    def compare_with(self, the_other_calc, reverse=False):
         """
         Compare with another calculation
         Look for difference in the input dicitonary
         Only supports comparing parameters for now
-        :params pk: pk or uuid, will be u
+        :params node: pk or uuid or node
+        :params reverse: reverse the comparision
         """
-        # Compare the input dictionary
-        calc2 = the_other_calc
+        if isinstance(the_other_calc, (int, basestring)):
+            from aiida.orm import load_node
+            calc2 = load_node(the_other_calc)
+        else:
+            calc2 = the_other_calc
+
         from deepdiff import DeepDiff
         this_param = self.get_castep_inputs()
         other_param = calc2.get_castep_inputs()
-        res = DeepDiff(this_param, other_param)
+        if reverse is True:
+            res = DeepDiff(this_param, other_param)
+        else:
+            res = DeepDiff(other_param, this_param)
 
         # Compare the kpoints
 #        this_kpt = self.get_inputs_dict()[self.get_linkname('kpoints')]
