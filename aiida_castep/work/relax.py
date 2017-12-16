@@ -46,6 +46,7 @@ class CastepRelaxWorkChain(WorkChain):
     @classmethod
     def define(cls, spec):
         super(CastepRelaxWorkChain, cls).define(spec)
+        spec.input('code', valid_type=Code)
         spec.input('structure', valid_type=StructureData)
         spec.input('parameters', valid_type=ParameterData)
         spec.input('settings', valid_type=ParameterData, required=False)
@@ -81,6 +82,7 @@ class CastepRelaxWorkChain(WorkChain):
         self.ctx.iteration = 0
         self.ctx.max_iterations = self.MAX_ITERATIONS
         self.ctx.restart_calc = None
+        self.ctx.submission_failure = None
 
         self.ctx.inputs = {
             'code': self.inputs.code,
@@ -104,6 +106,7 @@ class CastepRelaxWorkChain(WorkChain):
             self.ctx.inputs['pseudo'] = self.inputs.pseudos
         else:
             self.abort_nowait('No valida pseudo data passed. Both pseudo_family and pseudos are not specified')
+            return
 
         # Check if task:geometryoptimisation is passed
 
@@ -119,6 +122,7 @@ class CastepRelaxWorkChain(WorkChain):
         elif param_dict['task'] != 'geometryoptimisation' \
                 and param_dict['task'] != 'geometryoptimization':
             self.abort_nowait('Wrong task value passed {}'.format(param_dict['task']))
+            return
 
 
         # Add correct geom method
@@ -127,6 +131,7 @@ class CastepRelaxWorkChain(WorkChain):
             param_dict['geom_method'] = self.inputs.geom_method.value
         elif geom_method != self.inputs.geom_method:
             self.abort_nowait('Inconsistent geom_method passed. In PARAM it is {} but the input is {}'.format(geom_method, self.inputs.geom_method))
+            return
 
         return
 
@@ -218,9 +223,11 @@ class CastepRelaxWorkChain(WorkChain):
             self.report('Has reached max iterations {}'.format(
                 self.ctx.max_iterations))
             self.abort_nowait('Last ran CastepCalculation<{}>'.format(calc.pk))
+            return
 
         elif calc_state not in acceptable_states:
             self.abort_nowait('Last ran CastepCalculation <{}> state {} cannot be handled'.format(calc.pk, calc.get_state()))
+            return
 
         elif calc_state in  [calc_states.SUBMISSIONFAILED]:
             self._submission_failure_handler(calc)
@@ -233,6 +240,7 @@ class CastepRelaxWorkChain(WorkChain):
                 handler_out = self._failure_handler(calc)
             except UnexpectedFailure as e:
                 self.abort_nowait(e.args)
+                return
 
             if handler_out == "CAN RESTART":
                 # Use the last calculation to restart
@@ -240,6 +248,7 @@ class CastepRelaxWorkChain(WorkChain):
                 return
             else:
                 self.abort_nowait("Abort due to failure at iteration {} with CastepCalculation <{}> Message: {}".format(self.ctx.iteration, calc.pk, handler_out))
+                return
 
     def should_do_final_restart(self):
         return False
@@ -262,6 +271,7 @@ class CastepRelaxWorkChain(WorkChain):
         """We try again in 60 seconds"""
         if self.ctx.submission_failure:
             self.abort_nowait('Submission for CastepCalculation <{}> failed twice'.format(calc.pk))
+            return
         else:
             self.report('Submission for CastepCalculation <{}> failed. Sleep for {} seconds and try again'.format(calc.pk, self.SUBMISSION_RETRY_SECONDS))
             time.sleep(self.SUBMISSION_RETRY_SECONDS)

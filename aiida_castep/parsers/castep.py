@@ -3,7 +3,7 @@ Parsers for CASTEP
 """
 from aiida.orm.data.parameter import ParameterData
 from aiida.parsers.parser import Parser  # , ParserParamManager
-from aiida_castep.parsers.raw_parser import parse_raw_ouput
+from aiida_castep.parsers.raw_parser import parse_raw_ouput, units
 from aiida_castep.parsers import structure_from_input, add_last_if_exists
 from aiida.common.datastructures import calc_states
 from aiida.orm.data.array.bands import BandsData
@@ -76,7 +76,7 @@ class CastepParser(Parser):
             out_geom_file = None
             has_dot_geom = False
 
-        # TODO implement function handling bands
+        # Handling bands
         if self._calc._SEED_NAME + ".bands" in list_of_files:
             has_bands = True
             out_bands_file = os.path.join(out_folder.get_abs_path('.'),
@@ -241,6 +241,9 @@ def bands_to_bandsdata(bands_res):
     # Squeeze the first dimension e.g when there is a single spin
     if bands_array.shape[0] == 1:
         bands_array = bands_array[0]
+    bands_array = bands_array * units['Eh']
+    bands_res[0]['efermi'] = units['Eh']
+    bands_res[0]['units'] = "eV"
 
     bands.set_bands(bands_array)
     bands.set_cell(bands_res[0]['cell'], pbc=(True, True, True))

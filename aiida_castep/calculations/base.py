@@ -222,7 +222,8 @@ class BaseCastepInputGenerator(object):
                     _, weights = kpoints.get_kpoints(also_weights=True)
 
                 except AttributeError:
-                    weights = [1.] / num_kpoints
+                    import numpy as np
+                    weights = np.array([1.]) / num_kpoints
 
             if has_mesh is True:
                 input_params["CELL"]["kpoints_mp_grid"] = "{} {} {}".format(*mesh)

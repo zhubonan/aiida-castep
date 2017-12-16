@@ -562,6 +562,7 @@ def parse_dot_bands(filepath):
     coordinats x 3, kpoint weight]
     :returns bands: A list of bands. Each band has a list of actual eigenvalues
     for each spin components. E.g nkpoints, nspins, neigns
+    Note that the atomic units are used in the bands file
     """
     fh = open(filepath)
 
@@ -589,7 +590,7 @@ def parse_dot_bands(filepath):
             continue
         if "Fermi energy" in line:
             efermi = line.strip().split()[-1]
-            bands_info['efermi'] = float(efermi) * units['Eh']
+            bands_info['efermi'] = float(efermi)
             continue
         if "Unit cell" in line:
             i_finish = i + 3
