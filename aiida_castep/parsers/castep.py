@@ -242,7 +242,7 @@ def bands_to_bandsdata(bands_res):
     if bands_array.shape[0] == 1:
         bands_array = bands_array[0]
     bands_array = bands_array * units['Eh']
-    bands_res[0]['efermi'] = units['Eh']
+    bands_res[0]['efermi'] *= units['Eh']
     bands_res[0]['units'] = "eV"
 
     bands.set_bands(bands_array)
