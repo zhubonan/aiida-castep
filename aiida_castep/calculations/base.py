@@ -39,7 +39,7 @@ class BaseCastepInputGenerator(object):
     _SEED_NAME = 'aiida'
 
     # Additional files that should always be retrieved for the specific plugin
-    _internal_retrieve_list = [("*.err", ".", 1)]
+    _internal_retrieve_list = ["*.err"]
 
     ## Default PW output parser provided by AiiDA
     # to be defined in the subclass
