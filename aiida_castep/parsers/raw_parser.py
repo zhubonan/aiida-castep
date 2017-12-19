@@ -588,7 +588,7 @@ def parse_dot_bands(filepath):
             neigns = line.strip().split()[-1]
             bands_info['neigns'] = int(float(neigns))
             continue
-        if "Fermi energy" in line:
+        if "Fermi energ" in line:  # TODO support for spin polarisation
             efermi = line.strip().split()[-1]
             bands_info['efermi'] = float(efermi)
             continue

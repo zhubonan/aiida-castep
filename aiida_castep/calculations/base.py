@@ -20,6 +20,7 @@ from aiida.common.exceptions import MultipleObjectsError
 from .utils import get_castep_ion_line
 from aiida_castep.data import OTFGData, UspData, get_pseudos_from_structure
 from .helper import CastepHelper
+import copy
 
 logger = logging.getLogger("aiida")
 
@@ -526,7 +527,7 @@ class BaseCastepInputGenerator(object):
 
         self.use_parent_folder(remotedata)
 
-    def create_restart(self, ignore_state=False, restart_type="restart", reuse=False, use_symlink=False, use_output_structure=False, use_castep_bin=False):
+    def create_restart(self, ignore_state=False, restart_type="restart", reuse=False, use_symlink=None, use_output_structure=False, use_castep_bin=False):
         """
         Method to restart the calculation by creating a new one.
         Return a new calculation with all the essential input nodes in the unstored stated.
@@ -612,12 +613,20 @@ class BaseCastepInputGenerator(object):
         except KeyError:
             old_settings_dict = {}
 
-        if use_symlink is not None:
-            old_settings_dict['PARENT_FOLDER_SYMLINK'] = use_symlink
+        # Use deep copy to ensure two dictionaries are independent
+        new_settings = copy.deepcopy(old_settings_dict)
 
-        if old_settings_dict:
-            settings = ParameterData(dict=old_settings_dict)
-            c2.use_settings(settings)
+        if use_symlink is not None:
+            new_settings['PARENT_FOLDER_SYMLINK'] = use_symlink
+
+        if new_settings:
+            if new_settings != old_settings_dict:
+                # Link to an new settings
+                settings = ParameterData(dict=new_settings)
+                c2.use_settings(settings)
+            else:
+                # Nothing changed, just use the old settings
+                c2.use_settings(calc_inp[self.get_linkname('settings')])
 
         # SETUP the keyword in PARAM file
         parent_param = calc_inp[self.get_linkname('parameters')]
