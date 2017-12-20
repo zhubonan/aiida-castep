@@ -24,10 +24,14 @@ def structure_from_input(cell, positions, symbols):
     return out_structure
 
 
-def add_last_if_exists(dict_of_iterable, key, dict_to_be_added):
+def add_last_if_exists(dict_of_sequence, key, dict_to_be_added):
+    """
+    Added the last term of a sequence to a dictionary.
+    This is used for collecting final values in a dictionary of 'trajectory'
+    """
 
     try:
-        last = dict_of_iterable[key][-1]
+        last = dict_of_sequence[key][-1]
     except (KeyError, IndexError):
         return
     else:

@@ -52,6 +52,7 @@ class TestCastepParser(AiidaTestCase, BaseCalcCase, BaseDataCase):
             out_traj = out[parser.get_linkname_outtrajectory()]
             self.assertIn("total_energy", out_param_dict)
             self.assertIn("unit_energy", out_param_dict)
+            self.assertEqual(out_param_dict["unit_energy"], "eV")
             # Check the length of sites are consistent
             self.assertEqual(len(out_structure.sites), len(out_traj.get_symbols()))
 

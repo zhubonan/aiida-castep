@@ -174,7 +174,7 @@ def parse_raw_ouput(outfile, input_dict,
 
 
 # Re for getting unit
-unit_re = re.compile("^ output\s+(\w+) unit\s+:\s+([^\s]+\s*$)")
+unit_re = re.compile("^ output\s+(\w+) unit *: *([^\s]+)")
 time_re = re.compile("^(\w+) time += +([0-9.]+) s$")
 parallel_re = re.compile(
     "^Overall parallel efficiency rating: [\w ]+ \(([0-9]+)%\)")

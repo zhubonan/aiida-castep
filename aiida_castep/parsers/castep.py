@@ -98,7 +98,9 @@ class CastepParser(Parser):
             = parse_raw_ouput(*parsing_args)
 
         # Append the final value of trajectory_data into out_dict
-        for key in ["free_energy", "total_energy", "zero_K_energy"]:
+        last_value_keys = ["free_energy", "total_energy",
+             "zero_K_energy", "spin_density", "abs_spin_density", "enthalpy"]
+        for key in last_value_keys:
             add_last_if_exists(trajectory_data, key, out_dict)
 
         successful = all([raw_sucessful, successful])
