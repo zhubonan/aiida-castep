@@ -459,7 +459,7 @@ def parse_geom_text_output(out_lines, input_dict):
             start_found = False
             geom_start = i
             for i, line in enumerate(txt[geom_start:]):
-                if '<-- F' in line > 0:
+                if '<-- F' in line:
                     geom_stop = i + geom_start
                     break
             species = [line.split()[0] for line in
