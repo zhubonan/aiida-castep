@@ -74,7 +74,6 @@ class BaseCalcCase(object):
     def setup_calculation(self):
         from .utils import get_STO_structure
 
-        code = self.code
         STO = get_STO_structure()
 
         full, missing, C9 = self.create_family()

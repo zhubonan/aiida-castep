@@ -54,7 +54,7 @@ class CastepExtraKpnCalculation(CastepCalculation):
     """
     KPN_NAME = ""
     TASK = ""
-    FORCE = False
+    CHECK_EXTRA_KPN = False
 
     @classproperty
     def kpn_name(cls):
@@ -86,9 +86,9 @@ class CastepExtraKpnCalculation(CastepCalculation):
 
         # Check the existence of extra kpoints
         try:
-            extra_kpns = kwargs[self.get_link_name('{}_kpoints'.format(self.kpn_name))]
+            extra_kpns = kwargs[self.get_linkname('{}_kpoints'.format(self.kpn_name))]
         except KeyError:
-            if self.FORCE:
+            if self.CHECK_EXTRA_KPN:
                 raise InputValidationError("{}_kpoints"
                 " node not found".format(self.kpn_name))
             else:
@@ -121,15 +121,15 @@ class CastepExtraKpnCalculation(CastepCalculation):
             cell += ("\n{}_kpoints_mp_grid"
                 " : {} {} {}\n".format(self.kpn_name, *mesh))
         else:
-            bs_kpts_lines = [("%BLOCK"
+            bs_kpts_lines = [("%BLOCK "
              "{}_KPOINTS_LIST".format(self.kpn_name.upper()))]
             for kpoint, weight in zip(bs_kpts_list, weights):
                 bs_kpts_lines.append("{:18.10f} {:18.10f} "
                      "{:18.10f} {:18.10f}".format(kpoint[0],
                                                   kpoint[1],
                                                   kpoint[2], weight))
-            bs_kpts_lines.append("%ENDBLOCK"
-                " {}_KPOINTS_LIST".format(self.kpn_name.upper()))
+            bs_kpts_lines.append("%ENDBLOCK "
+                "{}_KPOINTS_LIST".format(self.kpn_name.upper()))
             cell += "\n" + "\n".join(bs_kpts_lines)
         return cell, param, local_copy
 

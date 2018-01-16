@@ -10,6 +10,7 @@ from aiida.backends.testbase import AiidaTestCase
 from aiida.orm import Code
 from aiida_castep.calculations.castep import CastepCalculation
 from aiida.common.exceptions import MultipleObjectsError
+from aiida_castep.calculations.castep import CastepBSCalculation as BSCalc
 
 from .dbcommon import BaseDataCase, BaseCalcCase
 from .utils import get_data_abs_path
@@ -219,5 +220,112 @@ class TestRestartGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
 
         with SandboxFolder() as f:
             print(c2._prepare_for_submission(f, c2_inp))
+
+from .dbcommon import BaseCalcCase
+
+class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
+
+    @classmethod
+    def setUpClass(cls, *args, **kwargs):
+        super(TestBSCalculation, cls).setUpClass(*args, **kwargs)
+        cls.clean_db()
+        cls.setup_localhost()
+        cls.setup_code_castep()
+
+    def get_default_input(self):
+
+        input_params = {
+            "PARAM": {
+            "task" : "bandstructure",
+            "xc_functional" : "lda",
+            },
+            "CELL" : {
+            "fix_all_cell" : "true",
+            #"species_pot": ("Ba Ba_00.usp",)
+            }
+        }
+
+        return input_params
+
+    def get_bs_kpoints(self):
+        kpoints = KpointsData()
+        kpoints.set_kpoints([[0, 0, 0], [0.5, 0.5, 0.5]])
+        return kpoints
+
+    def setup_calculation(self, param=None):
+        from .utils import get_STO_structure
+
+        STO = get_STO_structure()
+        full, missing, C9 = self.create_family()
+        c = BSCalc()
+
+        if param:
+            pdict = param
+        else:
+            pdict = self.get_default_input()
+
+        # pdict["CELL"].pop("block species_pot")
+        p = ParameterData(dict=pdict)
+        c.use_structure(STO)
+        c.use_pseudos_from_family(C9)
+        c.use_kpoints(self.get_kpoints_mesh())
+        c.use_bs_kpoints(self.get_bs_kpoints())
+        c.use_code(self.code)
+        c.set_computer(self.localhost)
+        c.set_resources({"num_machines":1, "num_mpiprocs_per_machine":2})
+        c.use_parameters(p)
+
+        # Check mixing libray with acutal entry
+        return c
+
+    def test_input_validation(self):
+        """Test input validation"""
+
+        c = self.setup_calculation()
+        pdict = c.get_inputs_dict()[c.get_linkname('parameters')].get_dict()
+        pdict['PARAM']['task'] = "singlepoint"
+        c.get_inputs_dict()[c.get_linkname('parameters')].set_dict(pdict)
+
+        with SandboxFolder() as f:
+            with self.assertRaises(InputValidationError):
+                inputs = c.get_inputs_dict()
+                c._prepare_for_submission(f, inputs)
+
+        c = self.setup_calculation()
+        c.CHECK_EXTRA_KPN = True
+
+        with SandboxFolder() as f:
+            with self.assertRaises(InputValidationError):
+                inputs = c.get_inputs_dict()
+                inputs.pop("bs_kpoints")
+                c._prepare_for_submission(f, inputs)
+
+    def test_bs_kpoints(self):
+
+        c = self.setup_calculation()
+        inputs = c.get_inputs_dict()
+        with SandboxFolder() as f:
+            c._prepare_for_submission(f, inputs)
+            with f.open("aiida.cell") as cell:
+                content = cell.read()
+        self.assertIn("%BLOCK BS_KPOINTS_LIST", content)
+
+
+    def test_bs_kpoints_mp(self):
+
+        c = self.setup_calculation()
+        inputs = c.get_inputs_dict()
+        mp = KpointsData()
+        mp.set_kpoints_mesh([2, 2, 2])
+        inputs['bs_kpoints'] = mp
+
+        with SandboxFolder() as f:
+            c._prepare_for_submission(f, inputs)
+            with f.open("aiida.cell") as cell:
+                content = cell.read()
+        self.assertIn("bs_kpoints_mp_grid : 2 2 2", content)
+
+
+
 
 

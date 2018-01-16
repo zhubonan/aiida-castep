@@ -115,7 +115,7 @@ class BaseCastepInputGenerator(object):
                                   pseudos,
                                   structure,
                                   kpoints=None,
-                                  *kwargs):
+                                  **kwargs):
         """
         This method creates the content of an input file in the
         CASTEP format
