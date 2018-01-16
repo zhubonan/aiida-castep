@@ -114,7 +114,8 @@ class BaseCastepInputGenerator(object):
                                   settings_dict,
                                   pseudos,
                                   structure,
-                                  kpoints=None):
+                                  kpoints=None,
+                                  *kwargs):
         """
         This method creates the content of an input file in the
         CASTEP format
@@ -124,7 +125,7 @@ class BaseCastepInputGenerator(object):
         :param settings_dict: A dictionary of the settings used for generation
         :param pseudos: A dictionary of pseduo potential Data for each kind
         :param structure: A StructureData instance
-        :param kpoints: A KpointsData node
+        :param kpoints: A KpointsData node, optional
         """
         local_copy_list_to_append = []
 
@@ -224,7 +225,7 @@ class BaseCastepInputGenerator(object):
 
                 except AttributeError:
                     import numpy as np
-                    weights = np.array([1.]) / num_kpoints
+                    weights = np.ones(num_kpoints, dtype=float) / num_kpoints
 
             if has_mesh is True:
                 input_params["CELL"]["kpoints_mp_grid"] = "{} {} {}".format(*mesh)
@@ -409,16 +410,20 @@ class BaseCastepInputGenerator(object):
             raise InputValidationError("No code specified for this calculation")
 
         # Here, there should be no more parameters...
+        # But in case there is, check if this is something not implemented
+        # in this base class
         if inputdict:
-            raise InputValidationError("The following input data nodes are "
-                                       "unrecognized: {}".format(inputdict.keys()))
+            for key in inputdict:
+                if key not in self._use_methods:
+                    raise InputValidationError("The following input data nodes are "
+                                               "unrecognized: {}".format(inputdict.keys()))
         ##############################
         # END OF INITIAL INPUT CHECK #
         ##############################
 
         # Generate input file
         cell_input, param_input, pseudo_copy_list = self._generate_CASTEPinputdata(parameters,
-            settings_dict, pseudos, structure, kpoints)
+            settings_dict, pseudos, structure, kpoints, **inputdict)
 
         local_copy_list.extend(pseudo_copy_list)
 
