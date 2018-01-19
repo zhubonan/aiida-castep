@@ -11,7 +11,7 @@ from aiida.orm.data.array.kpoints import KpointsData
 
 class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
     """
-    Basic mode for CASTEP calculation
+    Class representing a generic CASTEP calculation - This class should work for all types of calculations.
     """
 
     _default_symlink_usage = False
@@ -52,9 +52,9 @@ class CastepExtraKpnCalculation(CastepCalculation):
     """
     CASTEP calculation with extra kpoints (e.g SPEC, BS, PHONON, SPECTRAL)
     """
-    KPN_NAME = ""
-    TASK = ""
-    CHECK_EXTRA_KPN = False
+    KPN_NAME = ""  # Alias of the name, e.g BS for bandstructure calculation
+    TASK = ""  # The value of PARAM.task to be enforced
+    CHECK_EXTRA_KPN = False  # Check the existence of extra kpoints node
 
     @classproperty
     def kpn_name(cls):
@@ -132,6 +132,8 @@ class CastepExtraKpnCalculation(CastepCalculation):
                 "{}_KPOINTS_LIST".format(self.kpn_name.upper()))
             cell += "\n" + "\n".join(bs_kpts_lines)
         return cell, param, local_copy
+
+
 
 class CastepBSCalculation(CastepExtraKpnCalculation):
     """

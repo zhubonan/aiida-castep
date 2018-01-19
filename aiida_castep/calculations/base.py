@@ -2,6 +2,7 @@
 """
 Base module for calculations
 """
+from __future__ import print_function
 
 import os
 import logging
@@ -21,8 +22,6 @@ from .utils import get_castep_ion_line
 from aiida_castep.data import OTFGData, UspData, get_pseudos_from_structure
 from .helper import CastepHelper
 import copy
-
-logger = logging.getLogger("aiida")
 
 
 class BaseCastepInputGenerator(object):
@@ -275,7 +274,7 @@ class BaseCastepInputGenerator(object):
             if "species_pot" in key:
                 if pseudos:
                     raise MultipleObjectsError("Both species_pot and pseudos are provided")
-                logger.warning("Pseudopotentials directly defined in CELL dictionary")
+                self.logger.warning("Pseudopotentials directly defined in CELL dictionary")
 
             # Constructing block keywrods
             # We identify the key should be treated as a block it is not a string and has len() > 0
@@ -561,105 +560,50 @@ class BaseCastepInputGenerator(object):
         This is useful for photon/bs calculation.
         """
 
-        from aiida.common.datastructures import calc_states
+        cout = _create_restart(self, ignore_state, restart_type, reuse,
+            use_symlink, use_output_structure, use_castep_bin)
+        return cout
 
-        if self.get_state(from_attribute=True) != calc_states.FINISHED:
-            if not ignore_state:
-                raise InputValidationError(
-                    "Calculation to be restarted must be in the {} state."
-                    "use ignore_state keyword to override this".format(calc_states.FINISHED))
+    @classmethod
 
-        if restart_type == "continuation":
-            # If we do a conitniuation we actually have to re-use the file from previous run
-            reuse = True
+    def continue_from(cls, cin,
+                      ignore_state=False, restart_type="restart",
+                      reuse=False, use_symlink=None,
+                      use_output_structure=False,
+                      use_castep_bin=False):
+        """
+        Create a new calcualtion as a continution from a given calculation.
+        This is effectively an "restart" for CASTEP and a lot of the parameters
+        can be tweaked. For example, conducting bandstructure calculation from
+        finished geometry optimisations.
 
-        if use_symlink is None:
-            use_symlink = self._default_symlink_usage
+        CASTEP has two modes of 'restart', activated by setting CONTINUATION or REUSE keywords in .param file.
 
-        calc_inp = self.get_inputs_dict()  # Input nodes of parent calculation
+        CONTINUATION
+        ------------
+        Restart from the end of the last run. Only limited set of parameters can be modified. If unmodifiable parameters were changed, they are ignored. E.g changes of task, nextra_bands, cut_off_energy will be ignored. This is often used for geometry optimisation or md runs.
 
-        remote_folders = self.get_outputs(type=RemoteData)
+        REUSE
+        -----
+        Essentially making a new calculation with parameters read from .cell and .param file.
+        Data from *.castep_bin or *.check will be used to initialise te model of the new run. This is often used for bandstructure, dos, spectral calculation.
 
-        if reuse:
-            if len(remote_folders) > 1:
-                raise InputValidationError("More than one output RemoteData found "
-                                       "in calculation {}".format(self.pk))
-            if len(remote_folders) == 0:
-                raise InputValidationError("No output RemoteData found "
-                                       "in calculation {}".format(self.pk))
-
-        # Duplicate the calculation
-        c2 = self.copy()
-
-        # Setup remote folderes
-        if reuse:
-            remote_folder = remote_folders[0]
-            c2._set_parent_remotedata(remote_folder)
-
-        # Use the out_put structure if required
-        if use_output_structure:
-            try:
-                c2.use_structure(self.out.use_output_structure)
-            except AttributeError:
-                c2.use_structure(calc_inp[self.get_linkname('structure')])
-        else:
-            c2.use_structure(calc_inp[self.get_linkname('structure')])
-
-        # Copy the kpoints
-        # NOTE this need to be changed for restarting BS with bs_kpoints etc
-        # Move to another method to allow subclass modification
-        if self._use_kpoints:
-            c2.use_kpoints(calc_inp[self.get_linkname('kpoints')])
-        c2.use_code(calc_inp[self.get_linkname('code')])
-
-        # copy the settings dictionary
-        try:
-            old_settings_dict = calc_inp[self.get_linkname('settings')].get_dict()
-        except KeyError:
-            old_settings_dict = {}
-
-        # Use deep copy to ensure two dictionaries are independent
-        new_settings = copy.deepcopy(old_settings_dict)
-
-        if use_symlink is not None:
-            new_settings['PARENT_FOLDER_SYMLINK'] = use_symlink
-
-        if new_settings:
-            if new_settings != old_settings_dict:
-                # Link to an new settings
-                settings = ParameterData(dict=new_settings)
-                c2.use_settings(settings)
-            else:
-                # Nothing changed, just use the old settings
-                c2.use_settings(calc_inp[self.get_linkname('settings')])
-
-        # SETUP the keyword in PARAM file
-        parent_param = calc_inp[self.get_linkname('parameters')]
-
-        if reuse:
-            in_param_dict = parent_param.get_dict()
-            if restart_type == "restart":
-                # Set keyword reuse, pop any continuation keywords
-                in_param_dict['PARAM'].pop('continuation', None)
-                # Define the name of reuse here
-                in_param_dict['PARAM']["reuse"] = self.get_restart_file_relative_path(in_param_dict, use_castep_bin)
-            elif restart_type == "continuation":
-                # Do the opposite
-                in_param_dict['PARAM'].pop('reuse', None)
-                in_param_dict['PARAM']['continuation'] = self.get_restart_file_relative_path(in_param_dict, use_castep_bin)
-            c2.use_parameters(ParameterData(dict=in_param_dict))
-        else:
-            # In this case we simply create a identical calculation
-            c2.use_parameters(parent_param)
-
-        # Use exactly the same pseudopotential data
-        for linkname, input_node in self.get_inputs_dict().iteritems():
-            if isinstance(input_node, (UpfData, UspData, OTFGData)):
-                c2.add_link_from(input_node, label=linkname)
-
-        return c2
+        Note both castep_bin and check file may be used.
+        They are almost the same except castep_bin does not have wavefunctions stored.
 
 
+        :param bool ignore_state: Ignore the state of parent calculation
+        :param str restart_type: "continuation" or "restart". If set to continuation the child calculation has keyword 'continuation' set.
+        :param bool reuse: Wether we want to reuse the previous calculation.
+        only applies for "restart" run
+        :param bool parent_folder_symlink: if True, symlink are used instead of hard copies of the files. Default given be self._default_symlink_usage
+        :param bool use_output_structure: if True, the output structure of parent calculation is used as the input of the child calculation.
+        This is useful for photon/bs calculation.
+        """
+        cout = _create_restart(cin, ignore_state, restart_type, reuse,
+            use_symlink, use_output_structure, use_castep_bin, cls)
+
+        return cout
 
     @classmethod
     def check_castep_input(cls, input_dict, auto_fix=False):
@@ -843,3 +787,140 @@ def _uppercase_dict(d, dict_name):
         return new_dict
     else:
         raise TypeError("_uppercase_dict accepts only dictionaries as argument")
+
+
+def _create_restart(cin, ignore_state=False, restart_type="restart",
+                    reuse=False, use_symlink=None,
+                    use_output_structure=False,
+                    use_castep_bin=False,
+                    calc_class = None):
+    """
+    Method to restart the calculation by creating a new one.
+    Return a new calculation with all the essential input nodes in the unstored stated.
+
+    CASTEP has two modes of 'restart', activated by setting CONTINUATION or REUSE keywords in .param file.
+
+    CONTINUATION
+    ------------
+    Restart from the end of the last run. Only limited set of parameters can be modified. If unmodifiable parameters were changed, they are ignored. E.g changes of task, nextra_bands, cut_off_energy will be ignored. This is often used for geometry optimisation or md runs.
+
+    REUSE
+    -----
+    Essentially making a new calculation with parameters read from .cell and .param file.
+    Data from *.castep_bin or *.check will be used to initialise te model of the new run. This is often used for bandstructure, dos, spectral calculation.
+
+    Note both castep_bin and check file may be used.
+    They are almost the same except castep_bin does not have wavefunctions stored.
+
+
+    :param bool ignore_state: Ignore the state of parent calculation
+    :param str restart_type: "continuation" or "restart". If set to continuation the child calculation has keyword 'continuation' set.
+    :param bool reuse: Wether we want to reuse the previous calculation.
+    only applies for "restart" run
+    :param bool parent_folder_symlink: if True, symlink are used instead of hard copies of the files. Default given be cin._default_symlink_usage
+    :param bool use_output_structure: if True, the output structure of parent calculation is used as the input of the child calculation.
+    This is useful for photon/bs calculation.
+    """
+
+    from aiida.common.datastructures import calc_states
+
+    if cin.get_state(from_attribute=True) != calc_states.FINISHED:
+        if not ignore_state:
+            raise InputValidationError(
+                "Calculation to be restarted must be in the {} state."
+                "use ignore_state keyword to override this".format(calc_states.FINISHED))
+
+    if restart_type == "continuation":
+        # If we do a conitniuation we actually have to re-use the file from previous run
+        reuse = True
+
+    if use_symlink is None:
+        use_symlink = cin._default_symlink_usage
+
+    calc_inp = cin.get_inputs_dict()  # Input nodes of parent calculation
+
+    remote_folders = cin.get_outputs(type=RemoteData)
+
+    if reuse:
+        if len(remote_folders) > 1:
+            raise InputValidationError("More than one output RemoteData found "
+                                   "in calculation {}".format(cin.pk))
+        if len(remote_folders) == 0:
+            raise InputValidationError("No output RemoteData found "
+                                   "in calculation {}".format(cin.pk))
+
+    # Duplicate the calculation
+    if calc_class is None:
+        cout = cin.copy()
+    else:
+        cout = calc_class()
+        cout.set_computer(cin.get_computer())
+
+    # Setup remote folderes
+    if reuse:
+        remote_folder = remote_folders[0]
+        cout._set_parent_remotedata(remote_folder)
+
+    # Use the out_put structure if required
+    if use_output_structure:
+        try:
+            cout.use_structure(cin.out.output_structure)
+        except AttributeError:
+            cout.logger.warning("Warning: No output structure found. Fallback to input structure")
+            cout.use_structure(calc_inp[cin.get_linkname('structure')])
+    else:
+        cout.use_structure(calc_inp[cin.get_linkname('structure')])
+
+    # Copy the kpoints
+    # NOTE this need to be changed for restarting BS with bs_kpoints etc
+    # Move to another method to allow subclass modification
+    if cin._use_kpoints:
+        cout.use_kpoints(calc_inp[cin.get_linkname('kpoints')])
+    cout.use_code(calc_inp[cin.get_linkname('code')])
+
+    # copy the settings dictionary
+    try:
+        old_settings_dict = calc_inp[cin.get_linkname('settings')].get_dict()
+    except KeyError:
+        old_settings_dict = {}
+
+    # Use deep copy to ensure two dictionaries are independent
+    new_settings = copy.deepcopy(old_settings_dict)
+
+    if use_symlink != cout._default_symlink_usage:
+        new_settings['PARENT_FOLDER_SYMLINK'] = use_symlink
+
+    if new_settings:
+        if new_settings != old_settings_dict:
+            # Link to an new settings
+            settings = ParameterData(dict=new_settings)
+            cout.use_settings(settings)
+        else:
+            # Nothing changed, just use the old settings
+            cout.use_settings(calc_inp[cin.get_linkname('settings')])
+
+    # SETUP the keyword in PARAM file
+    parent_param = calc_inp[cin.get_linkname('parameters')]
+
+    if reuse:
+        in_param_dict = parent_param.get_dict()
+        if restart_type == "restart":
+            # Set keyword reuse, pop any continuation keywords
+            in_param_dict['PARAM'].pop('continuation', None)
+            # Define the name of reuse here
+            in_param_dict['PARAM']["reuse"] = cin.get_restart_file_relative_path(in_param_dict, use_castep_bin)
+        elif restart_type == "continuation":
+            # Do the opposite
+            in_param_dict['PARAM'].pop('reuse', None)
+            in_param_dict['PARAM']['continuation'] = cin.get_restart_file_relative_path(in_param_dict, use_castep_bin)
+        cout.use_parameters(ParameterData(dict=in_param_dict))
+    else:
+        # In this case we simply create a identical calculation
+        cout.use_parameters(parent_param)
+
+    # Use exactly the same pseudopotential data
+    for linkname, input_node in cin.get_inputs_dict().iteritems():
+        if isinstance(input_node, (UpfData, UspData, OTFGData)):
+            cout.add_link_from(input_node, label=linkname)
+
+    return cout
