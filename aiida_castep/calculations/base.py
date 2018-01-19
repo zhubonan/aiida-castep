@@ -565,7 +565,6 @@ class BaseCastepInputGenerator(object):
         return cout
 
     @classmethod
-
     def continue_from(cls, cin,
                       ignore_state=False, restart_type="restart",
                       reuse=False, use_symlink=None,
@@ -586,18 +585,25 @@ class BaseCastepInputGenerator(object):
         REUSE
         -----
         Essentially making a new calculation with parameters read from .cell and .param file.
-        Data from *.castep_bin or *.check will be used to initialise te model of the new run. This is often used for bandstructure, dos, spectral calculation.
+        Data from *.castep_bin or *.check will be used to initialise te model
+         of the new run.
+         This is often used for bandstructure, dos, spectral calculation.
 
-        Note both castep_bin and check file may be used.
-        They are almost the same except castep_bin does not have wavefunctions stored.
+        Note both castep_bin and check file may be used. They are almost the
+        same except castep_bin does not have wavefunctions stored.
 
 
         :param bool ignore_state: Ignore the state of parent calculation
-        :param str restart_type: "continuation" or "restart". If set to continuation the child calculation has keyword 'continuation' set.
+        :param str restart_type: "continuation" or "restart".
+        If set to continuation the child calculation has keyword
+        'continuation' set.
         :param bool reuse: Wether we want to reuse the previous calculation.
         only applies for "restart" run
-        :param bool parent_folder_symlink: if True, symlink are used instead of hard copies of the files. Default given be self._default_symlink_usage
-        :param bool use_output_structure: if True, the output structure of parent calculation is used as the input of the child calculation.
+        :param bool parent_folder_symlink: if True, symlink are used instead
+        of hard copies of the files. Default given be
+        self._default_symlink_usage
+        :param bool use_output_structure: if True, the output structure of
+        parent calculation is used as the input of the child calculation.
         This is useful for photon/bs calculation.
         """
         cout = _create_restart(cin, ignore_state, restart_type, reuse,

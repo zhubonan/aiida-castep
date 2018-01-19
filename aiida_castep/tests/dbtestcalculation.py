@@ -221,6 +221,37 @@ class TestRestartGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
         with SandboxFolder() as f:
             print(c2._prepare_for_submission(f, c2_inp))
 
+    def test_continue_from(self):
+        """
+        Test the continue_from function.
+        It calls the same underlying function compared with
+        create_restart
+        """
+        c1 = self.setup_calculation()
+        c1.store_all()
+        c2 = BSCalc.continue_from(c1, ignore_state=True, reuse=False)
+
+        rmd = self.get_remote_data("H2-geom")
+        rmd.store()
+        c1._set_state("RETRIEVING")
+        from aiida.common.links import LinkType
+        rmd.add_link_from(c1, link_type=LinkType.CREATE)
+
+        c3 = BSCalc.continue_from(c1, ignore_state=True)
+        c1_inp = c1.get_inputs_dict()
+        c2_inp = c2.get_inputs_dict()
+        c3_inp = c3.get_inputs_dict()
+
+        # Check all inputs of c1 are indeed present in c2
+        for key in c1_inp:
+            self.assertIn(key, c2_inp)
+
+        for key in c1_inp:
+            self.assertIn(key, c3_inp)
+
+        with SandboxFolder() as f:
+            c3._prepare_for_submission(f, c3_inp)
+
 from .dbcommon import BaseCalcCase
 
 class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):

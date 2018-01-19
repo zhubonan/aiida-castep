@@ -80,7 +80,8 @@ class CastepExtraKpnCalculation(CastepCalculation):
         param = args[0].get_dict()
 
         if param['PARAM']['task'].lower() != self.TASK.lower():
-            raise InputValidationError("Wrong TASK value set in PARAM")
+            raise InputValidationError("Wrong TASK value {}"
+                " set in PARAM".format(param['PARAM']['task'].lower()))
 
         cell, param, local_copy = super(CastepExtraKpnCalculation, self)._generate_CASTEPinputdata(*args, **kwargs)
 
@@ -132,6 +133,49 @@ class CastepExtraKpnCalculation(CastepCalculation):
                 "{}_KPOINTS_LIST".format(self.kpn_name.upper()))
             cell += "\n" + "\n".join(bs_kpts_lines)
         return cell, param, local_copy
+
+    @classmethod
+    def continue_from(cls, *args, **kwargs):
+        """
+        Create a new calcualtion as a continution from a given calculation.
+        This is effectively an "restart" for CASTEP and a lot of the parameters
+        can be tweaked. For example, conducting bandstructure calculation from
+        finished geometry optimisations.
+
+        :param bool ignore_state: Ignore the state of parent calculation
+        :param str restart_type: "continuation" or "restart".
+        If set to continuation the child calculation has keyword
+        'continuation' set.
+        :param bool reuse: Wether we want to reuse the previous calculation.
+        only applies for "restart" run
+        :param bool parent_folder_symlink: if True, symlink are used instead
+        of hard copies of the files. Default given be
+        self._default_symlink_usage
+        :param bool use_output_structure: if True, the output structure of
+        parent calculation is used as the input of the child calculation.
+        This is useful for photon/bs calculation.
+
+        See also: create_restart
+        """
+        cout = super(CastepExtraKpnCalculation, cls).continue_from(*args, **kwargs)
+
+        # Check the task keyword
+        param = cout.get_inputs_dict()[cout.get_linkname('parameters')]
+        pd = param.get_dict()
+
+        task = pd['PARAM'].get('task')
+        if task and task == cls.TASK.lower():
+            pass
+        else:
+            # Replace task
+            pd['PARAM']['task'] = cls.TASK.lower()
+            from aiida.orm import DataFactory
+            ParameterData = DataFactory('parameter')
+            new_param = ParameterData(dict=pd)
+            cout._remove_link_from(cout.get_linkname('parameters'))
+            cout.use_parameters(new_param)
+
+        return cout
 
 
 
