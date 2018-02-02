@@ -14,7 +14,7 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
     Class representing a generic CASTEP calculation - This class should work for all types of calculations.
     """
 
-    _default_symlink_usage = False
+    _default_symlink_usage = True
 
     def _init_internal_params(self):
 

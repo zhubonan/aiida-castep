@@ -21,7 +21,9 @@
     ],
     "entry_points": {
         "aiida.calculations": [
-            "castep.castep = aiida_castep.calculations.castep:CastepCalculation"
+            "castep.castep = aiida_castep.calculations.castep:CastepCalculation",
+            "castep.bs = aiida_castep.calculations.castep:CastepBSCalculation",
+            "castep.spec = aiida_castep.calculations.castep:CastepSpectralCalculation"
         ],
         "aiida.parsers": [
             "castep.castep = aiida_castep.parsers.castep:CastepParser"

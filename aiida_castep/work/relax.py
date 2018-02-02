@@ -300,8 +300,8 @@ class CastepRelaxWorkChain(WorkChain):
         # Calculation gets killed
         if  any([END_NOT_FOUND_MESSAGE in w for w in warnings]):
             try:
-                output_array = calc.get_outputs_dict()["output_array"]
-                total_energy = output_array.get_array("total_energy")
+                output_trajectory = calc.get_outputs_dict()["output_trajectory"]
+                total_energy = output_trajectory.get_array("total_energy")
             except KeyError:
                 self.report("First SCF not finished")
                 return "FIRST SCF UNFINISHED"
