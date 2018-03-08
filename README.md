@@ -15,12 +15,8 @@ TODOS
 -----
 
 * Make (a better) `helper` to be used without CASTEP binary
-* Parsing of the .bands file in `raw_parser`
-* Test the `CastepRelaxWorkChain`
-* Do wee need `CastepBandCalculation` and others as individual class?
-* Write `CastepSpectralWorkChain` to do relaxation-spectral calculation
 * Write docs
-* Reader for cell and param files.
+* Readers for cell and param files.
 * Methods to importing existing calculations.
 * Document what goes into settings ParameterData input node
 * At the moment there is no enforcement on the tpye of the input e.g 0.1 and "0.1" is equivalent for generating input, but store differently in the database.
