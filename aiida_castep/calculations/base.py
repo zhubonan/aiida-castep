@@ -175,7 +175,7 @@ class BaseCastepInputGenerator(object):
                 name = kind.symbol
             # If we are dealing with mixed atoms
             except ValueError:
-                name = kind.symols
+                name = kind.symbols
                 mixture_count += 1
 
             if spin_array:

@@ -43,7 +43,8 @@ def get_castep_ion_line(name, pos, label=None, spin=None, occupation=None, mix_n
         if isinstance(spin[0], (list,tuple)):
             lines = [l + " SPIN=( {:.2f} {.2f} {.2f} )".format(*s) for l, s  in zip(lines, spin)]
         else:
-            lines = [l + " SPIN={}".format(s) for l, s in zip(lines, spin)]
+            if None not in spin:
+                lines = [l + " SPIN={}".format(s) for l, s in zip(lines, spin)]
 
         return "\n".join(lines)
 
