@@ -444,45 +444,66 @@ def parse_geom_text_output(out_lines, input_dict):
     geom_list = []
     forces_list = []
     energy_list = []
+    temperature_list = []
+    velocity_list = []
 
-    # Taken from ASE with minor modifications
+    current_pos = []
+    current_species = []
+    current_forces = []
+    current_velocity = []
+    current_cell = []
+    in_header = False
     for i, line in enumerate(txt):
+        if "begin header" in line.lower():
+            in_header = True
+            continue
+        if "end header" in line.lower():
+            in_header = False
+            continue
+        if in_header:
+            continue  # Skip header lines
+
+        sline = line.split()
         if '<-- E' in line:
-            start_found = True
-            energy = float(line.split()[0]) * Hartree
-            cell = [x.split()[0:3] for x in txt[i + 1:i + 4]]
-            cell = np.array([[float(col) * Bohr for col in row] for row in
-                             cell])
-            cell_list.append(cell)
-            energy_list.append(energy)
-        if '<-- R' in line and start_found:
-            start_found = False
-            geom_start = i
-            for i, line in enumerate(txt[geom_start:]):
-                if '<-- F' in line:
-                    geom_stop = i + geom_start
-                    break
-            species = [line.split()[0] for line in
-                       txt[geom_start:geom_stop]]
-            geom = np.array([[float(col) * Bohr for col in
-                              line.split()[2:5]] for line in
-                             txt[geom_start:geom_stop]])
-            forces = np.array([[float(col) * Hartree / Bohr for col in
-                                line.split()[2:5]] for line in
-                               txt[geom_stop:geom_stop +
-                                   (geom_stop - geom_start)]])
-            species_list.append(species)
-            geom_list.append(geom)
-            forces_list.append(forces)
+            energy_list.append(float(sline[0]) * Hartree)
+            continue
+        elif '<-- h' in line:
+            current_cell.append(list(map(float, sline[:3])))
+            continue
+        elif '<-- R' in line:
+            current_pos.append(list(map(float, sline[2:5])))
+            current_species.append(sline[0])
+        elif '<-- F' in line:
+            current_forces.append(list(map(float, sline[2:5])))
+        elif '<-- V' in line:
+            current_velocity.append(list(map(float, sline[2:5])))
+        elif '<-- T' in line:
+            temperature_list.append(float(sline[0]))
+        elif not line.strip() and current_cell:
+            cell_list.append(current_cell)
+            species_list.append(current_species)
+            geom_list.append(current_pos)
+            forces_list.append(current_forces)
+            current_cell = []
+            current_species = []
+            current_pos = []
+            current_forces = []
+            if current_velocity:
+                velocity_list.append(current_velocity)
+                current_velocity = []
+
     if len(species_list) == 0:
         raise CASTEPOutputParsingError("No data found in geom file")
 
-    return dict(cells=np.array(cell_list),
-                positions=np.array(geom_list),
-                forces=np.array(forces_list),
+    out =  dict(cells=np.array(cell_list) * Bohr,
+                positions=np.array(geom_list) * Bohr,
+                forces=np.array(forces_list) * Hartree / Bohr,
                 geom_energy=np.array(energy_list),
-                symbols=species_list[0]
+                symbols=species_list[0],
                 )
+    if velocity_list:
+        out["velocities"] = np.array(velocity_list) * Bohr
+    return out
 
 
 force_match = re.compile(
