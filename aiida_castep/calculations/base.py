@@ -845,7 +845,7 @@ def _create_restart(cin, ignore_state=False, restart_type="restart",
 
     calc_inp = cin.get_inputs_dict()  # Input nodes of parent calculation
 
-    remote_folders = cin.get_outputs(type=RemoteData)
+    remote_folders = cin.get_outputs(node_type=RemoteData)
 
     if reuse:
         if len(remote_folders) > 1:
