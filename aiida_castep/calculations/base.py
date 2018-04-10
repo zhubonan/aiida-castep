@@ -751,7 +751,7 @@ class BaseCastepInputGenerator(object):
         out_info.update(param_dict)
 
         out_info["kpoints"] = in_kpn.get_desc()
-        out_info["structure"] = {"formula": in_structure.get_desc(),
+        out_info["structure"] = {"formula": in_structure.get_formula(),
                                  "cell": in_structure.cell,
                                  "label": in_structure.label
                                 }
