@@ -147,7 +147,18 @@ class BaseCastepInputGenerator(object):
         input_params["PARAM"]["iprint"] = input_params["PARAM"].get("iprint",
             self._default_verbosity)
 
-        # ========= Start to preare input site data ======
+        # Set run_time using define value for this calcualtion
+        run_time = self.get_max_wallclock_seconds()
+        if run_time:
+            n_seconds = run_time * 0.95
+            n_seconds = (n_seconds // 60) * 60  # Round down to the nearest minutes
+            # Do not do any thing if calculated time is less than 1 hour
+            if n_seconds < 3600:
+                pass
+            elif "run_time" not in input_params["PARAM"]:
+                input_params["PARAM"]["run_time"] = int(n_seconds)
+
+        # ========= Start to prepare input site data ======
 
         # --------- CELL ----------
         cell_vector_list = ["%BLOCK LATTICE_CART"]
@@ -724,18 +735,39 @@ class BaseCastepInputGenerator(object):
         return self.get_inputs_dict()[self.get_linkname('structure')]
 
     def get_castep_inputs(self):
-        """Convenient fuction for getting the input parameters"""
-        in_param = self.get_inputs_dict()[self.get_linkname('parameters')]
-        in_dict = in_param.get_dict()
-        return in_dict
+        """
+        Convenient fuction for getting a summary of the 
+        input of this calculation
+        """
+
+        inp_dict = self.get_inputs_dict()
+        in_param = inp_dict[self.get_linkname('parameters')]
+        in_kpn = inp_dict[self.get_linkname('kpoints')]
+        in_settings = inp_dict.get(self.get_linkname('settings'), None)
+        in_structure = inp_dict[self.get_linkname('structure')]
+
+        out_info = {}
+        param_dict = in_param.get_dict()
+        out_info.update(param_dict)
+
+        out_info["kpoints"] = in_kpn.get_desc()
+        out_info["structure"] = {"formula": in_structure.get_desc(),
+                                 "cell": in_structure.cell,
+                                 "label": in_structure.label
+                                }
+        if in_settings is not None:
+            out_info["settings"] = in_settings.get_dict()
+        out_info["label"] = self.label
+
+        return out_info
 
     def compare_with(self, the_other_calc, reverse=False):
         """
         Compare with another calculation
-        Look for difference in the input dicitonary
-        Only supports comparing parameters for now
+        Look for difference in get_castep_inputs functions
         :params node: pk or uuid or node
-        :params reverse: reverse the comparision
+        :params reverse: reverse the comparision, by default this node
+        is the "new" and the one compared with is "old".
         """
         if isinstance(the_other_calc, (int, basestring)):
             from aiida.orm import load_node

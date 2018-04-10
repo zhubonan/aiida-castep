@@ -191,7 +191,7 @@ class OTFGData(Data):
     @classmethod
     def get_otfg_group(cls, group_name):
         """
-        Return the UpfFamily group with the given name.
+        Return the OTFGData group with the given name.
         """
         from aiida.orm import Group
 

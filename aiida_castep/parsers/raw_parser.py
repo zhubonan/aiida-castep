@@ -423,7 +423,6 @@ def parse_castep_text_output(out_lines, input_dict):
     return parsed_data, trajectory_data, critical_warnings.values()
 
 
-# This function is modified from ase's geom reader
 def parse_geom_text_output(out_lines, input_dict):
     """
     Parse output of .geom file

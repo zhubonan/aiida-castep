@@ -135,7 +135,7 @@ class UspData(SinglefileData):
     @classmethod
     def get_or_create(cls, filename, use_first=False, store_usp=True):
         """
-        Same ase init. Check md5 in the db, it is found return a UpfData.
+        Same ase init. Check md5 in the db, it is found return a UspData.
         Otherwise will store the data into the db
 
         :return (usp, created)
@@ -227,7 +227,7 @@ class UspData(SinglefileData):
     @classmethod
     def get_usp_group(cls, group_name):
         """
-        Return the UpfFamily group with the given name.
+        Return the UspFamily group with the given name.
         """
         from aiida.orm import Group
 
