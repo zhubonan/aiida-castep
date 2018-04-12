@@ -736,7 +736,7 @@ class BaseCastepInputGenerator(object):
 
     def get_castep_inputs(self):
         """
-        Convenient fuction for getting a summary of the 
+        Convenient fuction for getting a summary of the
         input of this calculation
         """
 
@@ -940,8 +940,8 @@ def _create_restart(cin, ignore_state=False, restart_type="restart",
     # SETUP the keyword in PARAM file
     parent_param = calc_inp[cin.get_linkname('parameters')]
 
+    in_param_dict = parent_param.get_dict()
     if reuse:
-        in_param_dict = parent_param.get_dict()
         if restart_type == "restart":
             # Set keyword reuse, pop any continuation keywords
             in_param_dict['PARAM'].pop('continuation', None)
@@ -951,10 +951,17 @@ def _create_restart(cin, ignore_state=False, restart_type="restart",
             # Do the opposite
             in_param_dict['PARAM'].pop('reuse', None)
             in_param_dict['PARAM']['continuation'] = cin.get_restart_file_relative_path(in_param_dict, use_castep_bin)
-        cout.use_parameters(ParameterData(dict=in_param_dict))
     else:
         # In this case we simply create a identical calculation
+        # But we should discard reuse / continuation
+        in_param_dict['PARAM'].pop('continuation', None)
+        in_param_dict['PARAM'].pop('reuse', None)
+
+    # If we have not changed anything, link the old dict
+    if in_param_dict == parent_param.get_dict():
         cout.use_parameters(parent_param)
+    else:
+        cout.use_parameters(ParameterData(dict=in_param_dict))
 
     # Use exactly the same pseudopotential data
     for linkname, input_node in cin.get_inputs_dict().iteritems():
