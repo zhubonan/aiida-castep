@@ -108,6 +108,11 @@ class OTFGData(Data):
     def get_or_create(cls, otfg_entry, use_first=False, store_otfg=True):
         """
         Create or retrive OTFG from database
+        :param otfg_entry: CASTEP styled OTFG entry.
+        Can either be the name of library (e.g C9) or the full specification with element like:
+        "O 2|1.1|15|18|20|20:21(qc=7)"
+
+        The created OTFGData node will by default labeled by the fully entry.
         """
 
         in_db = cls.from_entry(otfg_entry)
@@ -118,6 +123,8 @@ class OTFGData(Data):
                 instance = cls(string=setting, element=element).store()
             else:
                 instance = cls(string=setting, element=element)
+            # Automatically set the label
+            instance.label = otfg_entry
             return (instance, True)
 
         else:
@@ -131,15 +138,16 @@ class OTFGData(Data):
                 return (in_db[0], False)
 
     def set_string(self, otfg_string):
+        """Set the full string of OTFGData instance"""
         if self.get_attr('element', None) is None:
             self._set_attr("element", str("LIBRARY"))
         self._set_attr("otfg_string", str(otfg_string))
 
     def set_element(self, element):
+        """Set the element of OTFGData instance"""
         self._set_attr("element", str(element))
 
     def store(self, *args, **kwargs):
-
         self._validate()
         return super(OTFGData, self).store(*args, **kwargs)
 
@@ -176,13 +184,11 @@ class OTFGData(Data):
         qb.append(cls, filters={'attributes.otfg_string': {'==': string},
             'attributes.element': {'==': element}})
 
-        return [_ for [_] in qb.all()]
+        return [ i[0] for i in qb.all()]
 
     def _validate(self):
         """Validate the format of OTFG configuration"""
         super(OTFGData, self)._validate()
-
-
 
     @classproperty
     def otfg_family_type_string(cls):
