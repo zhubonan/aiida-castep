@@ -10,7 +10,7 @@ from copy import deepcopy
 import time
 
 from aiida.orm import Code
-from aiida.orm.data.base import Str, Float, Bool
+from aiida.orm.data.base import Str, Float, Bool, Int
 from aiida.orm.data.folder import FolderData
 from aiida.orm.data.remote import RemoteData
 from aiida.orm.data.parameter import ParameterData
@@ -205,7 +205,7 @@ class CastepRelaxWorkChain(WorkChain):
             calc = self.ctx.calcs[-1]
 
         except IndexError:
-            self.abort_nowait('Seems the initial iteration had problems. Not calculation had been returned')
+            self.abort_nowait('Seems the initial iteration had problems. No calculation had been returned')
             return
 
         # Possible states that we can fix
@@ -314,3 +314,126 @@ class CastepRelaxWorkChain(WorkChain):
                     return "FIRST SCF UNFINISHED"
         else:
             return "CANNOT FIND VALID WARNINGS"
+
+
+class TwoStepRelax(WorkChain):
+    """
+    Two step relaxation. First relax with variable cell, then do a fixed cell
+    geometry optimisation. Even if the calcualtion has not convered
+    """
+
+    @classmethod
+    def define(cls, spec):
+        super(TwoStepRelax, cls).define(spec)
+        spec.input('code', valid_type=Code)
+        spec.input('structure', valid_type=StructureData)
+        spec.input('parameters', valid_type=ParameterData)
+        spec.input('settings', valid_type=ParameterData, required=False)
+        spec.input('pseudo_family', valid_type=Str, required=False)
+        spec.input_group('pseudos', valid_type=Str, required=False)
+        spec.input('kpoints', valid_type=KpointsData)
+        spec.input('options', valid_type=ParameterData, required=False)
+        spec.input('var_cell_geom_method', valid_type=Str, default=Str('TPSD'))
+        spec.input('var_cell_geom_iter', valid_type=Int, default=Int(20))
+        spec.input('fix_cell_geom_method', valid_type=Str, default=Str('TPSD'))
+        spec.outline(
+            cls.validate_inputs,
+            cls.relax,
+            cls.swap_param,
+            cls.relax,
+            cls.process_results,
+            )
+        spec.output('output_structure', valid_type=StructureData)
+        spec.output('output_parameters', valid_type=ParameterData)
+        spec.output('remote_folder', valid_type=RemoteData)
+        spec.output('retrieved', valid_type=FolderData)
+
+    def validate_inputs(self):
+
+        # ctx.inputs is a template to for castepcalculation processes
+        options = self.inputs.options.get_dict()
+        self.ctx.inputs = {
+            'code': self.inputs.code,
+            'structure': self.inputs.structure,
+            'kpoints': self.inputs.kpoints,
+            '_options': options,
+            '_label': options.pop("_calc_label", None),
+            '_description': options.pop("_calc_description", None),
+        }
+        if "settings" in self.inputs:
+            self.ctx.inputs["settings"] = self.inputs.settings
+
+        # Setup pseudo potentials
+        if self.inputs.pseudo_family:
+            self.ctx.inputs['pseudo'] = get_pseudos_from_structure(
+                self.inputs.structure, self.inputs.pseudo_family.value
+                )
+        elif self.inputs.pseudos:
+            self.ctx.inputs['pseudo'] = self.inputs.pseudos
+        else:
+            self.abort_nowait('No valida pseudo data passed. Both pseudo_family and pseudos are not specified')
+            return
+
+        # Check possible mistake in the parameterse dictionary
+        v_param_dict = self.inputs.parameters.get_dict()
+        v_param_dict["CELL"].pop("fix_all_cell", None)
+        v_param_dict["PARAM"]["geom_method"] = str(self.inputs.var_cell_geom_method)
+        v_param_dict["PARAM"]["geom_max_iter"] = int(self.inputs.var_cell_geom_iter)
+        v_param_dict = CastepCalculation.check_castep_input(v_param_dict, auto_fix=True)
+
+        f_param_dict = self.inputs.parameters.get_dict()
+        f_param_dict["CELL"]["fix_all_cell"] = True
+        f_param_dict["CELL"].pop("cell_constraints", None)
+        f_param_dict["PARAM"]["geom_method"] = str(self.inputs.fix_cell_geom_method)
+        f_param_dict = CastepCalculation.check_castep_input(f_param_dict,
+            auto_fix=True)
+
+        self.ctx.inputs["parameters"] = v_param_dict
+
+        # Save the parameters for fixed cell for later
+        self.ctx.fix_cell_param = f_param_dict
+
+        self.report("Inputs validated and processed")
+
+    def relax(self):
+        """
+        Relax with varable cell
+        """
+        inputs = dict(self.ctx.inputs)
+        inputs["parameters"] = ParameterData(
+            dict=self.ctx.inputs["parameters"])
+
+        process = CastepCalculation.process()
+        calc = submit(process, **inputs)
+        self.report('Launching CastepCalculation <{}>'.format(calc.pid))
+
+        return self.to_context(calcs=append_(calc))
+
+    def swap_param(self):
+
+        # Swap the parameters for fixed cell optimsiation
+        v_calc = self.ctx.calcs[-1]
+        self.report("Varcell finished. Swapping parameters")
+        reuse_name = CastepCalculation.get_restart_file_relative_path(self.ctx.inputs["parameters"], False)
+
+        # Reuse the checkfiles
+        self.ctx.inputs["parameters"] = self.ctx.fix_cell_param
+        self.ctx.inputs["parameters"]["PARAM"]["reuse"] = reuse_name
+        self.ctx.inputs["parent_folder"] = self.ctx.calcs[-1].out.remote_folder
+        self.ctx.inputs["structure"] = v_calc.out.output_structure
+
+        self.report("Fixed cell parameters swapped. Continue with fixed cell relaxation.")
+
+    def process_results(self):
+        """
+        Process the outputs
+        """
+        last_calc = self.ctx.calcs[-1]
+        output_dict = last_calc.get_outputs_dict()
+        self.out('output_structure', output_dict.get("output_structure"))
+        self.out('output_parameters', output_dict.get("output_parameters"))
+        self.out('output_trajectory', output_dict.get("output_trajectory"))
+        self.out('remote_folder', output_dict.get("remote_folder"))
+        self.out('retrieved', output_dict.get("retrieved"))
+
+        self.report("Workchain finished.")
