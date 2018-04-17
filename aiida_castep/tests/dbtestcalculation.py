@@ -122,6 +122,8 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
 
         settings_dict = {"SPINS": [0, 0]}
         c.use_settings(ParameterData(dict=settings_dict))
+        c.label = "TEST CALC"
+        c.description = "Test calculation for AiiDA CASTEP plugin. Test generation of calculation inputs and relavant exceptions."
         inputdict = c.get_inputs_dict()
 
         inputdict.pop("code", None)
