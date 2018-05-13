@@ -221,8 +221,8 @@ class BaseCastepInputGenerator(object):
         atomic_position_list = ["%BLOCK POSITIONS_ABS"]
         mixture_count = 0
         # deal with initial spins
-        spin_array = settings_dict.pop("SPINS", None)
-        label_array = settings_dict.pop("LABELS", None)
+        spin_list = settings_dict.pop("SPINS", None)
+        label_list = settings_dict.pop("LABELS", None)
 
         for i, site in enumerate(structure.sites):
             # get  the kind of the site
@@ -237,17 +237,17 @@ class BaseCastepInputGenerator(object):
                 name = kind.symbols
                 mixture_count += 1
 
-            if spin_array:
-                spin = spin_array[i]
+            if spin_list:
+                spin = spin_list[i]
             else:
                 spin = None
 
             # deal with labels
-            if label_array:
-                label = label_array[i]
+            if label_list:
+                label = label_list[i]
             else:
                 label = None
-
+            # Get the line of positions_abs block
             line = get_castep_ion_line(name, pos,
                                        label=label, spin=spin,
                                        occupation=kind.weights,
@@ -256,8 +256,24 @@ class BaseCastepInputGenerator(object):
             # Append the line to the list
             atomic_position_list.append(line)
 
-        # End ofthe atomic position block
+        # End of the atomic position block
         atomic_position_list.append("%ENDBLOCK POSITIONS_ABS")
+
+        # Check the consistency of spin in parameters
+        if spin_list:
+            total_spin = sum(s for s in spin_list if s)
+            param_spin = input_params["PARAM"].get("spin", None)
+            if param_spin is not None:
+                # If spin is specified - check consistency
+                if param_spin != total_spin:
+                    raise InputValidationError(
+                        "Inconsistent spin in cell and param files."
+                        "Total spin: {} in cell file but {} in param file".format(total_spin, ))
+            else:
+                # If no spin specified, do it atomatically
+                # Note that we don't check if spin polarized calculation is
+                # requested in the first place
+                input_params["PARAM"]["spin"] = total_spin
 
 
         # --------- KPOINTS ---------
@@ -804,6 +820,26 @@ class BaseCastepInputGenerator(object):
         in_settings = inp_dict.get(self.get_linkname('settings'), None)
         in_structure = inp_dict[self.get_linkname('structure')]
 
+        # Snippet from Pseudos calculation
+        pseudos = {}
+        # A dictionary that associates each kind name to a pseudo
+        for link in inp_dict.keys():
+            if link.startswith(self._get_linkname_pseudo_prefix()):
+                kindstring = link[len(self._get_linkname_pseudo_prefix()):]
+                kinds = kindstring.split('_')
+                the_pseudo = inp_dict.pop(link)
+                if not isinstance(the_pseudo, (UpfData, UspData, OTFGData)):
+                    raise InputValidationError("Pseudo for kind(s) {} is not of "
+                                               "supoorted ".format(",".join(kinds)))
+                for kind in kinds:
+                    if kind in pseudos:
+                        raise InputValidationError("Pseudo for kind {} passed "
+                                                   "more than one time".format(kind))
+                    if isinstance(the_pseudo, OTFGData):
+                        pseudos[kind] = the_pseudo.string
+                    elif isinstance(the_pseudo, (UspData, UpfData)):
+                        pseudos[kind] = the_pseudo.filename
+
         out_info = {}
         param_dict = in_param.get_dict()
         out_info.update(param_dict)
@@ -816,6 +852,7 @@ class BaseCastepInputGenerator(object):
         if in_settings is not None:
             out_info["settings"] = in_settings.get_dict()
         out_info["label"] = self.label
+        out_info["pseudos"] = pseudos
 
         return out_info
 
