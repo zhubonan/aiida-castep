@@ -171,8 +171,7 @@ class CastepHelper(object):
         invalid, wrong = self._check_dict(input_dict)
 
         if invalid:
-            from aiida.common.utils import get_suggestion
-            suggests = [get_suggestion(s, self.help_dict.keys()) for s in invalid]
+            suggests = [self.get_suggestion(s) for s in invalid]
             not_founds = ["keyword {} is not found".format(s) for s in invalid]
             sugst_str = [ a + "\n" + b for a, b in zip(not_founds, suggests)]
             sugst_str = "\n\n".join(sugst_str)
@@ -195,9 +194,16 @@ class CastepHelper(object):
                 raise HelperCheckError("keywords: {} are in the wrong file".format(", ".join([k[0] for k in wrong])))
         return input_dict
 
+    def get_suggestion(self, string):
+        """
+        Return string for suggestion of the string
+        """
+        return _get_suggestion(string, self.help_dict.keys())
 
 
-def get_suggestion(provided_string, allowed_strings):
+
+
+def _get_suggestion(provided_string, allowed_strings):
     """
     Given a string and a list of allowed_strings, it returns a string to print
     on screen, with sensible text depending on whether no suggestion is found,
@@ -219,7 +225,7 @@ def get_suggestion(provided_string, allowed_strings):
         return "(Maybe you wanted to specify {0}?)".format(similar_kws[0])
     elif len(similar_kws) > 1:
         return "(Maybe you wanted to specify one of these: {0}?)".format(
-            string.join(similar_kws, ', '))
+            ", ".join(similar_kws))
     else:
         return "(No similar keywords found...)"
 

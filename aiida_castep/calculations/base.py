@@ -615,7 +615,7 @@ class BaseCastepInputGenerator(object):
 
         self.use_parent_folder(remotedata)
 
-    def create_restart(self, ignore_state=False, restart_type="restart", reuse=False, use_symlink=None, use_output_structure=False, use_castep_bin=False):
+    def create_restart(self, ignore_state=False, restart_type="restart", reuse=False, use_symlink=None, use_output_structure=False, use_castep_bin=False, param_update=None):
         """
         Method to restart the calculation by creating a new one.
         Return a new calculation with all the essential input nodes in the unstored stated.
@@ -644,8 +644,13 @@ class BaseCastepInputGenerator(object):
         This is useful for photon/bs calculation.
         """
 
-        cout = _create_restart(self, ignore_state, restart_type, reuse,
-            use_symlink, use_output_structure, use_castep_bin)
+        cout = _create_restart(self, ignore_state=ignore_state,
+                               restart_type=restart_type,
+                               reuse=reuse,
+                               use_symlink=use_symlink,
+                               use_output_structure=use_output_structure,
+                               use_castep_bin=use_castep_bin,
+                               param_update=param_update)
         return cout
 
     @classmethod
@@ -934,7 +939,8 @@ def _create_restart(cin, ignore_state=False, restart_type="restart",
                     reuse=False, use_symlink=None,
                     use_output_structure=False,
                     use_castep_bin=False,
-                    calc_class=None):
+                    calc_class=None,
+                    param_update=None):
     """
     Method to restart the calculation by creating a new one.
     Return a new calculation with all the essential input nodes in the unstored stated.
@@ -961,6 +967,9 @@ def _create_restart(cin, ignore_state=False, restart_type="restart",
     :param bool parent_folder_symlink: if True, symlink are used instead of hard copies of the files. Default given be cin._default_symlink_usage
     :param bool use_output_structure: if True, the output structure of parent calculation is used as the input of the child calculation.
     This is useful for photon/bs calculation.
+    :param Calculation calc_class: Class of the new calculation. E.g can restart into a CastepBSCalculation.
+    :param param_update: A dictionary of the parameter keywords to be updated.
+    The key can be put into the top level and will be assigned accordingly.
     """
 
     from aiida.common.datastructures import calc_states
@@ -1059,6 +1068,25 @@ def _create_restart(cin, ignore_state=False, restart_type="restart",
         # But we should discard reuse / continuation
         in_param_dict['PARAM'].pop('continuation', None)
         in_param_dict['PARAM'].pop('reuse', None)
+
+    # UPDATE the key works
+    if param_update:
+        from .helper import InputValidationError
+        helper = cout.get_input_helper()
+        for key, value in param_update.items():
+            dict_update, not_found = helper._from_flat_dict(param_update)
+            if not_found:
+                suggest = [helper.get_suggestion(i) for i in not_found]
+                error_string = "Following keys are invalid -- "
+                for key, sug in zip(not_found, suggest):
+                    error_string += "{}: {}; ".format(key, sug)
+                raise InputValidationError(error_string)
+            else:
+                in_param_dict["PARAM"].update(dict_update["PARAM"])
+                in_param_dict["CELL"].update(dict_update["CELL"])
+
+
+
 
     # If we have not changed anything, link the old dict
     if in_param_dict == parent_param.get_dict():
