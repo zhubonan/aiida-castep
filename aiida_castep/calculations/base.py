@@ -1071,7 +1071,7 @@ def _create_restart(cin, ignore_state=False, restart_type="restart",
 
     # UPDATE the key works
     if param_update:
-        from .helper import InputValidationError
+        from .helper import HelperCheckError
         helper = cout.get_input_helper()
         for key, value in param_update.items():
             dict_update, not_found = helper._from_flat_dict(param_update)
@@ -1080,7 +1080,7 @@ def _create_restart(cin, ignore_state=False, restart_type="restart",
                 error_string = "Following keys are invalid -- "
                 for key, sug in zip(not_found, suggest):
                     error_string += "{}: {}; ".format(key, sug)
-                raise InputValidationError(error_string)
+                raise HelperCheckError(error_string)
             else:
                 in_param_dict["PARAM"].update(dict_update["PARAM"])
                 in_param_dict["CELL"].update(dict_update["CELL"])
