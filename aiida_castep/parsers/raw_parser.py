@@ -50,7 +50,7 @@ unit_suffix = "_units"
 SCF_FAILURE_MESSAGE = "SCF cycles failed to converge"
 GEOM_FAILURE_MESSAGE = "Maximum geometry optimization cycle has been reached"
 END_NOT_FOUND_MESSAGE = "CASTEP run did not reach the end of execution."
-
+INSUFFICENT_TIME_MESSAGE = "CASTEP run terminated due to insufficient run time left."
 
 def parse_raw_ouput(outfile, input_dict,
                     parser_opts=None, geom_file=None,
@@ -216,7 +216,8 @@ def parse_castep_text_output(out_lines, input_dict):
     critical_warnings = {
         "Geometry optimization failed to converge": GEOM_FAILURE_MESSAGE,
         "SCF cycles performed but system has not reached the groundstate": SCF_FAILURE_MESSAGE,
-        "NOSTART": "Can not find start of the calculation."}
+        "NOSTART": "Can not find start of the calculation.",
+        "Insufficient time for another iteration": INSUFFICENT_TIME_MESSAGE}
 
     minor_warnings = {"Warning": None}
 
