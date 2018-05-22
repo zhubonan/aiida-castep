@@ -615,7 +615,7 @@ class BaseCastepInputGenerator(object):
 
         self.use_parent_folder(remotedata)
 
-    def create_restart(self, ignore_state=False, restart_type="restart", reuse=False, use_symlink=None, use_output_structure=False, use_castep_bin=False, param_update=None):
+    def create_restart(self, ignore_state=False, restart_type="restart", reuse=False, use_symlink=None, use_output_structure=False, use_castep_bin=False, param_update=None, param_delete=None):
         """
         Method to restart the calculation by creating a new one.
         Return a new calculation with all the essential input nodes in the unstored stated.
@@ -650,7 +650,8 @@ class BaseCastepInputGenerator(object):
                                use_symlink=use_symlink,
                                use_output_structure=use_output_structure,
                                use_castep_bin=use_castep_bin,
-                               param_update=param_update)
+                               param_update=param_update,
+                               param_delete=param_delete)
         return cout
 
     @classmethod
@@ -940,7 +941,8 @@ def _create_restart(cin, ignore_state=False, restart_type="restart",
                     use_output_structure=False,
                     use_castep_bin=False,
                     calc_class=None,
-                    param_update=None):
+                    param_update=None,
+                    param_delete=None):
     """
     Method to restart the calculation by creating a new one.
     Return a new calculation with all the essential input nodes in the unstored stated.
@@ -970,6 +972,7 @@ def _create_restart(cin, ignore_state=False, restart_type="restart",
     :param Calculation calc_class: Class of the new calculation. E.g can restart into a CastepBSCalculation.
     :param param_update: A dictionary of the parameter keywords to be updated.
     The key can be put into the top level and will be assigned accordingly.
+    :param param_delete: A list of the keys to be removed from param file or cell file
     """
 
     from aiida.common.datastructures import calc_states
@@ -1069,7 +1072,7 @@ def _create_restart(cin, ignore_state=False, restart_type="restart",
         in_param_dict['PARAM'].pop('continuation', None)
         in_param_dict['PARAM'].pop('reuse', None)
 
-    # UPDATE the key works
+    # UPDATE the key words
     if param_update:
         from .helper import HelperCheckError
         helper = cout.get_input_helper()
@@ -1085,7 +1088,13 @@ def _create_restart(cin, ignore_state=False, restart_type="restart",
                 in_param_dict["PARAM"].update(dict_update["PARAM"])
                 in_param_dict["CELL"].update(dict_update["CELL"])
 
-
+    # Reomve key words
+    if param_delete:
+        for key in param_delete:
+            tmp1 = in_param_dict["PARAM"].pop(key, None)
+            tmp2 = in_param_dict["CELL"].pop(key, None)
+            if (tmp1 is None) and (tmp2 is None):
+                raise RuntimeError("Key {} not found".format(key))
 
 
     # If we have not changed anything, link the old dict
