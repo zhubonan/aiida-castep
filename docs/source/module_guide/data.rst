@@ -2,13 +2,13 @@
 Data
 ====
 
-Multiply data plugin
-++++++++++++++++++++
-
-.. Add here any	other module you might have
-
-.. automodule:: aiida_castep.data.upf
+Usp pseudopotential plugin
+++++++++++++++++++++++++++
+.. automodule:: aiida_castep.data.usp
    :members:
+
+OTFG pseudopotential pulgin
++++++++++++++++++++++++++++
 
 .. automodule:: aiida_castep.data.otfg
    :members:

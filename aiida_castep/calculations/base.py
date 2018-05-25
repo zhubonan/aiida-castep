@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
 """
-Base module for calculations
+A module of base class for CASTEP calculations
 """
 from __future__ import print_function
 
@@ -24,7 +23,6 @@ from .utils import get_castep_ion_line
 from aiida_castep.data import OTFGData, UspData, get_pseudos_from_structure
 from .helper import CastepHelper
 import copy
-
 
 class BaseCastepInputGenerator(object):
     """
@@ -622,14 +620,10 @@ class BaseCastepInputGenerator(object):
 
         CASTEP has two modes of 'restart', activated by setting CONTINUATION or REUSE keywords in .param file.
 
-        CONTINUATION
-        ------------
-        Restart from the end of the last run. Only limited set of parameters can be modified. If unmodifiable parameters were changed, they are ignored. E.g changes of task, nextra_bands, cut_off_energy will be ignored. This is often used for geometry optimisation or md runs.
+        CONTINUATION -- Restart from the end of the last run. Only limited set of parameters can be modified. If unmodifiable parameters were changed, they are ignored. E.g changes of task, nextra_bands, cut_off_energy will be ignored. This is often used for geometry optimisation or md runs.
 
-        REUSE
-        -----
-        Essentially making a new calculation with parameters read from .cell and .param file.
-        Data from *.castep_bin or *.check will be used to initialise te model of the new run. This is often used for bandstructure, dos, spectral calculation.
+        REUSE -- Essentially making a new calculation with parameters read from .cell and .param file.
+        Data from *castep_bin* or *check* will be used to initialise te model of the new run. This is often used for bandstructure, dos, spectral calculation.
 
         Note both castep_bin and check file may be used.
         They are almost the same except castep_bin does not have wavefunctions stored.
@@ -638,10 +632,13 @@ class BaseCastepInputGenerator(object):
         :param bool ignore_state: Ignore the state of parent calculation
         :param str restart_type: "continuation" or "restart". If set to continuation the child calculation has keyword 'continuation' set.
         :param bool reuse: Wether we want to reuse the previous calculation.
-        only applies for "restart" run
+            only applies for "restart" run
         :param bool parent_folder_symlink: if True, symlink are used instead of hard copies of the files. Default given be self._default_symlink_usage
         :param bool use_output_structure: if True, the output structure of parent calculation is used as the input of the child calculation.
-        This is useful for photon/bs calculation.
+            This is useful for photon/bs calculation.
+
+        :returns: A new unstored node.
+
         """
 
         cout = _create_restart(self, ignore_state=ignore_state,
@@ -665,24 +662,18 @@ class BaseCastepInputGenerator(object):
         This is effectively an "restart" for CASTEP and a lot of the parameters
         can be tweaked. For example, conducting bandstructure calculation from
         finished geometry optimisations.
-
         CASTEP has two modes of 'restart', activated by setting CONTINUATION or REUSE keywords in .param file.
 
         CONTINUATION
-        ------------
         Restart from the end of the last run. Only limited set of parameters can be modified. If unmodifiable parameters were changed, they are ignored. E.g changes of task, nextra_bands, cut_off_energy will be ignored. This is often used for geometry optimisation or md runs.
 
         REUSE
-        -----
         Essentially making a new calculation with parameters read from .cell and .param file.
-        Data from *.castep_bin or *.check will be used to initialise te model
-         of the new run.
-         This is often used for bandstructure, dos, spectral calculation.
-
+        Data from \*.castep_bin or \*.check will be used to initialise te model
+        of the new run.
+        This is often used for bandstructure, dos, spectral calculation.
         Note both castep_bin and check file may be used. They are almost the
         same except castep_bin does not have wavefunctions stored.
-
-
         :param bool ignore_state: Ignore the state of parent calculation
         :param str restart_type: "continuation" or "restart".
         If set to continuation the child calculation has keyword

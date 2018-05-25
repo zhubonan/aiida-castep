@@ -141,7 +141,6 @@ class CastepExtraKpnCalculation(CastepCalculation):
         This is effectively an "restart" for CASTEP and a lot of the parameters
         can be tweaked. For example, conducting bandstructure calculation from
         finished geometry optimisations.
-
         :param bool ignore_state: Ignore the state of parent calculation
         :param str restart_type: "continuation" or "restart".
         If set to continuation the child calculation has keyword

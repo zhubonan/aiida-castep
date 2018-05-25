@@ -2,8 +2,8 @@
 Parsers
 =======
 
-Multiply parser plugin
-++++++++++++++++++++++
+CASTEP parser plugin
+++++++++++++++++++++
 
 .. Add here any	other module you might have
 
