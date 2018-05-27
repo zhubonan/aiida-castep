@@ -5,10 +5,11 @@ We take many things from upf.py here as usp is not too much different...
 
 import re
 import os
-from aiida.orm.data.singlefile import SinglefileData
+from aiida.orm import DataFactory
 from aiida.common.utils import classproperty
 
 USPGROUP_TYPE = "data.castep.usp.family"
+SinglefileData = DataFactory("singlefile")
 
 
 # Extract element from filename

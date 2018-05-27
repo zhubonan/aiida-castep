@@ -12,17 +12,20 @@ from aiida.common.exceptions import InputValidationError
 from aiida.common.datastructures import CalcInfo
 from aiida.common.utils import classproperty
 
-from aiida.orm.data.structure import StructureData
-from aiida.orm.data.parameter import ParameterData
-from aiida.orm.data.array.kpoints import KpointsData
-from aiida.orm.data.upf import UpfData
-from aiida.orm.data.remote import RemoteData
+from aiida.orm import DataFactory
 from aiida.common.datastructures import CodeInfo
 from aiida.common.exceptions import MultipleObjectsError
 from .utils import get_castep_ion_line
 from aiida_castep.data import OTFGData, UspData, get_pseudos_from_structure
 from .helper import CastepHelper
 import copy
+
+StructureData = DataFactory("structure")
+ParameterData = DataFactory("parameter")
+KpointsData = DataFactory("array.kpoints")
+UpfData = DataFactory("upf")
+RemoteData = DataFactory("remote")
+
 
 class BaseCastepInputGenerator(object):
     """

@@ -1,12 +1,17 @@
 """
 Calculations of CASTEP
 """
-from aiida_castep.calculations.base import BaseCastepInputGenerator
-
-from aiida.orm.calculation.job import JobCalculation
+from aiida.orm import CalculationFactory
+from aiida.orm import DataFactory
 from aiida.common.utils import classproperty
 from aiida.common.exceptions import InputValidationError
-from aiida.orm.data.array.kpoints import KpointsData
+
+from aiida_castep.calculations.base import BaseCastepInputGenerator
+
+JobCalculation = CalculationFactory("job", True)
+KpointsData = DataFactory("array.kpoints")
+
+
 
 
 class CastepCalculation(BaseCastepInputGenerator, JobCalculation):

@@ -1,12 +1,14 @@
 """
 Parsers for CASTEP
 """
-from aiida.orm.data.parameter import ParameterData
+from aiida.orm import DataFactory
 from aiida.parsers.parser import Parser  # , ParserParamManager
 from aiida_castep.parsers.raw_parser import parse_raw_ouput, units
 from aiida_castep.parsers import structure_from_input, add_last_if_exists
 from aiida.common.datastructures import calc_states
-from aiida.orm.data.array.bands import BandsData
+
+ParameterData = DataFactory("parameter")
+BandsData = DataFactory("array.bands")
 
 
 class CastepParser(Parser):
