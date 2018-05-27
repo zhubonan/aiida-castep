@@ -327,7 +327,7 @@ else:
     # Back-end settings for readthedocs online documentation -
     # we don't want to create a profile there
     #from aiida.backends import settings
-    settings.IN_DOC_MODE = True
+    settings.IN_RT_DOC_MODE = True
     settings.BACKEND = "django"
     settings.AIIDADB_PROFILE = "default"
 
