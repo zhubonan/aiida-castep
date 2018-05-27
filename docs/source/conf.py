@@ -20,6 +20,8 @@ import time
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 import aiida_castep
+from aiida.backends import settings
+settings.IN_DOC_MODE = True
 
 # -- General configuration ------------------------------------------------
 
@@ -324,7 +326,7 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
 else:
     # Back-end settings for readthedocs online documentation -
     # we don't want to create a profile there
-    from aiida.backends import settings
+    #from aiida.backends import settings
     settings.IN_DOC_MODE = True
     settings.BACKEND = "django"
     settings.AIIDADB_PROFILE = "default"
