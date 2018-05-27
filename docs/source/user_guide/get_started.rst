@@ -6,19 +6,21 @@ provenance. The workflow of running lengthy, complex density functional theory c
 I would strongly encourage any user to families themselves with AiiDA before using this pulgin, otherwise a lot of things would not make sense.
 The ``aiida_core`` package has excelling documentation located at `readthedocs <https://aiida-core.readthedocs.io>`_.
 
+.. note:: Watch out of different version of AiiDA.
+
 Installation
 ------------
 
 The pulgin needs to properly installed and setup to be used by AiidA::
 
- pip install -e .
+ pip install -e <path_to_this_plugin>
 
-If ``aiida_core`` is not install, it will be installed as the dependecies.
+If ``aiida_core`` is not installed, it will be installed as a required package.
 To allow AiiDA to discover the plugin, run::
 
  reentry scan aiida
 
-.. note:: Please refer to AiiDA's documentation for plugin installation.
+.. note:: Please refer to AiiDA's documentation for details of plugin installation.
 
 Test the plugin
 ----------------
@@ -26,6 +28,8 @@ Test the plugin
 AiiDA's pulgin test framework can be used::
 
  verdi -p {your_test_profile_name} devel tests db.castep
+
+.. note:: A dedicated test profile is mandatory. Please refer to AiiDA's documentation.
 
 Using the plugin
 ----------------
