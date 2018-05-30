@@ -15,6 +15,13 @@ Highlights of avaliable functionalities:
 * `get_castep_inputs` method to get a summary of inputs of a calculations
 * `compare_with` method to compare two calculations, based on outputs from `get_castep_inputs`
 
+Documentation
+-------------
+
+Documentation is hosted at Read the Docs:  
+[dev version](https://aiida-castep.readthedocs.io/en/dev/)
+[master version](https://aiida-castep.readthedocs.io/en/master/)
+
 TODOS
 -----
 
