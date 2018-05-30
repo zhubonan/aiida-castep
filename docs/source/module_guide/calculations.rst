@@ -2,20 +2,20 @@
 Calculations
 ============
 
-CASTEP Calculation plugins
-++++++++++++++++++++++++++
+Base module
++++++++++++
 
 .. automodule:: aiida_castep.calculations.base
    :members:
 
-CASTEP Calculation plugins
-++++++++++++++++++++++++++
+Calculation classes plugins
++++++++++++++++++++++++++++
 
 .. automodule:: aiida_castep.calculations.castep
    :members:
 
-CASTEP Calculation plugins
-++++++++++++++++++++++++++
+Utility module
+++++++++++++++
 
 .. automodule:: aiida_castep.calculations.utils
    :members:

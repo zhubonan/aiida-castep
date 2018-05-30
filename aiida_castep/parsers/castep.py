@@ -185,7 +185,7 @@ class CastepParser(Parser):
     @classmethod
     def get_parser_settings_key(cls):
         """
-        Return the name of the key to be used in the calculation settings, that
+        Returns the name of the key to be used in the calculation settings, that
         contains the dictionary with the parser_options.
         Not used for now
         """
@@ -232,7 +232,13 @@ class CastepParser(Parser):
 
 
 def bands_to_bandsdata(bands_res):
-    """Convert the result of parser_dot_bands into a BandsData object """
+    """
+    Convert the result of parser_dot_bands into a BandsData object
+
+    :param bands_res: Output from ``parse_dot_bands`` function.
+    :return: A BandsData object
+    :rtype: ``aiida.orm.bands.data.array.bands.BandsData``
+    """
 
     bands = BandsData()
     kpts = [k[1:-1] for k in bands_res[1]]

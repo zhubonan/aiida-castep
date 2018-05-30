@@ -13,7 +13,7 @@ SinglefileData = DataFactory("singlefile")
 
 
 # Extract element from filename
-re_fn = re.compile("^(\w+)_\w+\.(usp|recpot)$", flags=re.IGNORECASE)
+re_fn = re.compile("^([a-z]+)_\w+\.(usp|recpot)$", flags=re.IGNORECASE)
 
 
 def upload_usp_family(folder, group_name, group_description,

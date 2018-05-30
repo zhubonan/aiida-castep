@@ -1,6 +1,6 @@
-========
-Tutorial
-========
+======================
+Your first calculation
+======================
 
 This page contains a simple tutorial for setting up a CASTEP calculation with AiiDA using ``aidia_castep`` plugin.
 
@@ -8,35 +8,42 @@ Step-by-step example - Oxygen in a box
 ======================================
 
 Here we setup a simple calculations of oxgen moleculer in a box as a example.
-Before we start AiiDA should be setup properly already - you should have a working *profile* with a CASTEP `Code` ndoe and
+Before we start AiiDA should be setup properly already - you should have a working *profile* with a CASTEP `Code` node and
 a `Computer` node.
 
 Construcing a Calculation
 --------------------------
 
 To construct a calculations, one can call ``CastepCalculation()`` but it is often more convenient to do this from a
-``Code`` node that represents the CASTEP excutable will be used:: 
+``Code`` node that represents the CASTEP excutable will be used::
 
  code = Code.get_from_string("castep-xx.xx@your_computer")
  calc = code.new_calc()
 
-In this way the ``Computer`` and ``Code`` are set automatically, otherwise ``use_code`` and ``set_computer`` methods need
-to be called manually.
+In this way the ``Computer`` and ``Code`` are set automatically,
+otherwise ``use_code`` and ``set_computer`` methods need
+to be called manually::
 
-Defining the `ParameterData` node
----------------------------------
+ from aiida.orm import CalculationFactory
+ CastepCalculation = CalculationFactory("castep.castep")
+ calc = CastepCalculation()
+ calc.use_code(code)
+ calc.set_computer(code.get_computer())
+
+Setup CASTEP parameters
+-----------------------
 
 For most CASTEP calculations we need a ``<seed>.param`` file and a ``<seed>.cell`` file.
-Likewise in ``aiida_castep`` we need a ``ParameterData`` node that defines the keyword-value pairs in these two files.
+To work with, ``aiida_castep`` we need a single ``ParameterData`` node that includes the keyword-value pairs that should have been put into the two files.
 The node is constructed based on a dictionary::
 
  param_in = {"PARAM": {
                        "task" : "geometryoptimisation",
                        "cut_off_energy": 500,
                        "opt_strategy": "speed",
-                       "xc_functional: "lda",
-                       "spin_polarized: True,
-             ,
+                       "xc_functional": "lda",
+                       "spin_polarized": True,
+             },
              "CELL":  {
                        "fix_all_cell": True,
              }}
@@ -45,11 +52,16 @@ To construct the node, call::
 
  param_data = ParameterData(dict=param_in)
 
-Note that not everything you otherwise have to write in the ``<seed>.cell`` goes into the dictionary .
+Not everything you otherwise have to write in the ``<seed>.cell`` goes into the dictionary.
 For example, there is no need to supply **lattice_cart** and **positions_abs** as they will be defined by the ``StructureData`` input node.
 Finally, we link the ``ParameterData`` to the calculation node using::
 
  calc.use_parameters(param_data)
+
+.. note::
+   It is recommended to use python types instead of strings to make it easy for querying.
+   No internal type check/enforcement is implemented.
+   The bottom line is that the text files generated needs to be unstanderable for CASTEP.
 
 Setup k-oints and structure
 ---------------------------
@@ -65,7 +77,7 @@ This is often more convenient.
 To define the k points mesh, run::
 
  kpoints = KpointsData()
- kpoints.set_kpoint_mesh((1,1,1))
+ kpoints.set_kpoints_mesh((1,1,1))
 
 Here we use the gamma point, alternatively kpoints may be passed explicitly.
 See AiiDA's `documentaion <https://aiida-core.readthedocs.io/en/v0.12.0/datatypes/index.html>`_ for details.
@@ -90,20 +102,21 @@ To get a ``OtfgData`` call::
 
  otfg, create = OtfgData.get_or_create(otfg_string)
 
-Creation of duplicated nodes can be avoided using this interface as the database is queried to check if
-the same otfg_string exists.
-If a new node is created, the ``create`` will be set to ``True``.
+Creation of duplicated nodes can be avoided using this interface as duplication will be checked.
+If a new node is created, the ``create`` varible will be ``True``.
 The element is automatically parsed from the ``otfg_string`` supplied.
 If no element is found, it will be assumed that the string refers to bulit-in libaray in CASTEP, for example ``"C9"``.
 
-Similary interface is also used for ``UspData`` node::
+A similar interface also exists for ``UspData`` node::
 
  create, usp = UspData.get_or_create(path_to_file)
 
 The md5 of Usp files will be compared to see if the same ``UspData`` already exists.
 A more convenient way of uploading a set of usp files is to use ``upload_usp_family`` function in ``aiida_castep.data.usp``.
 
-.. note: For ``OtfgData``, a similar "upload_otfg_family" function also exists.
+.. note::
+   The element of is inferred from the file name which should be in the format *<element>_<foo>.usp*.
+   Norm-conserving *recpot* files are treated as if they are *usp* files.
 
 The following code defines a ``OtfgData`` to represent the bulit-in libarary **C9** and tell let the calculation use it for oxygen::
 
@@ -112,14 +125,15 @@ The following code defines a ``OtfgData`` to represent the bulit-in libarary **C
 
 Alternatively, we can do::
 
- upload_otfg_family(["C9"], "C9")
- calc.use_pseudo_from_family("C9")
+ from aiida_castep.data.otfg import upload_otfg_family
+ upload_otfg_family(["C9"], "C9", "CASTEP C9 OTFG Library")
+ calc.use_pseudos_from_family("C9")
 
-The first line create a otfg family ``"C9"`` containing a sinle ``OtfgData`` node. The second line invoke the
-method to set pseudos.
+We first create a otfg family ``"C9"`` containing a sinle ``OtfgData`` node, then invoke the
+method to set pseudos automatically.
 
-Setup additional settings
--------------------------
+Additional settings
+-------------------
 
 An additional ``ParameterData`` node can be used by the calculation. The following fields can be used:
 
@@ -139,12 +153,12 @@ To break the symmetry, intial spins need to be set::
  settings_dict = {"SPINS" : [1, 1]}
  calc.use_settings(ParameterData(dict=settings_dict))
 
-A veteran CASTEP user will already spot a rookie mistake here - we did not set the *spin* keyword in the ``<seed>.param``.
-This will in fact be taken care of by the plugin, although setting it manually is recommended.
-The plugin will also check if the sum of spins are the same as that set in ``ParameterData`` before writting actual input files.
+A veteran CASTEP user probably already spot a rookie mistake here - we did not set the *spin* keyword in the ``<seed>.param``.
+This will in fact be taken care of by the plugin internall, although setting it manually is highly recommended.
+The plugin will check if the sum of spins are the same as that set in ``ParameterData`` before writting actual input files.
 
-Setup the resources
--------------------
+Set the resources
+-----------------
 
 To run on remote cluster, we need request some resources.
 Please refer to AiiDA's `documentation <https://aiida-core.readthedocs.io/en/v0.12.0/scheduler/index.html#job-resourcesl>`_ for details as the settings are scheduler dependent.
@@ -153,29 +167,49 @@ As an example for now::
  calc.set_max_wallclock_seconds(3600)
  calc.set_resources({"num_machines": 2})
 
-This tells AiiDA that we request to run on a single node for 3600 seconds.
+This lets AiiDA kown we want to run on a single node for 3600 seconds.
 You may want to call ``set_custom_schduler_commands`` for inserting additional lines in to the submission script,
 for example, to define the project account to be charged.
 
 Submiting the calculations
 --------------------------
 
-Now we are ready to submit the calculation. As standard in AiiDA we need to store the node first, but before that
-we really should check if there is any mistake::
+Now we are ready to submit the calculation.
+But before actual submission we really should check if there is any mistake::
 
  calc.get_castep_inputs()
 
-Returns a list as a brief summary of the inputs of the calculation. 
-To generate the input files, call::
+Returns a dictionary as a summary of the inputs of the calculation::
+
+ {'CELL': {'fix_all_cell': True},
+ 'PARAM': {'cut_off_energy': 500,
+  'opt_strategy': 'speed',
+  'spin_polarized': True,
+  'task': 'geometryoptimisation',
+  'xc_functional': 'lda'},
+ 'kpoints': 'Kpoints mesh: 1x1x1 (+0.0,0.0,0.0)',
+ 'label': u'',
+ 'pseudos': {'O': u'C9'},
+ 'settings': {'SPINS': [1, 1]},
+ 'structure': {'cell': [[10.0, 0.0, 0.0], [0.0, 10.0, 0.0], [0.0, 0.0, 10.0]],
+  'formula': 'O2',
+  'label': u''}}
+
+To generating the input files, call::
 
  calc.submit_test()
 
 This will cause the inputs to written to date coded sub folders inside ``submit_test`` folder at current working directory.
 Typos in ``ParameterData``'s dictionary will be check and if there is any mistake an exception will be raised.
+
+.. note::
+   The content of the folder should be identical to what will be uploaded to remote computer.
+   Hence we can also check if the job script is corretly generated.
+
 Finally, we are ready to submit::
 
  calc.store_all()
  calc.submit()
 
-Will store the calculation and mark our calculation as for submission.
-
+This stores the calculation and mark our calculation for submission.
+Now, just sit back and wait for it finish.

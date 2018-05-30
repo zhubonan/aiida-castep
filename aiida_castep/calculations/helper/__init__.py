@@ -8,12 +8,11 @@ Check for errorer in input dictionary
 """
 
 import os
-import subprocess
 import json
 from .generate import construct_full_dict
 
 import logging
-logger = logging.getLogger("aiida")
+logger = logging.getLogger(__name__)
 
 path = os.path.abspath(__file__)
 module_path = os.path.dirname(path)

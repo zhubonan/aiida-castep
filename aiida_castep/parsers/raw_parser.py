@@ -59,13 +59,14 @@ def parse_raw_ouput(outfile, input_dict,
     Parse an dot_castep file
     :param outfile: path to .castep file
     :param geom_file: path to the .geom file
+    :return: A list of:
 
-    :returns out_dict: a dictionary with parsed data
-    :return dict trajectory_data: dictionary of trajectory data
-    :return dict structure data: dictionary of cell, positions and symbols
-    :return bool successful: a boolean that is False in case of failed calculations
+     * out_dict: a dictionary with parsed data.
+     * trajectory_data: dictionary of trajectory data.
+     * structure data: dictionary of cell, positions and symbols.
+     * successful: a boolean that is False in case of failed calculations.
 
-    2 different keys to check in ouput : parser_warning and warnings.
+    2 different keys to check in out_dict: *parser_warning* and *warnings*.
     """
 
     parser_version = "0.1"
@@ -184,17 +185,23 @@ version_re = re.compile("CASTEP version ([0-9.]+)")
 def parse_castep_text_output(out_lines, input_dict):
     """
     Parse ouput of .castep
-
     :param out_lines: a list of lines from readlines function
-    :param input_dict: Control some variables. Currently support
-       'n_warning_lines'- number of the lines to include for a general warning.
 
-    :return parsed_data: dictionary with key values, reffering to the last occuring quanties
-    :return trajectory_data: key, values of the intermediate scf steps, such as
-    during geometryoptimization
-    :reutrn critical_messages: a list with critical messages.
-    If any is found in parsed_data["warnings"] the calucaltion is failed.
-    Keys: cells, positions, forces, energies
+    :param input_dict: Control some variables. Currently support
+
+    'n_warning_lines'- number of the lines to include for a general warning.
+
+    :return: A list of parsed_data, trajectory_data and critical_messsages:
+
+     * parsed_data: dictionary with key values, reffering to the last
+       occuring quanties
+
+     * trajectory_data: key, values of the intermediate scf steps,
+       such as during geometryoptimization
+
+     * critical_messages: a list with critical messages.
+
+    If any is found in parsed_data["warnings"] the calucaltion should be considered as failed.
     """
     from collections import defaultdict
 
@@ -428,11 +435,10 @@ def parse_geom_text_output(out_lines, input_dict):
     """
     Parse output of .geom file
 
-    :param out_lines: a list of lines from the readline function
-    :param input_dict: not in use at the moment
+    :param out_lines: a list of lines from the readline function.
+    :param dict input_dict: not in use at the moment.
 
-    :return parsed_data: key, value of the trajectories of cell, atoms,
-    force etc
+    :return: key, value of the trajectories of cell, atoms, force etc
     """
     txt = out_lines
     Hartree = units['Eh']
@@ -517,8 +523,7 @@ def parse_force_box(lines):
     Parse a box of the forces
     :param lines: a list of upcoming lines
 
-    :returns line read: number of lines read
-    :return forces: forces parsed
+    :return: A list of number of lines read and the forces
     """
 
     forces = []
@@ -542,9 +547,7 @@ def parse_stress_box(lines):
     Parse a box of the stress
     :param lines: a list of upcoming lines
 
-    :returns line read: number of lines read
-    :return stress tensor: a 3 by 3 tensor
-    :return pressure: a float of pressure
+    :return: a list of  [number of lines read, stress_tensor, pressure]
     """
 
     stress = []
@@ -571,21 +574,25 @@ def parse_stress_box(lines):
     return i, stress, pressure
 
 
-def parse_dot_bands(filepath):
+def parse_dot_bands(file_path):
     """
     Parse an CASTEP bands file
     Extract Kpoints and each bands for each kpoints.
     This is a generic parsing function. Return python builtin types.
 
-    :param filepath, str: Path of the file to parse
-    :returns bands_info, dict: A dictionary of info in the *.bands file
-    :returns kpoints, list: A list of kpoints. In the format [kpoint index,
-    coordinats x 3, kpoint weight]
-    :returns bands: A list of bands. Each band has a list of actual eigenvalues
-    for each spin components. E.g nkpoints, nspins, neigns
+    :param str file_path: Path of the file to parse
+    :return: A list of bands_info, kpoints and bands:
+
+     * bands_info: A dictionary for information of bands.
+
+     * kpoints: A list of kpoints. In the format [kpoint index, coordinats x 3 kpoint weight]
+
+     * bands: A list of bands. Each band has a list of actual
+       eigenvalues for each spin components. E.g nkpoints, nspins, neigns.
+
     Note that the atomic units are used in the bands file
     """
-    fh = open(filepath)
+    fh = open(file_path)
 
     i_finish = None
     cell = []

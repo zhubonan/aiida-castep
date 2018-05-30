@@ -5,8 +5,11 @@ Parsers
 CASTEP parser plugin
 ++++++++++++++++++++
 
-.. Add here any	other module you might have
-
 .. automodule:: aiida_castep.parsers.castep
    :members:
 
+Raw parser module
++++++++++++++++++
+
+.. automodule:: aiida_castep.parsers.raw_parser
+   :members:

@@ -6,7 +6,7 @@ User's guide
     :maxdepth: 3
 
     get_started
-    tutorial
+    first_calc
     outputs
 
 

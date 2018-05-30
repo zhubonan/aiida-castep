@@ -1,21 +1,29 @@
 Getting started
 +++++++++++++++
 
-AiiDA is a sophisticated framework with great ability to prepare, submit, manage calculations and preserve their
-provenance. The workflow of running lengthy, complex density functional theory calculations on clusters can be grealty simplified.
-I would strongly encourage any user to families themselves with AiiDA before using this pulgin, otherwise a lot of things would not make sense.
-The ``aiida_core`` package has excelling documentation located at `readthedocs <https://aiida-core.readthedocs.io>`_.
+AiiDA is a sophisticated framework with great ability to prepare, submit, manage calculations and preserve their provenance.
+The workflow of running lengthy, complex density functional theory calculations on clusters can be automated and symplified.
 
-.. note:: Watch out of different version of AiiDA.
+I would strongly encourage any user to familiarise themselves with `AiiDA`_ before using this pulgin, otherwise a lot of things would not make sense.
+The ``aiida_core`` package has excellent documentation located at `readthedocs <https://aiida-core.readthedocs.io>`_.
+The user should also be familiar with running `CASTEP`_ manually using file interface.
+Tutorials for `CASTEP`_ can be found at http://www.castep.org/CASTEP/OnlineTutorials.
+
+.. note:: Make sure the version is consistent between documentation and ``aiida_core``.
+
+.. _AiiDA: http://www.aiida.net
+.. _CASTEP: http://www.castep.org
 
 Installation
 ------------
 
-The pulgin needs to properly installed and setup to be used by AiidA::
+Use pip to properly install the plugin::
 
  pip install -e <path_to_this_plugin>
 
-If ``aiida_core`` is not installed, it will be installed as a required package.
+This will properly register the entry points.
+The ``-e`` flag makes the installation editable.
+If ``aiida_core`` is not installed, it will be installed as a dependency.
 To allow AiiDA to discover the plugin, run::
 
  reentry scan aiida
@@ -25,7 +33,7 @@ To allow AiiDA to discover the plugin, run::
 Test the plugin
 ----------------
 
-AiiDA's pulgin test framework can be used::
+AiiDA's pulgin test framework should be used::
 
  verdi -p {your_test_profile_name} devel tests db.castep
 
@@ -34,7 +42,7 @@ AiiDA's pulgin test framework can be used::
 Using the plugin
 ----------------
 
-A typical CASTEP calculation, like most density functional theory calculations, needs the following inputs:
+For a typical CASTEP calculation, like most density functional theory calculations, needs the following inputs:
 
 * A ``ParameterData`` node with ``PARAM`` and ``CELL`` fields. Each fields is a dictionary define the keys goes into the *param* and *cell* files.
 
@@ -42,9 +50,11 @@ A typical CASTEP calculation, like most density functional theory calculations, 
 
 * A ``StructureData`` node define the atomic structure for calculation.
 
-* ``UspData`` or ``OtfgData`` nodes that defines the pseudo potential. An shortcut ``use_pseudo_from_family`` function may be called to simplify the process once the ``StructureData`` node has been defined.
+* Nodes that defines the pseudo potential. An shortcut ``use_pseudos_from_family`` function
+  may be called to simplify the process once the ``StructureData`` node has been defined.
+  Supported node type: ``OtfgData``, ``UspData``, ``UpfData``.
 
-* An optional ``ParameterData`` node with link name *settings* can be supplied to defines extra properties such as initial spins and use of symbolic link in restart calculations.
+* An optional ``ParameterData`` node with link name ``settings`` can be supplied to defines extra properties such as initial spins and use of symbolic link in restart calculations.
 
 The ``use_xxxxx`` methods are used to link nodes. Once inputs are defined, ``submit_test`` method can be invoked to test generating the inputs. Note this may require some attributes of the calculation node to be defined depending on the scheduler and computer.
 
@@ -53,10 +63,15 @@ Generated input files
 
 Some metadata are included as comments in the input *cell* and *param* files.
 This includes the generation time, AiiDA user, pk, uuid, label and description of the calculation node and input nodes used.
+All keywords are written in lower case.
 In addition, the following keys are set automatically:
 
 * *iprint* is set to 1, otherwise parsing is not supported.
 
 * If not set explicitly, *comment* will be set as the label of the calculation node to keep things tracked.
 
-* If not set explicitly, *run_time* will be set to 95% of the requested walltime but will always be larger than 3600 seconds. To disable control set it to *0* the default value.
+* *run_time* will be set to 95% of the requested walltime by default unless it will be less than 3600 seconds.
+  This is to ensure that check files can be written at the end of run.
+  To completely disable control set it to *0* explicitly in ``ParameterData`` node.
+
+* Consistency of spins are checked. Keyword *spin* in ``<seed>.param`` will be set automatically if not already defined.
