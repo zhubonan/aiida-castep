@@ -1,8 +1,13 @@
-AiiDA plugin for interface with CASTEP
-======================================
+AiiDA plugin for working with CASTEP
+====================================
 
-A plugin for using CASTEP in AiiDA. The plugin is OK for production but still under active development. A lot of the initial implementation was based on `aiida_quantumespresso`. CASTEP has a single binary executable and calculation is primiarily controled by the *task* keyword. The generic `CastepCalculation` should work with most tasks, at least in terms of generating input files.
-Likewise a generic `CastepParser` class is implemented and can handle parsing most information we are interested in *singlepoint*, *geometryoptimisation*, *bandstructure/spectral* tasks. Things such as parsing output from *phonon* calculation has not been implemented so far - I have very little experience with phonon calculations.
+This is a  plugin for using CASTEP in AiiDA.
+The plugin is OK for production but still under active development.
+A lot of the initial implementation was based on `aiida_quantumespresso`.
+CASTEP has a single binary executable and calculation is primiarily controled by the *task* keyword.
+The generic `CastepCalculation` should work with most tasks, at least in terms of generating input files.
+Likewise a generic `CastepParser` class is implemented and can handle parsing most information we are interested in *singlepoint*, *geometryoptimisation*, *bandstructure/spectral* tasks.
+Things such as parsing output from *phonon* calculation has not been implemented so far - I have very little experience with phonon calculations.
 
 Highlights of avaliable functionalities:
 * Storing usp/recopt as `UspData` (sub-class of `SingleFileData`) in aiida database and create/use of pseudo family group
@@ -19,7 +24,7 @@ Documentation
 -------------
 
 Documentation is hosted at Read the Docs:  
-[dev version](https://aiida-castep.readthedocs.io/en/dev/)
+[dev version](https://aiida-castep.readthedocs.io/en/dev/)  
 [master version](https://aiida-castep.readthedocs.io/en/master/)
 
 TODOS
