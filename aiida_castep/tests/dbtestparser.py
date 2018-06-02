@@ -19,6 +19,7 @@ class TestCastepParser(AiidaTestCase, BaseCalcCase, BaseDataCase):
 
     def setUp(self):
         self.clean_db()
+        self.insert_data()
 
     def get_data_abs_path(self):
         test_moudule = os.path.split(__file__)[0]
@@ -36,7 +37,6 @@ class TestCastepParser(AiidaTestCase, BaseCalcCase, BaseDataCase):
         return retrieved
 
     def test_parser_retrieved(self):
-        self.setup_localhost()
         self.setup_code_castep()
         calc = self.setup_calculation()
 

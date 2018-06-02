@@ -93,6 +93,47 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
         Test using UpfData
         """
 
+    def generate_test_calc(self):
+        """
+        Return a defined Calculation
+        """
+
+        cell = ((2., 0., 0.), (0., 2., 0.), (0., 0., 2.))
+
+        input_params = {
+            "PARAM": {
+            "task" : "singlepoint",
+            "xc_functional" : "lda",
+            },
+            "CELL" : {
+            "fix_all_cell" : "true",
+            "species_pot": ("Ba Ba_00.usp",)
+            }
+        }
+
+        c = CasCalc(**self.calc_params).store()
+        s = StructureData(cell=cell)
+        s.append_atom(position=(0., 0., 0.), symbols=["Ba"])
+        s.append_atom(position=(1., 0., 0.), symbols=["Ba"])
+        s.store()
+
+        p =  ParameterData(dict=input_params).store()
+
+        k = KpointsData()
+        k.set_kpoints_mesh([4, 4, 4])
+        k.store()
+
+        settings_dict = {"SPINS": [0, 0]}
+        c.use_settings(ParameterData(dict=settings_dict))
+        c.label = "TEST CALC"
+        c.description = "Test calculation for AiiDA CASTEP plugin. Test generation of calculation inputs and relavant exceptions."
+        c.use_code(self.code)
+        c.use_kpoints(kpoints)
+        c.use_structure(s)
+        c.use_parameters(p)
+
+        return c
+
     def test_inputs(self):
 
         cell = ((2., 0., 0.), (0., 2., 0.), (0., 0., 2.))
@@ -164,9 +205,22 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
             with open(param) as p:
                 print(p.read())
 
-            # Now test dryrun
+    def test_dryrun(self):
+        from subprocess import call
+        from glob import glob
+
+        try:
+            call(["castep.serial", "-v"])
+        except OSError:
+            self.skipTest("No CASTEP excutable found")
+
+        c = self.generate_test_calc()
+        # Do a dry run - check if any error message is given
+        with SandboxFolder() as f:
+            c._prepare_for_submission(f, c.get_inputs_dict())
             self.castep_dryrun(f, c._SEED_NAME)
-            self.assertFalse(f.get_content_list("*.err"))
+            self.assertFalse(self.assertFalse(f.get_content_list("*.err")))
+
 
     def castep_dryrun(self, folder, seed):
         from subprocess import call
@@ -180,8 +234,6 @@ class TestRestartGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
     @classmethod
     def setUpClass(cls, *args, **kwargs):
         super(TestRestartGeneration, cls).setUpClass(*args, **kwargs)
-        cls.clean_db()
-        cls.setup_localhost()
         cls.setup_code_castep()
 
     def test_restart(self):
@@ -261,8 +313,6 @@ class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
     @classmethod
     def setUpClass(cls, *args, **kwargs):
         super(TestBSCalculation, cls).setUpClass(*args, **kwargs)
-        cls.clean_db()
-        cls.setup_localhost()
         cls.setup_code_castep()
 
     def get_default_input(self):
@@ -304,7 +354,7 @@ class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
         c.use_kpoints(self.get_kpoints_mesh())
         c.use_bs_kpoints(self.get_bs_kpoints())
         c.use_code(self.code)
-        c.set_computer(self.localhost)
+        c.set_computer(self.computer)
         c.set_resources({"num_machines":1, "num_mpiprocs_per_machine":2})
         c.use_parameters(p)
 

@@ -86,7 +86,7 @@ class BaseCalcCase(object):
         c.use_pseudos_from_family(C9)
         c.use_kpoints(self.get_kpoints_mesh())
         c.use_code(self.code)
-        c.set_computer(self.localhost)
+        c.set_computer(self.computer)
         c.set_resources({"num_machines":1, "num_mpiprocs_per_machine":2})
         c.use_parameters(p)
 
@@ -94,22 +94,10 @@ class BaseCalcCase(object):
         return c
 
     @classmethod
-    def setup_localhost(cls):
-        from aiida.orm.computer import Computer
-        l = Computer()
-        l.set_name("localhost")
-        l.set_hostname("localhost")
-        l.set_transport_type("local")
-        l.set_workdir("/home/bonan/aiida_test_run/")
-        l.set_scheduler_type("direct")
-        l.store()
-        cls.localhost = l
-
-    @classmethod
     def setup_code_castep(cls):
         from aiida.orm.code import Code
         code = Code()
-        code.set_remote_computer_exec((cls.localhost, "/home/bonan/appdir/CASTEP-17.2/bin/linux_x86_64_gfortran5.0--mpi/castep.mpi"))
+        code.set_remote_computer_exec((cls.computer, "/home/bonan/appdir/CASTEP-17.2/bin/linux_x86_64_gfortran5.0--mpi/castep.mpi"))
         code.set_input_plugin_name("castep.castep")
         code.store()
         cls.code = code
@@ -117,6 +105,6 @@ class BaseCalcCase(object):
     def get_remote_data(self, rel_path):
         RemoteData = DataFactory("remote")
         rmd = RemoteData()
-        rmd.set_computer(self.localhost)
+        rmd.set_computer(self.computer)
         rmd.set_remote_path(os.path.join(get_data_abs_path(), rel_path))
         return rmd

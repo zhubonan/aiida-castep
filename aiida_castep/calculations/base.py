@@ -130,7 +130,10 @@ class BaseCastepInputGenerator(object):
                  "# uuid: {}".format(self.uuid),
                  "# label: {}".format(self.label),
                  "# description:",]
-        lines.extend(wrapper.wrap(self.description))
+
+        # Fix for SQLA backend - default of node.description is None
+        if self.description:
+            lines.extend(wrapper.wrap(self.description))
         lines.append("")
 
         # additional information of the input nodes
@@ -144,7 +147,9 @@ class BaseCastepInputGenerator(object):
                  "# uuid: {}".format(node.uuid),
                  "# label: {}".format(node.label),
                  "# description:"]
-                node_lines.extend(wrapper.wrap(node.description))
+                _desc = node.description
+                if _desc:
+                    node_lines.extend(wrapper.wrap(_desc))
                 node_lines.append("")
                 lines.extend(node_lines)
 

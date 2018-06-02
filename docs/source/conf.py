@@ -301,8 +301,8 @@ latex_elements = {
 # on_rtd is whether we are on readthedocs.org, this line of code grabbed
 # from docs.readthedocs.org
 # NOTE: it is needed to have these lines before load_dbenv()
-#on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
-on_rtd = True  # Use RTD settings even we are not
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+#on_rtd = True  # Use RTD settings even we are not
 
 sys.path.append( os.path.join( os.path.split(__file__)[0],
                                            os.pardir,os.pardir) )

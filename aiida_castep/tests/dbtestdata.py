@@ -33,6 +33,7 @@ class TestOTFGData(AiidaTestCase, BaseDataCase):
 
     def setUp(self):
         self.clean_db()
+        self.insert_data()
         self.otfg_nodes = {}
 
     def test_otfg_split(self):
@@ -164,6 +165,7 @@ class TestUspData(AiidaTestCase, BaseDataCase):
 
     def setUp(self):
         self.clean_db()
+        self.insert_data()
 
     def upload_usp_family(self):
         """Make a fake usp node"""

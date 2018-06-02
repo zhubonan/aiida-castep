@@ -1,13 +1,12 @@
 """
-Module for generating castep help information
+Module for generation HELP information using CASTEP
+excutable.
 """
 from __future__ import print_function
 import subprocess as sbp
 import json
 import sys
 
-
-castep_exe_name = "castep.serial"
 
 
 def dot_proc(iterable):
