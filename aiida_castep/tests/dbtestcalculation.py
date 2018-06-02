@@ -128,7 +128,7 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
         c.label = "TEST CALC"
         c.description = "Test calculation for AiiDA CASTEP plugin. Test generation of calculation inputs and relavant exceptions."
         c.use_code(self.code)
-        c.use_kpoints(kpoints)
+        c.use_kpoints(self.get_kpoints_mesh())
         c.use_structure(s)
         c.use_parameters(p)
 
