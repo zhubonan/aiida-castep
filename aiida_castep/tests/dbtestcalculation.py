@@ -207,7 +207,6 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
 
     def test_dryrun(self):
         from subprocess import call
-        from glob import glob
 
         try:
             call(["castep.serial", "-v"])
@@ -219,7 +218,8 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
         with SandboxFolder() as f:
             c._prepare_for_submission(f, c.get_inputs_dict())
             self.castep_dryrun(f, c._SEED_NAME)
-            self.assertFalse(self.assertFalse(f.get_content_list("*.err")))
+            self.assertFalse(f.get_content_list("*.err"))
+            self.assertTrue(f.get_content_list("*.castep"))
 
 
     def castep_dryrun(self, folder, seed):
