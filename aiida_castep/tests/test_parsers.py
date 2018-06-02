@@ -2,7 +2,6 @@
 Test parsing data
 """
 from __future__ import print_function
-import aiida_castep
 from aiida_castep.parsers.raw_parser import parse_castep_text_output, parse_geom_text_output, parse_dot_bands
 import unittest
 
@@ -81,6 +80,7 @@ class TestParsers(unittest.TestCase):
         self.assertIn('symm_pressure', trajectory_data)
         self.assertTrue(trajectory_data['symm_pressure'])
         print(trajectory_data['symm_pressure'])
+
 
 if __name__ == "__main__":
     unittest.main()

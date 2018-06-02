@@ -3,17 +3,15 @@ Testing the parsers
 """
 
 import os
-from aiida.common.exceptions import InputValidationError
-from aiida.common.folders import SandboxFolder, Folder
-from aiida.orm import  DataFactory, Calculation
+
+from aiida.orm import DataFactory
 from aiida.parsers import ParserFactory
 from aiida.backends.testbase import AiidaTestCase
-from aiida.orm import Code
-
 from .dbcommon import BaseCalcCase, BaseDataCase
 
 
 FolderData = DataFactory("folder")
+
 
 class TestCastepParser(AiidaTestCase, BaseCalcCase, BaseDataCase):
 

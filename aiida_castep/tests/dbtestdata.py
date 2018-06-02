@@ -5,12 +5,9 @@ Data for data plugins
 
 import io
 
-import aiida
-from aiida.common.exceptions import InputValidationError
 from aiida.common.folders import SandboxFolder
-from aiida.orm import  DataFactory
+from aiida.orm import DataFactory
 from aiida.backends.testbase import AiidaTestCase
-from aiida.orm import Code
 import aiida_castep.data.otfg as otf
 import aiida_castep.data.usp as usp
 import os
@@ -93,7 +90,7 @@ class TestOTFGData(AiidaTestCase, BaseDataCase):
             Sr.store()
 
             # This should fail
-            Sr4, create  = self.otfg.get_or_create("Sr_bla", use_first=False)
+            Sr4, create = self.otfg.get_or_create("Sr_bla", use_first=False)
 
     def test_set_up_family(self):
 
@@ -141,7 +138,6 @@ class TestOTFGData(AiidaTestCase, BaseDataCase):
         self.assertEqual(pseudo_list["O"].entry, "C9")
         self.assertEqual(pseudo_list["Ti"].entry, Ti_otfg)
 
-
     def create_family(self):
         """Creat families for testsing"""
         Ti, Sr, O, C9 = self.get_otfgs()
@@ -150,7 +146,6 @@ class TestOTFGData(AiidaTestCase, BaseDataCase):
 
         # Missing O but that's OK we have a C9 wild card here
         otf.upload_otfg_family([Ti.entry, Sr.entry, "C9"], "STO_O_C9", "TEST", False)
-
 
     def get_otfgs(self):
 
@@ -182,7 +177,6 @@ class TestUspData(AiidaTestCase, BaseDataCase):
                 usp.upload_usp_family(os.path.join(f.abspath, "pseudo"), "STO", "")
 
     def get_usp_node(self, element):
-
         """
         Return a node of usp file
         """
@@ -193,11 +187,11 @@ class TestUspData(AiidaTestCase, BaseDataCase):
             fpath = os.path.join(f.abspath, name)
             node = usp.UspData.get_or_create(fpath)[0]
 
-        return  node
+        return node
 
     def test_get_or_create(self):
         """Testing the logic or get_or_create"""
-        name  = "Sr_00.usp"
+        name = "Sr_00.usp"
         with SandboxFolder() as f:
             fp = io.StringIO(u"foo bla 42")
             f.create_file_from_filelike(fp, name)
@@ -222,7 +216,6 @@ class TestUspData(AiidaTestCase, BaseDataCase):
     def test_upload(self):
         self.upload_usp_family()
 
-
     def test_assign_from_structure(self):
         """
         Test using get_pseudos_from_structure
@@ -242,5 +235,3 @@ class TestUspData(AiidaTestCase, BaseDataCase):
         with self.assertRaises(NotExistent):
             STO.append_atom(symbols="Ba", position=(1, 1, 1))
             pseudo_list = get_pseudos_from_structure(STO, "STO")
-
-

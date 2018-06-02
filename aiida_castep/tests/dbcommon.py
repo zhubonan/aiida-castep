@@ -4,7 +4,7 @@ import os
 
 from aiida.common.exceptions import InputValidationError
 from aiida.common.folders import SandboxFolder
-from aiida.orm import  DataFactory, CalculationFactory
+from aiida.orm import DataFactory, CalculationFactory
 from aiida.orm import Code
 from aiida.common.exceptions import MultipleObjectsError
 
@@ -13,7 +13,7 @@ import aiida_castep.data.usp as usp
 
 from .utils import get_data_abs_path
 
-CasCalc =  CalculationFactory("castep.castep")
+CasCalc = CalculationFactory("castep.castep")
 StructureData = DataFactory("structure")
 ParameterData = DataFactory("parameter")
 KpointsData = DataFactory("array.kpoints")
@@ -23,6 +23,7 @@ Sr_otfg = "Sr 3|2.0|5|6|7|40U:50:41:42"
 O_otfg = "O 2|1.1|15|18|20|20:21(qc=7)"
 
 otfg = DataFactory("castep.otfgdata")
+
 
 class BaseDataCase(object):
     """Base to include some useful things"""
@@ -53,12 +54,12 @@ class BaseCalcCase(object):
 
         input_params = {
             "PARAM": {
-            "task" : "singlepoint",
-            "xc_functional" : "lda",
+                "task": "singlepoint",
+                "xc_functional": "lda",
             },
-            "CELL" : {
-            "fix_all_cell" : "true",
-            #"species_pot": ("Ba Ba_00.usp",)
+            "CELL": {
+                "fix_all_cell": "true",
+                # "species_pot": ("Ba Ba_00.usp",)
             }
         }
 
@@ -87,7 +88,7 @@ class BaseCalcCase(object):
         c.use_kpoints(self.get_kpoints_mesh())
         c.use_code(self.code)
         c.set_computer(self.computer)
-        c.set_resources({"num_machines":1, "num_mpiprocs_per_machine":2})
+        c.set_resources({"num_machines": 1, "num_mpiprocs_per_machine": 2})
         c.use_parameters(p)
 
         # Check mixing libray with acutal entry
@@ -95,9 +96,9 @@ class BaseCalcCase(object):
 
     @classmethod
     def setup_code_castep(cls):
-        from aiida.orm.code import Code
         code = Code()
-        code.set_remote_computer_exec((cls.computer, "/home/bonan/appdir/CASTEP-17.2/bin/linux_x86_64_gfortran5.0--mpi/castep.mpi"))
+        code.set_remote_computer_exec(
+            (cls.computer, "/home/bonan/appdir/CASTEP-17.2/bin/linux_x86_64_gfortran5.0--mpi/castep.mpi"))
         code.set_input_plugin_name("castep.castep")
         code.store()
         cls.code = code

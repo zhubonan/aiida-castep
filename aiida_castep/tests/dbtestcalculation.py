@@ -5,17 +5,13 @@ import os
 
 from aiida.common.exceptions import InputValidationError
 from aiida.common.folders import SandboxFolder
-from aiida.orm import  DataFactory, CalculationFactory
+from aiida.orm import DataFactory, CalculationFactory
 from aiida.backends.testbase import AiidaTestCase
 from aiida.orm import Code
-from aiida_castep.calculations.castep import CastepCalculation
-from aiida.common.exceptions import MultipleObjectsError
 from aiida_castep.calculations.castep import CastepBSCalculation as BSCalc
-
 from .dbcommon import BaseDataCase, BaseCalcCase
-from .utils import get_data_abs_path
 
-CasCalc =  CalculationFactory("castep.castep")
+CasCalc = CalculationFactory("castep.castep")
 StructureData = DataFactory("structure")
 ParameterData = DataFactory("parameter")
 KpointsData = DataFactory("array.kpoints")
@@ -30,9 +26,9 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
     def setUpClass(cls):
         super(TestCastepInputGeneration, cls).setUpClass()
         cls.calc_params = {
-            "computer" : cls.computer,
-            "resources" : {
-                "num_machines" : 1,
+            "computer": cls.computer,
+            "resources": {
+                "num_machines": 1,
                 "num_mpiprocs_per_machine": 1
             }
         }
@@ -102,12 +98,12 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
 
         input_params = {
             "PARAM": {
-            "task" : "singlepoint",
-            "xc_functional" : "lda",
+                "task": "singlepoint",
+                "xc_functional": "lda",
             },
-            "CELL" : {
-            "fix_all_cell" : "true",
-            "species_pot": ("Ba Ba_00.usp",)
+            "CELL": {
+                "fix_all_cell": "true",
+                "species_pot": ("Ba Ba_00.usp",)
             }
         }
 
@@ -117,7 +113,7 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
         s.append_atom(position=(1., 0., 0.), symbols=["Ba"])
         s.store()
 
-        p =  ParameterData(dict=input_params).store()
+        p = ParameterData(dict=input_params).store()
 
         k = KpointsData()
         k.set_kpoints_mesh([4, 4, 4])
@@ -126,7 +122,8 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
         settings_dict = {"SPINS": [0, 0]}
         c.use_settings(ParameterData(dict=settings_dict))
         c.label = "TEST CALC"
-        c.description = "Test calculation for AiiDA CASTEP plugin. Test generation of calculation inputs and relavant exceptions."
+        c.description = ("Test calculation for AiiDA CASTEP plugin."
+                         " Test generation of calculation inputs and relavant exceptions.")
         c.use_code(self.code)
         c.use_kpoints(self.get_kpoints_mesh())
         c.use_structure(s)
@@ -140,12 +137,12 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
 
         input_params = {
             "PARAM": {
-            "task" : "singlepoint",
-            "xc_functional" : "lda",
+                "task": "singlepoint",
+                "xc_functional": "lda",
             },
-            "CELL" : {
-            "fix_all_cell" : "true",
-            "species_pot": ("Ba Ba_00.usp",)
+            "CELL": {
+                "fix_all_cell": "true",
+                "species_pot": ("Ba Ba_00.usp",)
             }
         }
 
@@ -155,7 +152,7 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
         s.append_atom(position=(1., 0., 0.), symbols=["Ba"])
         s.store()
 
-        p =  ParameterData(dict=input_params).store()
+        p = ParameterData(dict=input_params).store()
 
         k = KpointsData()
         k.set_kpoints_mesh([4, 4, 4])
@@ -164,7 +161,8 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
         settings_dict = {"SPINS": [0, 0]}
         c.use_settings(ParameterData(dict=settings_dict))
         c.label = "TEST CALC"
-        c.description = "Test calculation for AiiDA CASTEP plugin. Test generation of calculation inputs and relavant exceptions."
+        c.description = ("Test calculation for AiiDA CASTEP plugin. ",
+                         "Test generation of calculation inputs and relavant exceptions.")
         inputdict = c.get_inputs_dict()
 
         inputdict.pop("code", None)
@@ -197,11 +195,11 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
             cell = f.get_abs_path(c._SEED_NAME + ".cell", check_existence=True)
             param = f.get_abs_path(c._SEED_NAME + ".param", check_existence=True)
 
-            print("\n"+ "#" *5 + "CONTENT OF CELL FILE: " + "#" * 5)
+            print("\n" + "#" * 5 + "CONTENT OF CELL FILE: " + "#" * 5)
             with open(cell) as p:
                 print(p.read())
 
-            print("\n" + "#" *5 + "CONTENT OF PARAM FILE: " + "#" * 5)
+            print("\n" + "#" * 5 + "CONTENT OF PARAM FILE: " + "#" * 5)
             with open(param) as p:
                 print(p.read())
 
@@ -220,7 +218,6 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
             self.castep_dryrun(f, c._SEED_NAME)
             self.assertFalse(f.get_content_list("*.err"))
             self.assertTrue(f.get_content_list("*.castep"))
-
 
     def castep_dryrun(self, folder, seed):
         from subprocess import call
@@ -267,7 +264,6 @@ class TestRestartGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
         c1_inp = c1.get_inputs_dict()
 
         c2_param = c2_inp[c2.get_linkname("parameters")].get_dict()['PARAM']
-        c1_param = c1_inp[c1.get_linkname("parameters")].get_dict()['PARAM']
 
         reuse = c2_param.pop("reuse")
         self.assertEqual(reuse, os.path.join(c2._restart_copy_to, "{}.check".format(c2._SEED_NAME)))
@@ -306,7 +302,6 @@ class TestRestartGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
         with SandboxFolder() as f:
             c3._prepare_for_submission(f, c3_inp)
 
-from .dbcommon import BaseCalcCase
 
 class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
 
@@ -319,12 +314,12 @@ class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
 
         input_params = {
             "PARAM": {
-            "task" : "bandstructure",
-            "xc_functional" : "lda",
+                "task": "bandstructure",
+                "xc_functional": "lda",
             },
-            "CELL" : {
-            "fix_all_cell" : "true",
-            #"species_pot": ("Ba Ba_00.usp",)
+            "CELL": {
+                "fix_all_cell": "true",
+                # "species_pot": ("Ba Ba_00.usp",)
             }
         }
 
@@ -355,7 +350,7 @@ class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
         c.use_bs_kpoints(self.get_bs_kpoints())
         c.use_code(self.code)
         c.set_computer(self.computer)
-        c.set_resources({"num_machines":1, "num_mpiprocs_per_machine":2})
+        c.set_resources({"num_machines": 1, "num_mpiprocs_per_machine": 2})
         c.use_parameters(p)
 
         # Check mixing libray with acutal entry
@@ -393,7 +388,6 @@ class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
                 content = cell.read()
         self.assertIn("%BLOCK BS_KPOINTS_LIST", content)
 
-
     def test_bs_kpoints_mp(self):
 
         c = self.setup_calculation()
@@ -407,8 +401,3 @@ class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
             with f.open("aiida.cell") as cell:
                 content = cell.read()
         self.assertIn("bs_kpoints_mp_grid : 2 2 2", content)
-
-
-
-
-

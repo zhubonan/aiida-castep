@@ -12,11 +12,10 @@ JobCalculation = CalculationFactory("job", True)
 KpointsData = DataFactory("array.kpoints")
 
 
-
-
 class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
     """
-    Class representing a generic CASTEP calculation - This class should work for all types of calculations.
+    Class representing a generic CASTEP calculation -
+    This class should work for all types of calculations.
     """
 
     _default_symlink_usage = True
@@ -32,7 +31,6 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
         self._SEED_NAME = "aiida"
         self._DEFAULT_INPUT_FILE = "aiida.cell"
         self._DEFAULT_OUTPUT_FILE = "aiida.castep"
-
 
     @classproperty
     def _use_methods(cls):
@@ -52,6 +50,7 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
         }
 
         return retdict
+
 
 class CastepExtraKpnCalculation(CastepCalculation):
     """
@@ -74,7 +73,7 @@ class CastepExtraKpnCalculation(CastepCalculation):
 
             'valid_types': KpointsData,
             'additional_parameter': None,
-            'linkname' : '{}_kpoints'.format(cls.kpn_name),
+            'linkname': '{}_kpoints'.format(cls.kpn_name),
             'docstring': "Use the node defining the kpoint sampling for band {}  calculation".format(cls.TASK.lower())
         }
         return retdict
@@ -86,17 +85,19 @@ class CastepExtraKpnCalculation(CastepCalculation):
 
         if param['PARAM']['task'].lower() != self.TASK.lower():
             raise InputValidationError("Wrong TASK value {}"
-                " set in PARAM".format(param['PARAM']['task'].lower()))
+                                       " set in PARAM".format(param['PARAM']['task'].lower()))
 
-        cell, param, local_copy = super(CastepExtraKpnCalculation, self)._generate_CASTEPinputdata(*args, **kwargs)
+        cell, param, local_copy = super(
+            CastepExtraKpnCalculation, self)._generate_CASTEPinputdata(*args, **kwargs)
 
         # Check the existence of extra kpoints
         try:
-            extra_kpns = kwargs[self.get_linkname('{}_kpoints'.format(self.kpn_name))]
+            extra_kpns = kwargs[self.get_linkname(
+                '{}_kpoints'.format(self.kpn_name))]
         except KeyError:
             if self.CHECK_EXTRA_KPN:
                 raise InputValidationError("{}_kpoints"
-                " node not found".format(self.kpn_name))
+                                           " node not found".format(self.kpn_name))
             else:
                 return cell, param, local_copy
 
@@ -125,17 +126,17 @@ class CastepExtraKpnCalculation(CastepCalculation):
 
         if has_mesh is True:
             cell += ("\n{}_kpoints_mp_grid"
-                " : {} {} {}\n".format(self.kpn_name, *mesh))
+                     " : {} {} {}\n".format(self.kpn_name, *mesh))
         else:
             bs_kpts_lines = [("%BLOCK "
-             "{}_KPOINTS_LIST".format(self.kpn_name.upper()))]
+                              "{}_KPOINTS_LIST".format(self.kpn_name.upper()))]
             for kpoint, weight in zip(bs_kpts_list, weights):
                 bs_kpts_lines.append("{:18.10f} {:18.10f} "
-                     "{:18.10f} {:18.10f}".format(kpoint[0],
-                                                  kpoint[1],
-                                                  kpoint[2], weight))
+                                     "{:18.10f} {:18.10f}".format(kpoint[0],
+                                                                  kpoint[1],
+                                                                  kpoint[2], weight))
             bs_kpts_lines.append("%ENDBLOCK "
-                "{}_KPOINTS_LIST".format(self.kpn_name.upper()))
+                                 "{}_KPOINTS_LIST".format(self.kpn_name.upper()))
             cell += "\n" + "\n".join(bs_kpts_lines)
         return cell, param, local_copy
 
@@ -161,7 +162,8 @@ class CastepExtraKpnCalculation(CastepCalculation):
 
         See also: create_restart
         """
-        cout = super(CastepExtraKpnCalculation, cls).continue_from(*args, **kwargs)
+        cout = super(CastepExtraKpnCalculation,
+                     cls).continue_from(*args, **kwargs)
 
         # Check the task keyword
         param = cout.get_inputs_dict()[cout.get_linkname('parameters')]
@@ -182,7 +184,6 @@ class CastepExtraKpnCalculation(CastepCalculation):
         return cout
 
 
-
 class CastepBSCalculation(CastepExtraKpnCalculation):
     """
     CASTEP bandstructure calculation
@@ -191,6 +192,7 @@ class CastepBSCalculation(CastepExtraKpnCalculation):
     TASK = "BANDSTRUCTURE"
     KPN_NAME = "BS"
 
+
 class CastepSpectralCalculation(CastepExtraKpnCalculation):
     """
     CASTEP spectral calculation
@@ -198,10 +200,10 @@ class CastepSpectralCalculation(CastepExtraKpnCalculation):
     TASK = "SPECTRAL"
     KPN_NAME = "SPECTRAL"
 
+
 class CastepOpticsCalclulation(CastepExtraKpnCalculation):
     """
     CASTEP Optics calculation
     """
     TASK = "OPTICS"
     KPN_NAME = "OPTICS"
-

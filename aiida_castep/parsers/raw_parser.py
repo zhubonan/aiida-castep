@@ -2,7 +2,6 @@
 Module for parsing .castep file
 """
 
-import os
 import re
 import numpy as np
 from aiida_castep.parsers import CASTEPOutputParsingError

@@ -12,15 +12,15 @@ class TestHelper(unittest.TestCase):
 
     @property
     def flat_dict(self):
-        return dict(fix_all_cell="true", cut_off_energy="true", kpoints_mp_grid= "0 0 0")
+        return dict(fix_all_cell="true", cut_off_energy="true", kpoints_mp_grid="0 0 0")
 
     @property
     def only_param_dict(self):
-        return dict(PARAM= {"cut_off_energy": "100", "nextra_bands": "200"})
+        return dict(PARAM={"cut_off_energy": "100", "nextra_bands": "200"})
 
     @property
     def only_cell_dict(self):
-        return dict(CELL = {"fix_all_cell": "100", "symmetry_generate": "200"})
+        return dict(CELL={"fix_all_cell": "100", "symmetry_generate": "200"})
 
     @property
     def input_dict(self):
@@ -30,7 +30,7 @@ class TestHelper(unittest.TestCase):
 
     def test_from_flat(self):
         out, not_found = self.helper._from_flat_dict(self.flat_dict)
-        #print(self.helper.help_dict)
+        # print(self.helper.help_dict)
         self.assertFalse(not_found)
 
     def test_check_dict_raw(self):
@@ -46,7 +46,7 @@ class TestHelper(unittest.TestCase):
         invalid, wrong = self.helper._check_dict(comb)
         self.assertFalse(any([wrong, invalid]))
 
-        comb["CELL"].update(kpointx_mp_grid= "d")
+        comb["CELL"].update(kpointx_mp_grid="d")
         comb["PARAM"].update(snap_to_symmetry="true")
         invalid, wrong = self.helper._check_dict(comb)
         self.assertIn("kpointx_mp_grid", invalid)
@@ -81,4 +81,3 @@ class TestHelper(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
