@@ -8,5 +8,7 @@ User's guide
     get_started
     first_calc
     outputs
+    additional
+
 
 

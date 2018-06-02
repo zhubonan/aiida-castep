@@ -4,12 +4,34 @@ Your first calculation
 
 This page contains a simple tutorial for setting up a CASTEP calculation with AiiDA using ``aidia_castep`` plugin.
 
-Step-by-step example - Oxygen in a box
-======================================
+Step-by-step example - Silicon
+==============================
 
-Here we setup a simple calculations of oxygen molecule in a box as a example.
-Before we start AiiDA should be setup properly already - you should have a working *profile* with a CASTEP `Code` node and
-a `Computer` node.
+Here we setup a simple calculations of silicon that is identical to the ones in the
+CASTEP's `on-line tutorial <http://www.castep.org/Tutorials/BasicsAndBonding>`__.
+Before we start, AiiDA should be setup properly already. 
+You should have a working *profile* with a CASTEP ``Code`` node and
+a ``Computer`` node.
+Both of them can be added using ``verdi`` command-line interface.
+
+Loading classes
+---------------
+
+The plugin system allows plugin classes to be loaded using *factory* functions::
+
+  from aiida.orm import DataFactory, CalculationFactory
+  # Classes defined in this plugin
+  CastepCalculation = CalculationFactory("castep.castep")
+  OtfgData = DataFactory("castep.otfgdata")
+  UspData = DataFactory("castep.uspdata")
+  # Native aiida classes
+  KpointsData = DataFactory("array.kpoints")
+  ParameterData = DataFactory("parameter")
+  StructureData = DataFactory("structure")
+
+The first line can be neglected if we are running interactively from ``verdi shell``.
+
+.. note:: It is best to work through the example interactively using ``verdi shell``.
 
 Constructing a Calculation
 --------------------------
@@ -24,8 +46,6 @@ In this way the ``Computer`` and ``Code`` are set automatically,
 otherwise ``use_code`` and ``set_computer`` methods need
 to be called manually::
 
- from aiida.orm import CalculationFactory
- CastepCalculation = CalculationFactory("castep.castep")
  calc = CastepCalculation()
  calc.use_code(code)
  calc.set_computer(code.get_computer())
@@ -38,14 +58,16 @@ To work with, ``aiida_castep`` we need a single ``ParameterData`` node that incl
 The node is constructed based on a dictionary::
 
  param_in = {"PARAM": {
-                       "task" : "geometryoptimisation",
-                       "cut_off_energy": 500,
+                       "task" : "singlepoint",
+                       "basis_precision": "medium",
+                       "fix_occupancy": True,
                        "opt_strategy": "speed",
+                       "num_dump_cycles": 0,
                        "xc_functional": "lda",
-                       "spin_polarized": True,
+                       "write_formatted_density": True,
              },
              "CELL":  {
-                       "fix_all_cell": True,
+                       "syemmetry_generate": True,
              }}
 
 To construct the node, call::
@@ -63,53 +85,71 @@ Finally, we link the ``ParameterData`` to the calculation node using::
    No internal type check/enforcement is implemented.
    The bottom line is that the text files generated needs to be understandable for CASTEP.
 
-Setup k-points and structure
+.. note:: 
+  Block type keywords can be set using a list of strings each of a single line.
+
+Setup structure and k-points
 ----------------------------
-We first need to define the structure to be calculated::
 
- o2_in_a_box = StructureData()
- o2_in_a_box.set_cell([10, 0, 0], [0, 10, 0], [0, 0, 10])
- o2_in_a_box.append_atom(position=[0, 0, 0], symbols="O")
- o2_in_a_box.append_atom(position=[1.4, 0, 0], symbols="O")
+The input structure has to be stored as a ``StructureData`` node.
+Details about ``StructureData`` can be found in AiiDA's documentation.
+For now, we can write::
 
-Alternatively, one can pass a ``ase.Atoms`` object to the constructive as keyword argument.
-This is often more convenient.
+ StructureData = DataFactory("structure")
+ silicon = StructureData()
+ cell = [[2.6954645, 2.6954645, 0], 
+         [2.6954645, 0, 2.6954645],
+         [0, 2.6954645, 2.6954645]]
+ silicon.set_cell(cell)
+ silicon.append_atom(position=[0, 0, 0], symbols="Si")
+ silicon.append_atom(position=[1.34773255, 1.34773255, 1.34773255], symbols="Si")
+
+Alternatively, one can pass a ``ase.Atoms`` object to the constructive as keyword argument::
+ 
+ from ase import Atoms
+ a_si = Atoms("Si2", cell=cell, scaled_positions=[[0, 0, 0], [0.25, 0.25, 0.25]])
+ silicon = StructureData(ase=a_si)
+
 To define the k points mesh, run::
 
+ KpointsData = Datafactory("array.kpoints")
  kpoints = KpointsData()
- kpoints.set_kpoints_mesh((1,1,1))
+ kpoints.set_kpoints_mesh((4, 4, 4))
 
-Here we use the gamma point, alternatively kpoints may be passed explicitly.
-See AiiDA's `documentation <https://aiida-core.readthedocs.io/en/v0.12.0/datatypes/index.html>`__ for details.
-Finally, link them up with the calculation::
+Here we are using a MP grid, alternatively k-points may be passed explicitly as in
+``KpointsData``.
+See AiiDA's `documentation <https://aiida-core.readthedocs.io/en/v0.12.0/datatypes/index.html>`__ for more information.
+Finally, we tell the calculation to use them as inputs::
 
  calc.use_kpoints(kpoints)
- calc.use_structure(structure)
+ calc.use_structure(silicon)
 
 Setup pseudo potentials
 -----------------------
 
-Unlike most other DFT codes, CASTEP has the ability to generate pseudopotentials on-the-fly.
-Of course, using a pre-generated pseudo potential set is also supported and you can even make such set reusing
-the on-the-fly generated (OTFG)) potential files.
-There are several libraries built-in in CASTEP and new, revised versions come out with different releases.
-Internally, OTFG potentials are generated based on a 1 line specification string which can be user defined as well.
-A OTFG library is merely a archive of such string for a range of elements.
-On the other hand, files based native pseudopotentials has the suffix ``usp`` or ``recpot``.
+CASTEP has the ability to generate pseudopotentials on-the-fly.
+Of course, using a pre-generated pseudo potential set is also supported and you 
+can reuse the on-the-fly generated (OTFG)) potential files.
+There are several libraries built-in in CASTEP and new, revised versions comes out at new releases.
+Internally, OTFG potentials are generated based on a 1 line specification string which can be defined manually.
+A OTFG library is in fact a hard-coded collection of such string for a range of elements.
+
+Files based native pseudopotentials has the suffix ``usp`` or ``recpot``.
 In newer version of CASTEP, ``upf`` files are also supported.
 This plugin introduces ``UspData`` and ``OtfgData`` classes.
-To get a ``OtfgData`` call::
+Their usage is similar to the ``UpfData`` defined in ``aiida_core``.
+To get a ``OtfgData``::
 
  otfg, create = OtfgData.get_or_create(otfg_string)
 
-Creation of duplicated nodes can be avoided using this interface as duplication will be checked.
-If a new node is created, the ``create`` variable will be ``True``.
-The element is automatically parsed from the ``otfg_string`` supplied.
-If no element is found, it will be assumed that the string refers to built-in library in CASTEP, for example ``"C9"``.
+This avoids creation of duplicated nodes.
+If a new node is created, the variable ``create`` will be ``True``.
+The element is automatically inferred from the ``otfg_string`` supplied.
+If no element is found, we assume that the string refers to built-in library in CASTEP, for example ``"C9"``.
 
 A similar interface also exists for ``UspData`` node::
 
- create, usp = UspData.get_or_create(path_to_file)
+ si00, create = UspData.get_or_create(path_to_workdir + "/Si_00.usp")
 
 The md5 of Usp files will be compared to see if the same ``UspData`` already exists.
 A more convenient way of uploading a set of usp files is to use ``upload_usp_family`` function in ``aiida_castep.data.usp``.
@@ -118,44 +158,18 @@ A more convenient way of uploading a set of usp files is to use ``upload_usp_fam
    The element of is inferred from the file name which should be in the format *<element>_<foo>.usp*.
    Norm-conserving *recpot* files are treated as if they are *usp* files.
 
-The following code defines a ``OtfgData`` to represent the built-in library **C9** and tell let the calculation use it for oxygen::
+To let the calculation use the pseudo potential::
 
- c9, create = OtfgData.get_or_create("C9")
- calc.use_pseudos(c9, kind="O")
+ calc.use_pseudos(si00, kind="Si")
 
-Alternatively, we can do::
+Alternatively, we can create a family of the potentials::
 
- from aiida_castep.data.otfg import upload_otfg_family
- upload_otfg_family(["C9"], "C9", "CASTEP C9 OTFG Library")
- calc.use_pseudos_from_family("C9")
+ from aiida_castep.data.usp import upload_usp_family
+ upload_usp_family("./", "LDA_test", "A family of LDA potentials for testing")
+ calc.use_pseudos_from_family("LDA_test")
 
-We first create a otfg family ``"C9"`` containing a single ``OtfgData`` node, then invoke the
-method to set pseudos automatically.
-
-Additional settings
--------------------
-
-An additional ``ParameterData`` node can be used by the calculation. The following fields can be used:
-
-* ``SPINS``: A list of initial spins for each atom.
-
-* ``PARENT_FOLDER_SYMLINK``: Whether we use symbolic link to the parent folder that contains ``<seed>.check``.
-
-* ``LABELS``: A list of labels for each atom.
-
-* ``CMDLINE``: Additional parameters to be passed. By default we call ``<castep_excutable> <seed>`` but some times additional parameters may be useful, e.g when we use wrapping script.
-
-* ``ADDITIONAL_RETRIEVE_LIST``: A list for additional files to be retrieved from remove work directory. See also description in AiiDA's `tutorial <https://aiida-core.readthedocs.io/en/latest/developer_guide/devel_tutorial/code_plugin_int_sum.html>`__.
-
-For this example, we want to oxygen molecules should be spin polarized.
-To break the symmetry, initial spins need to be set::
-
- settings_dict = {"SPINS" : [1, 1]}
- calc.use_settings(ParameterData(dict=settings_dict))
-
-A veteran CASTEP user probably already spot a rookie mistake here - we did not set the *spin* keyword in the ``<seed>.param``.
-This will in fact be taken care of by the plugin internal, although setting it manually is highly recommended.
-The plugin will check if the sum of spins are the same as that set in ``ParameterData`` before writing actual input files.
+The ``use_pseudos_from_family`` is more convenient for calculations with multiple
+species. Note that the ``use_structure`` method most be called beforehand.
 
 Set the resources
 -----------------
@@ -164,8 +178,8 @@ To run on remote cluster, we need request some resources.
 Please refer to AiiDA's `documentation <https://aiida-core.readthedocs.io/en/v0.12.0/scheduler/index.html#job-resourcesl>`__ for details as the settings are scheduler dependent.
 As an example for now::
 
- calc.set_max_wallclock_seconds(3600)
- calc.set_resources({"num_machines": 2})
+ calc.set_max_wallclock_seconds(600)
+ calc.set_resources({"num_machines": 1})
 
 This lets AiiDA known we want to run on a single node for 3600 seconds.
 You may want to call ``set_custom_schduler_commands`` for inserting additional lines in to the submission script,
@@ -181,25 +195,28 @@ But before actual submission we really should check if there is any mistake::
 
 Returns a dictionary as a summary of the inputs of the calculation::
 
- {'CELL': {'fix_all_cell': True},
- 'PARAM': {'cut_off_energy': 500,
-  'opt_strategy': 'speed',
-  'spin_polarized': True,
-  'task': 'geometryoptimisation',
-  'xc_functional': 'lda'},
- 'kpoints': 'Kpoints mesh: 1x1x1 (+0.0,0.0,0.0)',
- 'label': u'',
- 'pseudos': {'O': u'C9'},
- 'settings': {'SPINS': [1, 1]},
- 'structure': {'cell': [[10.0, 0.0, 0.0], [0.0, 10.0, 0.0], [0.0, 0.0, 10.0]],
-  'formula': 'O2',
-  'label': u''}}
+  {'CELL': {'syemmetry_generate': True},
+   'PARAM': {'basis_precision': 'medium',
+    'fix_occupancy': True,
+    'num_dump_cycles': 0,
+    'opt_strategy': 'speed',
+    'task': 'singlepoint',
+    'write_formatted_density': True,
+    'xc_functional': 'lda'},
+   'kpoints': 'Kpoints mesh: 4x4x4 (+0.0,0.0,0.0)',
+   'label': None,
+   'pseudos': {'Si': u'Si_00.usp'},
+   'structure': {'cell': [[2.6954645, 2.6954645, 0.0],
+     [2.6954645, 0.0, 2.6954645],
+     [0.0, 2.6954645, 2.6954645]],
+    'formula': 'Si2',
+    'label': None}}
 
 To generating the input files, call::
 
  calc.submit_test()
 
-This will cause the inputs to written to date coded sub folders inside ``submit_test`` folder at current working directory.
+This write inputs to written to date coded sub folders inside ``submit_test`` folder at current working directory.
 Typos in ``ParameterData``'s dictionary will be check and if there is any mistake an exception will be raised.
 
 .. note::
@@ -213,3 +230,23 @@ Finally, we are ready to submit::
 
 This stores the calculation and mark our calculation for submission.
 Now, just sit back and wait for it finish.
+
+
+Monitoring
+==========
+
+Monitoring the state of calculations can be done using ``verdi calculations list``. 
+Inside a interactive shell, the state of a calculation may be checked with
+``calc.get_state()``.
+
+
+Accessing Results
+=================
+
+A series of node will be created when the calculation is finished and parsed.
+Use ``calc.get_outputs_dict()`` to access the output nodes. 
+Alternatively, the main ``ParameterData`` node's content can be return using
+``calc.res.<tab completion>``. 
+Other nodes can be access using ``calc.out.<tab completion>``. 
+We only set the calculation as "FINISHED" when is really finished. 
+For example, non-converged geometry optimization run will be marked ad "FAILED". 
