@@ -63,8 +63,8 @@ Finally, we link the ``ParameterData`` to the calculation node using::
    No internal type check/enforcement is implemented.
    The bottom line is that the text files generated needs to be understandable for CASTEP.
 
-Setup k-oints and structure
----------------------------
+Setup k-points and structure
+----------------------------
 We first need to define the structure to be calculated::
 
  o2_in_a_box = StructureData()
@@ -80,7 +80,7 @@ To define the k points mesh, run::
  kpoints.set_kpoints_mesh((1,1,1))
 
 Here we use the gamma point, alternatively kpoints may be passed explicitly.
-See AiiDA's `documentation <https://aiida-core.readthedocs.io/en/v0.12.0/datatypes/index.html>`_ for details.
+See AiiDA's `documentation <https://aiida-core.readthedocs.io/en/v0.12.0/datatypes/index.html>`__ for details.
 Finally, link them up with the calculation::
 
  calc.use_kpoints(kpoints)
@@ -145,7 +145,7 @@ An additional ``ParameterData`` node can be used by the calculation. The followi
 
 * ``CMDLINE``: Additional parameters to be passed. By default we call ``<castep_excutable> <seed>`` but some times additional parameters may be useful, e.g when we use wrapping script.
 
-* ``ADDITIONAL_RETRIEVE_LIST``: A list for additional files to be retrieved from remove work directory. See also description in AiiDA's `tutorial <https://aiida-core.readthedocs.io/en/latest/developer_guide/devel_tutorial/code_plugin_int_sum.html>`_.
+* ``ADDITIONAL_RETRIEVE_LIST``: A list for additional files to be retrieved from remove work directory. See also description in AiiDA's `tutorial <https://aiida-core.readthedocs.io/en/latest/developer_guide/devel_tutorial/code_plugin_int_sum.html>`__.
 
 For this example, we want to oxygen molecules should be spin polarized.
 To break the symmetry, initial spins need to be set::
@@ -161,7 +161,7 @@ Set the resources
 -----------------
 
 To run on remote cluster, we need request some resources.
-Please refer to AiiDA's `documentation <https://aiida-core.readthedocs.io/en/v0.12.0/scheduler/index.html#job-resourcesl>`_ for details as the settings are scheduler dependent.
+Please refer to AiiDA's `documentation <https://aiida-core.readthedocs.io/en/v0.12.0/scheduler/index.html#job-resourcesl>`__ for details as the settings are scheduler dependent.
 As an example for now::
 
  calc.set_max_wallclock_seconds(3600)
@@ -172,7 +172,7 @@ You may want to call ``set_custom_schduler_commands`` for inserting additional l
 for example, to define the project account to be charged.
 
 Submitting the calculations
---------------------------
+---------------------------
 
 Now we are ready to submit the calculation.
 But before actual submission we really should check if there is any mistake::
