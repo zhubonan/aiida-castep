@@ -7,15 +7,15 @@ This page contains a simple tutorial for setting up a CASTEP calculation with Ai
 Step-by-step example - Oxygen in a box
 ======================================
 
-Here we setup a simple calculations of oxgen moleculer in a box as a example.
+Here we setup a simple calculations of oxygen molecule in a box as a example.
 Before we start AiiDA should be setup properly already - you should have a working *profile* with a CASTEP `Code` node and
 a `Computer` node.
 
-Construcing a Calculation
+Constructing a Calculation
 --------------------------
 
 To construct a calculations, one can call ``CastepCalculation()`` but it is often more convenient to do this from a
-``Code`` node that represents the CASTEP excutable will be used::
+``Code`` node that represents the CASTEP executable will be used::
 
  code = Code.get_from_string("castep-xx.xx@your_computer")
  calc = code.new_calc()
@@ -61,7 +61,7 @@ Finally, we link the ``ParameterData`` to the calculation node using::
 .. note::
    It is recommended to use python types instead of strings to make it easy for querying.
    No internal type check/enforcement is implemented.
-   The bottom line is that the text files generated needs to be unstanderable for CASTEP.
+   The bottom line is that the text files generated needs to be understandable for CASTEP.
 
 Setup k-oints and structure
 ---------------------------
@@ -72,7 +72,7 @@ We first need to define the structure to be calculated::
  o2_in_a_box.append_atom(position=[0, 0, 0], symbols="O")
  o2_in_a_box.append_atom(position=[1.4, 0, 0], symbols="O")
 
-Alternatively, one can pass a ``ase.Atoms`` object to the constructure as keyword arugment.
+Alternatively, one can pass a ``ase.Atoms`` object to the constructive as keyword argument.
 This is often more convenient.
 To define the k points mesh, run::
 
@@ -80,8 +80,8 @@ To define the k points mesh, run::
  kpoints.set_kpoints_mesh((1,1,1))
 
 Here we use the gamma point, alternatively kpoints may be passed explicitly.
-See AiiDA's `documentaion <https://aiida-core.readthedocs.io/en/v0.12.0/datatypes/index.html>`_ for details.
-Finally, link them up with the calcualtion::
+See AiiDA's `documentation <https://aiida-core.readthedocs.io/en/v0.12.0/datatypes/index.html>`_ for details.
+Finally, link them up with the calculation::
 
  calc.use_kpoints(kpoints)
  calc.use_structure(structure)
@@ -103,9 +103,9 @@ To get a ``OtfgData`` call::
  otfg, create = OtfgData.get_or_create(otfg_string)
 
 Creation of duplicated nodes can be avoided using this interface as duplication will be checked.
-If a new node is created, the ``create`` varible will be ``True``.
+If a new node is created, the ``create`` variable will be ``True``.
 The element is automatically parsed from the ``otfg_string`` supplied.
-If no element is found, it will be assumed that the string refers to bulit-in libaray in CASTEP, for example ``"C9"``.
+If no element is found, it will be assumed that the string refers to built-in library in CASTEP, for example ``"C9"``.
 
 A similar interface also exists for ``UspData`` node::
 
@@ -118,7 +118,7 @@ A more convenient way of uploading a set of usp files is to use ``upload_usp_fam
    The element of is inferred from the file name which should be in the format *<element>_<foo>.usp*.
    Norm-conserving *recpot* files are treated as if they are *usp* files.
 
-The following code defines a ``OtfgData`` to represent the bulit-in libarary **C9** and tell let the calculation use it for oxygen::
+The following code defines a ``OtfgData`` to represent the built-in library **C9** and tell let the calculation use it for oxygen::
 
  c9, create = OtfgData.get_or_create("C9")
  calc.use_pseudos(c9, kind="O")
@@ -129,7 +129,7 @@ Alternatively, we can do::
  upload_otfg_family(["C9"], "C9", "CASTEP C9 OTFG Library")
  calc.use_pseudos_from_family("C9")
 
-We first create a otfg family ``"C9"`` containing a sinle ``OtfgData`` node, then invoke the
+We first create a otfg family ``"C9"`` containing a single ``OtfgData`` node, then invoke the
 method to set pseudos automatically.
 
 Additional settings
@@ -139,23 +139,23 @@ An additional ``ParameterData`` node can be used by the calculation. The followi
 
 * ``SPINS``: A list of initial spins for each atom.
 
-* ``PARENT_FOLDER_SYMLINK``: Wether we use symbolic link to the parent folder that contains ``<seed>.check``.
+* ``PARENT_FOLDER_SYMLINK``: Whether we use symbolic link to the parent folder that contains ``<seed>.check``.
 
 * ``LABELS``: A list of labels for each atom.
 
-* ``CMDLINE``: Additional parameters to be passed. By default we call ``<castep_excutable> <seed>`` but some times additonal parameters may be useful, e.g when we use wrapping script.
+* ``CMDLINE``: Additional parameters to be passed. By default we call ``<castep_excutable> <seed>`` but some times additional parameters may be useful, e.g when we use wrapping script.
 
 * ``ADDITIONAL_RETRIEVE_LIST``: A list for additional files to be retrieved from remove work directory. See also description in AiiDA's `tutorial <https://aiida-core.readthedocs.io/en/latest/developer_guide/devel_tutorial/code_plugin_int_sum.html>`_.
 
 For this example, we want to oxygen molecules should be spin polarized.
-To break the symmetry, intial spins need to be set::
+To break the symmetry, initial spins need to be set::
 
  settings_dict = {"SPINS" : [1, 1]}
  calc.use_settings(ParameterData(dict=settings_dict))
 
 A veteran CASTEP user probably already spot a rookie mistake here - we did not set the *spin* keyword in the ``<seed>.param``.
-This will in fact be taken care of by the plugin internall, although setting it manually is highly recommended.
-The plugin will check if the sum of spins are the same as that set in ``ParameterData`` before writting actual input files.
+This will in fact be taken care of by the plugin internal, although setting it manually is highly recommended.
+The plugin will check if the sum of spins are the same as that set in ``ParameterData`` before writing actual input files.
 
 Set the resources
 -----------------
@@ -167,11 +167,11 @@ As an example for now::
  calc.set_max_wallclock_seconds(3600)
  calc.set_resources({"num_machines": 2})
 
-This lets AiiDA kown we want to run on a single node for 3600 seconds.
+This lets AiiDA known we want to run on a single node for 3600 seconds.
 You may want to call ``set_custom_schduler_commands`` for inserting additional lines in to the submission script,
 for example, to define the project account to be charged.
 
-Submiting the calculations
+Submitting the calculations
 --------------------------
 
 Now we are ready to submit the calculation.
@@ -204,7 +204,7 @@ Typos in ``ParameterData``'s dictionary will be check and if there is any mistak
 
 .. note::
    The content of the folder should be identical to what will be uploaded to remote computer.
-   Hence we can also check if the job script is corretly generated.
+   Hence we can also check if the job script is correctly generated.
 
 Finally, we are ready to submit::
 

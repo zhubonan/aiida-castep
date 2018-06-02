@@ -8,7 +8,7 @@ Parsing output
 --------------
 
 A ``<seed>.castep`` file is always written by CASTEP with human readable information.
-This pulgin trys to parser as much useful information as we can as possible.
+This plugin try to parser as much useful information as we can as possible.
 At the moment, the parser only supports verbosity level ``iprint = 1``.
 For geometric optimizations, a ``<seed>.geom`` files will also be written containing
 atomic configuration of each iteration and often has higher precision than those in
@@ -32,7 +32,7 @@ Attribute of this node can be accessed easily via ``calc.res.xx``. For example::
 returns the free energy of the calculations and tab completion may be used in interactive environments.
 Array-like properties such as forces and stresses are stored in dedicated ``ArrayData`` node with
 link ``output_array``.
-If there are multiple iterations, a ``TrajectoryData`` node is created intead with name ``output_trajectory``
+If there are multiple iterations, a ``TrajectoryData`` node is created instead with name ``output_trajectory``
 It also contains other arrays such as enthalpy/stress.
 
 CASTEP writes Kohn-Sham eigenvalues in a ``<seed>.bands`` file which can be used for plotting
@@ -42,12 +42,12 @@ band structure or density of states. The file is parsed by this plugin and a ``B
 Restarting a calculation
 ------------------------
 
-Tracking lengthy calculations wtih multiple restarts can be frustrating.
-This is where AiiDA's ability of presving provance comes in.
-A ``create_restart`` method is avaiable and for its capability please refer to the
+Tracking lengthy calculations with multiple restarts can be frustrating.
+This is where AiiDA's ability of preserving provenance comes in.
+A ``create_restart`` method is available and for its capability please refer to the
 module document.
 For a continuations run, CASTEP reads in data from previous run from ``<seed>.check`` or <seed>.castep_bin`` files.
-The ``param`` and ``cell`` files are also read and some parameters can be chagned at restart.
+The ``param`` and ``cell`` files are also read and some parameters can be changed at restart.
 When running under ``aiida_castep`` parent and children calculations will be linked via a ``RemoteData``.
 
 .. note:: Parents and children may or may not share the same **parameters**.

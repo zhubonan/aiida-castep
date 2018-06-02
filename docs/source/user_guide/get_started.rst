@@ -2,9 +2,9 @@ Getting started
 +++++++++++++++
 
 AiiDA is a sophisticated framework with great ability to prepare, submit, manage calculations and preserve their provenance.
-The workflow of running lengthy, complex density functional theory calculations on clusters can be automated and symplified.
+The workflow of running lengthy, complex density functional theory calculations on clusters can be automated and simplified.
 
-I would strongly encourage any user to familiarise themselves with `AiiDA`_ before using this pulgin, otherwise a lot of things would not make sense.
+I would strongly encourage any user to familiarize themselves with `AiiDA`_ before using this pulgin, otherwise a lot of things would not make sense.
 The ``aiida_core`` package has excellent documentation located at `readthedocs <https://aiida-core.readthedocs.io>`_.
 The user should also be familiar with running `CASTEP`_ manually using file interface.
 Tutorials for `CASTEP`_ can be found at http://www.castep.org/CASTEP/OnlineTutorials.
@@ -33,7 +33,7 @@ To allow AiiDA to discover the plugin, run::
 Test the plugin
 ----------------
 
-AiiDA's pulgin test framework should be used::
+AiiDA's plugin test framework should be used::
 
  verdi -p {your_test_profile_name} devel tests db.castep
 
@@ -61,7 +61,7 @@ The ``use_xxxxx`` methods are used to link nodes. Once inputs are defined, ``sub
 Generated input files
 ---------------------
 
-Some metadata are included as comments in the input *cell* and *param* files.
+Some meta data are included as comments in the input *cell* and *param* files.
 This includes the generation time, AiiDA user, pk, uuid, label and description of the calculation node and input nodes used.
 All keywords are written in lower case.
 In addition, the following keys are set automatically:
@@ -70,7 +70,7 @@ In addition, the following keys are set automatically:
 
 * If not set explicitly, *comment* will be set as the label of the calculation node to keep things tracked.
 
-* *run_time* will be set to 95% of the requested walltime by default unless it will be less than 3600 seconds.
+* *run_time* will be set to 95% of the requested wall-time by default unless it will be less than 3600 seconds.
   This is to ensure that check files can be written at the end of run.
   To completely disable control set it to *0* explicitly in ``ParameterData`` node.
 
