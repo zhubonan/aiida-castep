@@ -68,15 +68,11 @@ type_re = re.compile("Type: (\w+)")
 level_re = re.compile("Level: (\w+)")
 
 
-def get_help_string(key):
-    # NOTE: this is not python3 compatible
-    out = sbp.check_output(["castep.serial", "-h", key])
-    return out
-
-
-def parse_help_string(entry):
+def parse_help_string(key, excutable="castep.serial"):
     """Capture help string, determine if it is for PARAM or CELL"""
-    lines = entry.split("\n")
+
+    out = sbp.check_output([excutable, "-h", key])
+    lines = out.split("\n")
     value_type = None
     key_level = None
 
@@ -144,8 +140,7 @@ def construct_full_dict():
     all.update(param)  # Dictionary of all the keys
 
     for key in progress(all):
-        help_string = get_help_string(key)
-        lines, k_type, k_level, v_type = parse_help_string(help_string)
+        lines, k_type, k_level, v_type = parse_help_string(key)
         full_dict[key.lower()] = dict(help_short = all[key],
                                       help_full = "\n".join(lines),
                                       key_type= k_type,
