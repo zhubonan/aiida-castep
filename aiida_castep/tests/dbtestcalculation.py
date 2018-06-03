@@ -122,8 +122,7 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
         settings_dict = {"SPINS": [0, 0]}
         c.use_settings(ParameterData(dict=settings_dict))
         c.label = "TEST CALC"
-        c.description = ("Test calculation for AiiDA CASTEP plugin."
-                         " Test generation of calculation inputs and relavant exceptions.")
+        c.description = "Test calculation for AiiDA CASTEP plugin."
         c.use_code(self.code)
         c.use_kpoints(self.get_kpoints_mesh())
         c.use_structure(s)
@@ -161,8 +160,8 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
         settings_dict = {"SPINS": [0, 0]}
         c.use_settings(ParameterData(dict=settings_dict))
         c.label = "TEST CALC"
-        c.description = ("Test calculation for AiiDA CASTEP plugin. ",
-                         "Test generation of calculation inputs and relavant exceptions.")
+        c.description = ("Test calculation for AiiDA CASTEP plugin. "
+                         "Testing generation of inputs.")
         inputdict = c.get_inputs_dict()
 
         inputdict.pop("code", None)
