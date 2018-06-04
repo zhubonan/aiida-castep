@@ -32,7 +32,7 @@ def progress(func, *args, **kwargs):
         return tqdm(func, *args, **kwargs)
 
 
-@data_cmd.group('castep-helper')
+@data_cmd.group('castep-help')
 def helper_cmd():
     """Commandline interface for controlling helper information"""
     pass
@@ -43,14 +43,13 @@ def helper_cmd():
               help="The excutable of CASTEP to be used",
               default="castep.serial")
 @click.option("--save-as", "-s",
-              help="Path to the save file")
-@click.option("--force", "-f",
-              help="Overwrite existing files")
-def generate(castep_excutable, save_as, force):
+              help="override default path for saving file")
+def generate(castep_excutable, save_as):
     """
-    Generate help information file using excutable of CASTEP.
+    Generate help information file.
+
     The generated file will be saved as .castep_help_info_<version>.json
-    at the $HOME if --save-as option is not passed
+    at the $HOME by default.
     """
     from aiida_castep.calculations.helper.generate import (get_castep_commands,
     parse_help_string)

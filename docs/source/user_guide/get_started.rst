@@ -30,6 +30,24 @@ To allow AiiDA to discover the plugin, run::
 
 .. note:: Please refer to AiiDA's documentation for details of plugin installation.
 
+Generate help info
+------------------
+
+This plugin will check for mistakes in parameters supplied to CASTEP before writing
+input files.
+A dictionary containing all keywords and where they should be is used internally.
+It is stored as ``$HOME/.castep_help_info_<version>.json`` and loaded at runtime.
+To generate this file, use command::
+
+ verdi data castep-help generate
+
+By default, ``castep.serial`` executable will be used.
+It can be overridden using optional argument ``-e <path_to_excutable>``.
+For details, refer to the internal help using the ``--help`` flag.
+Stored help information can be accessed using this interface as well,
+imitating the behavior of ``castep.serial -h`` and ``castep.serial -s``.
+
+
 Test the plugin
 ----------------
 
