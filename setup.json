@@ -6,7 +6,7 @@
         "Programming Language:: Python :: 2.7",
         "Development Status :: 4- Beta"
     ],
-    "description": "AiiDA plugin template for CASTEP",
+    "description": "AiiDA plugin for CASTEP",
     "url": "https://gitlab.com/bz1/aiida-castep",
     "license": "MIT License",
     "classifiers": [
