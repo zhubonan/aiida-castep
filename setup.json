@@ -39,7 +39,8 @@
         ],
         "aiida.cmdline.data" : [
             "castep-usp = aiida_castep.cmdline.usp_cmd:usp_cmd",
-            "castep-otfg = aiida_castep.cmdline.otfg_cmd:otfg_cmd"
+            "castep-otfg = aiida_castep.cmdline.otfg_cmd:otfg_cmd",
+            "castep-helper = aiida_castep.cmdline.helper_cmd:helper_cmd"
         ]
 
     }
