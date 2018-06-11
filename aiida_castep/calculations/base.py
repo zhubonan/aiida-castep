@@ -964,18 +964,6 @@ def _create_restart(cin, ignore_state=False, restart_type="restart",
     if use_symlink is None:
         use_symlink = cin._default_symlink_usage
 
-    calc_inp = cin.get_inputs_dict()  # Input nodes of parent calculation
-
-    remote_folders = cin.get_outputs(node_type=RemoteData)
-
-    if reuse:
-        if len(remote_folders) > 1:
-            raise InputValidationError("More than one output RemoteData found "
-                                   "in calculation {}".format(cin.pk))
-        if len(remote_folders) == 0:
-            raise InputValidationError("No output RemoteData found "
-                                   "in calculation {}".format(cin.pk))
-
     # Duplicate the calculation
     if calc_class is None:
         cout = cin.copy()
@@ -983,10 +971,20 @@ def _create_restart(cin, ignore_state=False, restart_type="restart",
         cout = calc_class()
         cout.set_computer(cin.get_computer())
 
-    # Setup remote folderes
+    calc_inp = cin.get_inputs_dict()  # Input nodes of parent calculation
+
+    # Find the RemoteData of this calculation
     if reuse:
-        remote_folder = remote_folders[0]
-        cout._set_parent_remotedata(remote_folder)
+        remote_folders = [o for o in cin.get_outputs() if isinstance(o, RemoteData)]
+        if len(remote_folders) > 1:
+            raise InputValidationError("More than one output RemoteData found "
+                                   "in calculation {}".format(cin.pk))
+        elif len(remote_folders) == 0:
+            raise InputValidationError("No output RemoteData found "
+                                   "in calculation {}".format(cin.pk))
+        else:
+            remote_folder = remote_folders[0]
+            cout._set_parent_remotedata(remote_folder)
 
     # Use the out_put structure if required
     if use_output_structure:
