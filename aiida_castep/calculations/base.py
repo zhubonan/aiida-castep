@@ -661,10 +661,7 @@ class BaseCastepInputGenerator(object):
 
     @classmethod
     def continue_from(cls, cin,
-                      ignore_state=False, restart_type="restart",
-                      reuse=False, use_symlink=None,
-                      use_output_structure=False,
-                      use_castep_bin=False):
+                      *args, **kwargs):
         """
         Create a new calcualtion as a continution from a given calculation.
         This is effectively an "restart" for CASTEP and a lot of the parameters
@@ -672,31 +669,9 @@ class BaseCastepInputGenerator(object):
         finished geometry optimisations.
         CASTEP has two modes of 'restart', activated by setting CONTINUATION or REUSE keywords in .param file.
 
-        CONTINUATION
-        Restart from the end of the last run. Only limited set of parameters can be modified. If unmodifiable parameters were changed, they are ignored. E.g changes of task, nextra_bands, cut_off_energy will be ignored. This is often used for geometry optimisation or md runs.
-
-        REUSE
-        Essentially making a new calculation with parameters read from .cell and .param file.
-        Data from \*.castep_bin or \*.check will be used to initialise te model
-        of the new run.
-        This is often used for bandstructure, dos, spectral calculation.
-        Note both castep_bin and check file may be used. They are almost the
-        same except castep_bin does not have wavefunctions stored.
-        :param bool ignore_state: Ignore the state of parent calculation
-        :param str restart_type: "continuation" or "restart".
-        If set to continuation the child calculation has keyword
-        'continuation' set.
-        :param bool reuse: Wether we want to reuse the previous calculation.
-        only applies for "restart" run
-        :param bool parent_folder_symlink: if True, symlink are used instead
-        of hard copies of the files. Default given be
-        self._default_symlink_usage
-        :param bool use_output_structure: if True, the output structure of
-        parent calculation is used as the input of the child calculation.
-        This is useful for photon/bs calculation.
+        ..see also:: ``create_restart``
         """
-        cout = _create_restart(cin, ignore_state, restart_type, reuse,
-            use_symlink, use_output_structure, use_castep_bin, cls)
+        cout = _create_restart(cin, calc_class=cls, *args, **kwargs)
 
         return cout
 
