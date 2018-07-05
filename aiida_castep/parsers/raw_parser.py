@@ -38,11 +38,23 @@ units_CODATA2002 = {
     'e': 1.60217653E-19,        # C
     'me': 5.4857990945E-4}      # u
 
+units_CODATA2010 = {
+    'c': 299792458,
+    'hbar': 6.58211928e-16,  # eV
+    'e': 1.602176565e-19,    # C
+    'Av': 6.02214129e23,     # Avogadro constant
+    'R': 8.3144621,          # Gas constrant
+    'Eh': 27.21138505,       # eV
+    'a0': 0.52917721092,     # A - bohr radius
+    'me': 5.4857990946e-4,    # u
+    'kB': 8.6173324          # eV/K
+}
+
 # (common) derived entries
-for d in (units_CODATA1986, units_CODATA2002):
+for d in (units_CODATA1986, units_CODATA2002, units_CODATA2010):
     d['t0'] = d['hbar'] / d['Eh']     # s
     d['Pascal'] = d['e'] * 1E30       # Pa
-units = units_CODATA2002
+units = units_CODATA2010
 
 unit_suffix = "_units"
 
