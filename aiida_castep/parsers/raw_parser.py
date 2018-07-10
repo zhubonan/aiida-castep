@@ -235,12 +235,13 @@ def parse_castep_text_output(out_lines, input_dict):
         "SCF cycles performed but system has not reached the groundstate": SCF_FAILURE_MESSAGE,
         "NOSTART": "Can not find start of the calculation.",
         "STOP keyword detected in parameter file. Stop execution.": STOP_REQUESTED_MESSAGE,
+        }
 
-    # Warnings that won't result in a calculation in FAILED state 
+    # Warnings that won't result in a calculation in FAILED state
     minor_warnings = {"Warning": None,
                      "Geometry optimization failed to converge": GEOM_FAILURE_MESSAGE,
                      "Insufficient time for another iteration": INSUFFICENT_TIME_MESSAGE}
-                      }
+
 
     # A dictionary witch keys we should check at each line
     all_warnings = dict(critical_warnings.items() + minor_warnings.items())

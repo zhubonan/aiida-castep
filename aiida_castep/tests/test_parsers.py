@@ -51,10 +51,11 @@ class TestParsers(unittest.TestCase):
     def test_warnings(self):
         # Test assertion of warnings
         with_warning = self.castep_lines[:]
+        # This is no longer a critical warning leading to FAILED state
         with_warning.insert(-10, "Geometry optimization failed to converge")
         parsed_data, trajectory_data, critical = parse_castep_text_output(with_warning, None)
         self.assertTrue(parsed_data["warnings"])
-        self.assertIn(parsed_data["warnings"][0], critical)
+        self.assertNotIn(parsed_data["warnings"][0], critical)
 
         with_warning = self.castep_lines[:]
         with_warning.insert(-10, "SCF cycles performed but system has not reached the groundstate")

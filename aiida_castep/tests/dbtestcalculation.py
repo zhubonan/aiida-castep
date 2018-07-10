@@ -2,6 +2,7 @@
 Test for generating castep input
 """
 import os
+import unittest
 
 from aiida.common.exceptions import InputValidationError
 from aiida.common.folders import SandboxFolder
@@ -103,7 +104,6 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
             },
             "CELL": {
                 "fix_all_cell": "true",
-                "species_pot": ("Ba Ba_00.usp",)
             }
         }
 
@@ -202,6 +202,7 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
             with open(param) as p:
                 print(p.read())
 
+    @unittest.skip("Dry run test takes a long time.")
     def test_dryrun(self):
         from subprocess import call
 
@@ -211,6 +212,8 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
             self.skipTest("No CASTEP excutable found")
 
         c = self.generate_test_calc()
+        full, missing, C9 = self.create_family()
+        c.use_pseudos_from_family(C9)
         # Do a dry run - check if any error message is given
         with SandboxFolder() as f:
             c._prepare_for_submission(f, c.get_inputs_dict())

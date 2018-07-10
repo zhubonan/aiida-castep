@@ -112,7 +112,7 @@ class CastepParser(Parser):
             add_last_if_exists(trajectory_data, key, out_dict)
 
         # Add warnings from this level
-        out_dict.warnings.extend(warnings)
+        out_dict["warnings"].extend(warnings)
 
         successful = all([raw_sucessful, successful])
 
