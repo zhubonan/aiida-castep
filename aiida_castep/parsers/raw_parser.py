@@ -443,6 +443,12 @@ def parse_castep_text_output(out_lines, input_dict):
     for key in units_to_delete:
         parsed_data.pop(key)
 
+    # set geom convergence state
+    if GEOM_FAILURE_MESSAGE in parsed_data["warnings"]:
+        parsed_data["geom_unconverged"] = True
+    else:
+        parsed_data["geom_unconverged"] = None
+
     return parsed_data, trajectory_data, critical_warnings.values()
 
 
