@@ -9,7 +9,7 @@ from aiida_castep.parsers import structure_from_input, add_last_if_exists
 ParameterData = DataFactory("parameter")
 BandsData = DataFactory("array.bands")
 
-
+ERR_FILE_WARNING_MSG = ".err files found in workdir"
 class CastepParser(Parser):
     """
     This is the class for Parsing results from a CASTEP calcultion
@@ -37,6 +37,7 @@ class CastepParser(Parser):
 
         successful = True
         seed_name = self._calc._SEED_NAME
+        warnings = []
 
         # Look for lags of the parser
         try:
@@ -60,12 +61,18 @@ class CastepParser(Parser):
         list_of_files = out_folder.get_folder_list()
 
         # at least the stdout should exist
-        if not self._calc._OUTPUT_FILE_NAME in list_of_files:
+        if self._calc._OUTPUT_FILE_NAME not in list_of_files:
             self.logger.error("Standard output not found")
             successful = False
             return successful, ()
 
-        # TODO include *err files in the output and check error messages
+        # The calculation is failed if there is any err file.
+        for f in list_of_files:
+            if ".err" in f:
+                successful = False
+                self.logger.warnings("Error files found in workdir.")
+                warnings.append("ERR_FILE_WARNING_MSG")
+                break
 
         # look for other files
         has_dot_geom = False
@@ -103,6 +110,9 @@ class CastepParser(Parser):
              "zero_K_energy", "spin_density", "abs_spin_density", "enthalpy"]
         for key in last_value_keys:
             add_last_if_exists(trajectory_data, key, out_dict)
+
+        # Add warnings from this level
+        out_dict.warnings.extend(warnings)
 
         successful = all([raw_sucessful, successful])
 

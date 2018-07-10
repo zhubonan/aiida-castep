@@ -62,6 +62,8 @@ SCF_FAILURE_MESSAGE = "SCF cycles failed to converge"
 GEOM_FAILURE_MESSAGE = "Maximum geometry optimization cycle has been reached"
 END_NOT_FOUND_MESSAGE = "CASTEP run did not reach the end of execution."
 INSUFFICENT_TIME_MESSAGE = "CASTEP run terminated due to insufficient run time left."
+STOP_REQUESTED_MESSAGE = "CASTEP run terminated due to requested STOP in param file."
+
 
 def parse_raw_ouput(outfile, input_dict,
                     parser_opts=None, geom_file=None,
@@ -80,7 +82,7 @@ def parse_raw_ouput(outfile, input_dict,
     2 different keys to check in out_dict: *parser_warning* and *warnings*.
     """
 
-    parser_version = "0.1"
+    parser_version = "0.2"
     parser_info = {}
     parser_info["parser_warnings"] = []
     parser_info["parser_info"] = "AiiDA CASTEP basic Parser v{}".format(
@@ -104,11 +106,9 @@ def parse_raw_ouput(outfile, input_dict,
     finished_run = False
 
     # Use Total time as a mark for completed run
-    for i, line in enumerate(reversed(out_lines)):
+    for i, line in enumerate(out_lines[-20:]):
         # Check only the last 20 lines
         # Otherwise unfinished restarts may be seen as finished
-        if i >= 20:
-            break
         if "Total time" in line:
             finished_run = True
             break
@@ -232,12 +232,15 @@ def parse_castep_text_output(out_lines, input_dict):
 
     # In the formatof {<keywords in line>:<message to pass>}
     critical_warnings = {
-        "Geometry optimization failed to converge": GEOM_FAILURE_MESSAGE,
         "SCF cycles performed but system has not reached the groundstate": SCF_FAILURE_MESSAGE,
         "NOSTART": "Can not find start of the calculation.",
-        "Insufficient time for another iteration": INSUFFICENT_TIME_MESSAGE}
+        "STOP keyword detected in parameter file. Stop execution.": STOP_REQUESTED_MESSAGE,
 
-    minor_warnings = {"Warning": None}
+    # Warnings that won't result in a calculation in FAILED state 
+    minor_warnings = {"Warning": None,
+                     "Geometry optimization failed to converge": GEOM_FAILURE_MESSAGE,
+                     "Insufficient time for another iteration": INSUFFICENT_TIME_MESSAGE}
+                      }
 
     # A dictionary witch keys we should check at each line
     all_warnings = dict(critical_warnings.items() + minor_warnings.items())
