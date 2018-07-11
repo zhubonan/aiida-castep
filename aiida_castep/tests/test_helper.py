@@ -2,6 +2,8 @@
 from aiida_castep.calculations.helper import CastepHelper, HelperCheckError
 import unittest
 
+helper = CastepHelper()
+has_info = helper.BY_PASS
 
 class TestHelper(unittest.TestCase):
     """class  TestHelper for test CastepHepler"""
@@ -28,11 +30,13 @@ class TestHelper(unittest.TestCase):
         d.update(self.only_param_dict)
         return d
 
+    @unittest.skipIf(has_info, "No helper info found")
     def test_from_flat(self):
         out, not_found = self.helper._from_flat_dict(self.flat_dict)
         # print(self.helper.help_dict)
         self.assertFalse(not_found)
 
+    @unittest.skipIf(has_info, "No helper info found")
     def test_check_dict_raw(self):
         """Test the underlying check_dict function"""
 
@@ -52,6 +56,8 @@ class TestHelper(unittest.TestCase):
         self.assertIn("kpointx_mp_grid", invalid)
         self.assertIn(("snap_to_symmetry", "CELL"), wrong)
 
+
+    @unittest.skipIf(has_info, "No helper info found")
     def test_check_dict(self):
         """Test top level check dict function"""
 
