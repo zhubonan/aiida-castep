@@ -1,0 +1,26 @@
+image: 
+  name: aiidateam/aiida_core_base:0.11.2
+  entrypoint: [""]
+  
+
+before_script:
+    - export HOME=/home/aiida
+    - export PATH=$HOME/.local/bin:$PATH
+    - pip install --user -e .
+    - reentry scan aiida
+
+pytest_tests:
+  script:
+    - pip install --user pytest
+    - pytest aiida_castep/tests
+
+db_tests:
+  variables:
+    DB_HOST: "postgres"
+  services:
+    - postgres:9.5
+  script:
+    - TEST_AIIDA_BACKEND="django" bash .ci-data/setup_profiles.sh
+    - verdi -p test_django devel tests db.castep
+    - TEST_AIIDA_BACKEND="sqlalchemy" bash .ci-data/setup_profiles.sh
+    - verdi -p test_sqlalchemy devel tests db.castep
