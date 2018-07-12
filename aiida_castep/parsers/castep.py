@@ -10,6 +10,7 @@ ParameterData = DataFactory("parameter")
 BandsData = DataFactory("array.bands")
 
 ERR_FILE_WARNING_MSG = ".err files found in workdir"
+
 class CastepParser(Parser):
     """
     This is the class for Parsing results from a CASTEP calcultion
@@ -70,8 +71,8 @@ class CastepParser(Parser):
         for f in list_of_files:
             if ".err" in f:
                 successful = False
-                self.logger.warnings("Error files found in workdir.")
-                warnings.append("ERR_FILE_WARNING_MSG")
+                self.logger.warning("Error files found in workdir.")
+                warnings.append(ERR_FILE_WARNING_MSG)
                 break
 
         # look for other files
