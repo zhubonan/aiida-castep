@@ -47,7 +47,7 @@ units_CODATA2010 = {
     'Eh': 27.21138505,       # eV
     'a0': 0.52917721092,     # A - bohr radius
     'me': 5.4857990946e-4,    # u
-    'kB': 8.6173324          # eV/K
+    'kB': 8.6173324E-5          # eV/K
 }
 
 # (common) derived entries
@@ -462,8 +462,11 @@ def parse_geom_text_output(out_lines, input_dict):
     :return: key, value of the trajectories of cell, atoms, force etc
     """
     txt = out_lines
-    Hartree = units['Eh']
-    Bohr = units['a0']
+    Hartree = units['Eh'] # eV
+    Bohr = units['a0'] # A
+    kB = units['kB'] # eV/K
+    hBar = units['hbar'] # in eV
+    eV = units["e"]  # in J
 
     # Yeah, we know that...
     cell_list = []
@@ -471,6 +474,9 @@ def parse_geom_text_output(out_lines, input_dict):
     geom_list = []
     forces_list = []
     energy_list = []
+    hamilt_list = []
+    kinetic_list = []
+    pressure_list = []
     temperature_list = []
     velocity_list = []
 
@@ -492,7 +498,9 @@ def parse_geom_text_output(out_lines, input_dict):
 
         sline = line.split()
         if '<-- E' in line:
-            energy_list.append(float(sline[0]) * Hartree)
+            energy_list.append(float(sline[0])) # Total energy
+            hamilt_list.append(float(sline[1])) # Hamitonian (MD)
+            kinetic_list.append(float(sline[2])) # Kinetic (MD)
             continue
         elif '<-- h' in line:
             current_cell.append(list(map(float, sline[:3])))
@@ -506,6 +514,8 @@ def parse_geom_text_output(out_lines, input_dict):
             current_velocity.append(list(map(float, sline[2:5])))
         elif '<-- T' in line:
             temperature_list.append(float(sline[0]))
+        elif '<-- P' in line:
+            pressure_list.append(float(sline[0]))
         elif not line.strip() and current_cell:
             cell_list.append(current_cell)
             species_list.append(current_species)
@@ -525,11 +535,23 @@ def parse_geom_text_output(out_lines, input_dict):
     out =  dict(cells=np.array(cell_list) * Bohr,
                 positions=np.array(geom_list) * Bohr,
                 forces=np.array(forces_list) * Hartree / Bohr,
-                geom_energy=np.array(energy_list),
+                geom_energy=np.array(energy_list) * Hartree,
                 symbols=species_list[0],
                 )
-    if velocity_list:
-        out["velocities"] = np.array(velocity_list) * Bohr
+
+    # optional lists
+    unit_V = Hartree * Bohr / hBar
+    unit_T = Hartree / kB
+    unit_P = Hartree / (Bohr * 1e-10) ** 3 * eV
+    opt = {"velocities": (velocity_list, unit_V),
+           "temperatures": (temperature_list, unit_T),
+           "pressures": (pressure_list, unit_P),
+           "hamilt_energy": (hamilt_list, Hartree),
+           "kinetic_energy": (kinetic_list, Hartree)
+           }
+    for key, value in opt.items():
+        if value[0]:
+            out.update({key: np.array(value[0]) * value[1]})
     return out
 
 

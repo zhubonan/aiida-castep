@@ -582,6 +582,9 @@ class BaseCastepInputGenerator(object):
             settings_retrieve_list.append(self._SEED_NAME + ".geom")
             if parameters.get_dict().get("PARAM", {}).get("write_cell_structure"):
                 settings_retrieve_list.append(self._SEED_NAME + "-out.cell")
+        # For MD calculation retrieve the *.md file
+        if calculation_mode.lower() == "molecular dynamics":
+            settings_retrieve_list.append(self._SEED_NAME + ".md")
 
         calcinfo.retrieve_list += settings_retrieve_list
         calcinfo.retrieve_list += self._internal_retrieve_list
