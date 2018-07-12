@@ -27,7 +27,7 @@ class TestCastepParser(AiidaTestCase, BaseCalcCase, BaseDataCase):
     def get_dummy_outputs(self):
 
         retrieved = {}
-        for folder in ["H2-geom", "O2-geom-spin", "Si-geom-stress"]:
+        for folder in ["H2-geom", "O2-geom-spin", "Si-geom-stress", "N2-md"]:
             folderdata = FolderData()
             folderdata.replace_with_folder(
                 os.path.join(self.get_data_abs_path(), folder))
@@ -40,6 +40,10 @@ class TestCastepParser(AiidaTestCase, BaseCalcCase, BaseDataCase):
 
         parser = ParserFactory("castep.castep")(calc)
         retrived_folders = self.get_dummy_outputs()
+        common_keys = ["cells", "positions", "forces", "symbols", "geom_total_energy"]
+        md_keys = ["hamilt_energy", "kinetic_energy",
+                   "velocities", "temperatures", "times"]
+        geom_keys = ["geom_enthalpy"]
 
         for name, r in retrived_folders.items():
             success, out = parser.parse_with_retrieved(r)
@@ -54,6 +58,9 @@ class TestCastepParser(AiidaTestCase, BaseCalcCase, BaseDataCase):
             # Check the length of sites are consistent
             self.assertEqual(len(out_structure.sites), len(out_traj.get_symbols()))
 
+            for k in common_keys:
+                self.assertIn(k, out_traj.get_arraynames())
+
             if name == "O2-geom-spin" or name == "Si-geom-stress":
                 self.assertIn(parser.get_linkname_outbands(), out)
                 bands = out[parser.get_linkname_outbands()]
@@ -64,3 +71,10 @@ class TestCastepParser(AiidaTestCase, BaseCalcCase, BaseDataCase):
                     self.assertEqual(bands.get_attr('nkpts'), len(bands.get_bands()))
                 elif bands.get_attr('nspins') == 2:
                     self.assertEqual(bands.get_attr('nkpts'), len(bands.get_bands()[0]))
+
+                for k in geom_keys:
+                    self.assertIn(k, out_traj.get_arraynames())
+
+            if name == "N2-md":
+                for k in md_keys:
+                    self.assertIn(k, out_traj.get_arraynames())

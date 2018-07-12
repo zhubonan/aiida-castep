@@ -1,0 +1,14 @@
+cut_off_energy = 250
+xc_functional = LDA
+opt_strategy = speed
+elec_energy_tol = 1e-7
+
+task = molecular dynamics
+md_ensemble = NVT
+md_temperature = 300 K
+md_thermostat = Langevin
+md_delta_t = 1.0 fs
+md_num_iter = 20 
+write_checkpoint = none
+write_otfg = false
+write_bib = false

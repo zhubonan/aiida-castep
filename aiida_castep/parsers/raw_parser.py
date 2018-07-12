@@ -66,12 +66,12 @@ STOP_REQUESTED_MESSAGE = "CASTEP run terminated due to requested STOP in param f
 
 
 def parse_raw_ouput(outfile, input_dict,
-                    parser_opts=None, geom_file=None,
+                    parser_opts=None, md_geom_file=None,
                     bands_file=None):
     """
     Parse an dot_castep file
     :param outfile: path to .castep file
-    :param geom_file: path to the .geom file
+    :param md_geom_file: path to the .geom file or .md file
     :return: A list of:
 
      * out_dict: a dictionary with parsed data.
@@ -125,11 +125,16 @@ def parse_raw_ouput(outfile, input_dict,
             out_lines, input_dict)
 
         # Use data from geom file if avaliable.
-        if geom_file is not None:
-            with open(geom_file) as gfile:
+        if md_geom_file is not None:
+            with open(md_geom_file) as gfile:
                 glines = gfile.readlines()
             geom_data = parse_geom_text_output(glines, None)
+            # For geom file the second energy is the enthalpy while
+            # for MD it is the approx hamiltonian (etotal + ek)
+            if "geom" in md_geom_file:
+                geom_data["geom_enthalpy"] = geom_data["hamilt_energy"]
             trajectory_data.update(geom_data)
+
 
         if bands_file is not None:
             bands_data = parse_dot_bands(bands_file)
@@ -468,7 +473,7 @@ def parse_geom_text_output(out_lines, input_dict):
     hBar = units['hbar'] # in eV
     eV = units["e"]  # in J
 
-    # Yeah, we know that...
+
     cell_list = []
     species_list = []
     geom_list = []
@@ -479,7 +484,9 @@ def parse_geom_text_output(out_lines, input_dict):
     pressure_list = []
     temperature_list = []
     velocity_list = []
+    time_list = []
 
+    # For a specific image
     current_pos = []
     current_species = []
     current_forces = []
@@ -497,10 +504,17 @@ def parse_geom_text_output(out_lines, input_dict):
             continue  # Skip header lines
 
         sline = line.split()
-        if '<-- E' in line:
+        if len(sline) == 1:
+            try:
+                time_list.append(float(sline[0]))
+            except ValueError:
+                continue
+        elif '<-- E' in line:
             energy_list.append(float(sline[0])) # Total energy
             hamilt_list.append(float(sline[1])) # Hamitonian (MD)
-            kinetic_list.append(float(sline[2])) # Kinetic (MD)
+            # Kinetic energy is not blank in GEOM OPT runs
+            if len(sline) == 5:
+                kinetic_list.append(float(sline[2])) # Kinetic (MD)
             continue
         elif '<-- h' in line:
             current_cell.append(list(map(float, sline[:3])))
@@ -535,18 +549,20 @@ def parse_geom_text_output(out_lines, input_dict):
     out =  dict(cells=np.array(cell_list) * Bohr,
                 positions=np.array(geom_list) * Bohr,
                 forces=np.array(forces_list) * Hartree / Bohr,
-                geom_energy=np.array(energy_list) * Hartree,
+                geom_total_energy=np.array(energy_list) * Hartree,
                 symbols=species_list[0],
                 )
 
     # optional lists
     unit_V = Hartree * Bohr / hBar
-    unit_T = Hartree / kB
+    unit_K = Hartree / kB  # temperature in K
     unit_P = Hartree / (Bohr * 1e-10) ** 3 * eV
+    unit_s = hBar / Hartree
     opt = {"velocities": (velocity_list, unit_V),
-           "temperatures": (temperature_list, unit_T),
+           "temperatures": (temperature_list, unit_K),
            "pressures": (pressure_list, unit_P),
            "hamilt_energy": (hamilt_list, Hartree),
+           "times": (time_list, unit_s),
            "kinetic_energy": (kinetic_list, Hartree)
            }
     for key, value in opt.items():

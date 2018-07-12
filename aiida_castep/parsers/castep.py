@@ -76,14 +76,20 @@ class CastepParser(Parser):
                 break
 
         # look for other files
-        has_dot_geom = False
+
+        # Trajectory files
+        has_md_geom = False
         if seed_name + ".geom" in list_of_files:
-            out_geom_file = os.path.join(
+            out_md_geom_file = os.path.join(
                 out_folder.get_abs_path('.'), seed_name + '.geom')
-            has_dot_geom = True
+            has_md_geom = True
+        elif seed_name + ".md" in list_of_files:
+            out_md_geom_file = os.path.join(
+                out_folder.get_abs_path('.'), seed_name + '.md')
+            has_md_geom = True
         else:
-            out_geom_file = None
-            has_dot_geom = False
+            out_md_geom_file = None
+            has_md_geom = False
 
         # Handling bands
         if self._calc._SEED_NAME + ".bands" in list_of_files:
@@ -99,7 +105,7 @@ class CastepParser(Parser):
 
         # call the raw parsing function
         parsing_args = [out_file, input_dict,
-                        parser_opts, out_geom_file,
+                        parser_opts, out_md_geom_file,
                         out_bands_file]
 
         # If there is a geom file then we parse it
@@ -150,7 +156,7 @@ class CastepParser(Parser):
             from aiida.orm.data.array import ArrayData
 
             # If we have .geom file, save as in a trajectory data
-            if has_dot_geom:
+            if has_md_geom:
                 try:
                     positions = trajectory_data["positions"]
                     cells = trajectory_data["cells"]

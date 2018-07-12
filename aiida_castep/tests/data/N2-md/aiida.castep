@@ -1,0 +1,1805 @@
+ +-------------------------------------------------+
+ |                                                 |
+ |      CCC   AA    SSS  TTTTT  EEEEE  PPPP        |
+ |     C     A  A  S       T    E      P   P       |
+ |     C     AAAA   SS     T    EEE    PPPP        |
+ |     C     A  A     S    T    E      P           |
+ |      CCC  A  A  SSS     T    EEEEE  P           |
+ |                                                 |
+ +-------------------------------------------------+
+ |                                                 |
+ | Welcome to Academic Release CASTEP version 17.2 |          
+ | Ab Initio Total Energy Program                  |
+ |                                                 |
+ | Authors:                                        |
+ | M. Segall, M. Probert, C. Pickard, P. Hasnip,   |
+ | S. Clark, K. Refson, J. R. Yates, M. Payne      |
+ |                                                 |
+ | Contributors:                                   |
+ | P. Lindan, P. Haynes, J. White, V. Milman,      |
+ | N. Govind, M. Gibson, P. Tulip, V. Cocula,      |
+ | B. Montanari, D. Quigley, M. Glover,            |
+ | L. Bernasconi, A. Perlov, M. Plummer,           |
+ | E. McNellis, J. Meyer, J. Gale, D. Jochym       |
+ | J. Aarons, B. Walker, R. Gillen, D. Jones       |
+ | T. Green, I. J. Bush, C. J. Armstrong,          |
+ | E. J. Higgins, E. L. Brown, M. S. McFly,        |
+ | J. Wilkins, B-C. Shih, P. J. P. Byrne           |
+ |                                                 |
+ | Copyright (c) 2000 - 2017                       |
+ |                                                 |
+ |     Distributed under the terms of an           |
+ |     Agreement between the United Kingdom        |
+ |     Car-Parrinello (UKCP) Consortium,           |
+ |     Daresbury Laboratory and Accelrys, Inc.     |
+ |                                                 |
+ | Please cite                                     |
+ |                                                 |
+ |     "First principles methods using CASTEP"     |
+ |                                                 |
+ |         Zeitschrift fuer Kristallographie       |
+ |           220(5-6) pp. 567-570 (2005)           |
+ |                                                 |
+ | S. J. Clark, M. D. Segall, C. J. Pickard,       |
+ | P. J. Hasnip, M. J. Probert, K. Refson,         |
+ | M. C. Payne                                     |
+ |                                                 |
+ |       in all publications arising from          |
+ |              your use of CASTEP                 |
+ |                                                 |
+ +-------------------------------------------------+
+ 
+ 
+ Compiled for linux_x86_64_ifort15 on Wed, 22 Mar 2017 12:59:02 +0000
+ from code version 
+ 4947bf343853+ Castep172_branch Tue, 28 Feb 2017 17:24:36 +0000
+ Compiler: Intel Fortran 15.0.3.187; Optimisation: fast
+ MATHLIBS: Intel MKL(11.2.3) (LAPACK version 3.5.0)
+ FFT Lib : mkl
+ Fundamental constants values: CODATA 2010
+ 
+ Run started: Thu, 12 Jul 2018 17:11:24 +0100
+ 
+ Atomic calculation performed for N: 1s2 2s2 2p3
+ 
+ Converged in 57 iterations to an ae energy of -1470.881 eV
+ 
+ 
+ Pseudo atomic calculation performed for N 2s2 2p3
+ 
+ Converged in 27 iterations to a total energy of -262.5262 eV
+ 
+ Calculation parallelised over 2 processes.
+ Data is distributed by G-vector(2-way)
+
+ ************************************ Title ************************************
+ 
+
+ ***************************** General Parameters ******************************
+  
+ output verbosity                               : normal  (1)
+ write checkpoint data to                       : aiida.check
+ type of calculation                            : molecular dynamics
+ stress calculation                             : off
+ density difference calculation                 : off
+ electron localisation func (ELF) calculation   : off
+ Hirshfeld analysis                             : off
+ unlimited duration calculation
+ timing information                             : on
+ memory usage estimate                          : on
+ write final potential to formatted file        : off
+ write final density to formatted file          : off
+ write BibTeX reference list                    : off
+ write OTFG pseudopotential files               : off
+ write electrostatic potential file             : on
+ write bands file                               : on
+ checkpoint writing                             : off
+  
+ output         length unit                     : A
+ output           mass unit                     : amu
+ output           time unit                     : ps
+ output         charge unit                     : e
+ output           spin unit                     : hbar/2
+ output         energy unit                     : eV
+ output          force unit                     : eV/A
+ output       velocity unit                     : A/ps
+ output       pressure unit                     : GPa
+ output     inv_length unit                     : 1/A
+ output      frequency unit                     : cm-1
+ output force constant unit                     : eV/A**2
+ output         volume unit                     : A**3
+ output   IR intensity unit                     : (D/A)**2/amu
+ output         dipole unit                     : D
+ output         efield unit                     : eV/A/e
+ output        entropy unit                     : J/mol/K
+  
+ wavefunctions paging                           : none
+ random number generator seed                   : randomised (171124265)
+ data distribution                              : optimal for this architecture
+ optimization strategy                          : maximize speed(+++)
+
+ *********************** Exchange-Correlation Parameters ***********************
+  
+ using functional                               : Local Density Approximation
+ relativistic treatment                         : Koelling-Harmon
+ DFT+D: Semi-empirical dispersion correction    : off
+
+ ************************* Pseudopotential Parameters **************************
+  
+ pseudopotential representation                 : reciprocal space
+ <beta|phi> representation                      : reciprocal space
+ spin-orbit coupling                            : off
+
+ **************************** Basis Set Parameters *****************************
+  
+ plane wave basis set cut-off                   :   250.0000   eV
+ size of standard grid                          :     1.7500
+ size of   fine   gmax                          :    14.1758   1/A
+ finite basis set correction                    : none
+
+ **************************** Electronic Parameters ****************************
+  
+ number of  electrons                           :  10.00    
+ net charge of system                           :  0.000    
+ treating system as non-spin-polarized
+ number of bands                                :          9
+
+ ********************* Electronic Minimization Parameters **********************
+  
+ Method: Treating system as metallic with density mixing treatment of electrons,
+         and number of  SD  steps               :          1
+         and number of  CG  steps               :          4
+  
+ total energy / atom convergence tol.           : 0.1000E-06   eV
+ eigen-energy convergence tolerance             : 0.4000E-07   eV
+ max force / atom convergence tol.              : ignored
+ convergence tolerance window                   :          3   cycles
+ max. number of SCF cycles                      :         30
+ number of fixed-spin iterations                :         10
+ smearing scheme                                : Gaussian
+ smearing width                                 : 0.2000       eV
+ Fermi energy convergence tolerance             : 0.2721E-13   eV
+ periodic dipole correction                     : NONE
+
+ ************************** Density Mixing Parameters **************************
+  
+ density-mixing scheme                          : Broyden
+ max. length of mixing history                  :         20
+ charge density mixing amplitude                : 0.8000    
+ cut-off energy for mixing                      :  250.0       eV
+
+ *********************** Population Analysis Parameters ************************
+  
+ Population analysis with cutoff                :  3.000       A
+
+ ************************ Molecular Dynamics Parameters ************************
+  
+ ensemble                                       : NVT
+ temperature                                    :  300.0       K
+ using                                          : Langevin thermostat
+ with characteristic ionic time                 : 0.1000       ps
+ path integral MD                               : OFF
+ time step                                      : 0.1000E-02   ps
+ number of MD steps                             :         20
+ ab initio properties sampled every             :          0   MD steps
+ enhanced equilibration method                  : NONE
+ using best-fit first order extrapolation for wavefunctions and charge density
+ backup results every                           :          5   steps
+  
+ MD SCF energy / atom convergence tol.          : 0.1000E-06   eV
+ MD SCF eigenenergies tolerance                 : 0.4000E-07   eV
+ MD SCF convergence tolerance window            :          3   cycles
+
+ *******************************************************************************
+  
+ 
+                           -------------------------------
+                                      Unit Cell
+                           -------------------------------
+        Real Lattice(A)                      Reciprocal Lattice(1/A)
+  10.0000000   0.0000000   0.0000000        0.6283185  -0.0000000  -0.0000000
+   0.0000000  10.0000000   0.0000000        0.0000000   0.6283185  -0.0000000
+   0.0000000   0.0000000  10.0000000        0.0000000   0.0000000   0.6283185
+ 
+                       Lattice parameters(A)       Cell Angles
+                    a =   10.000000          alpha =   90.000000
+                    b =   10.000000          beta  =   90.000000
+                    c =   10.000000          gamma =   90.000000
+ 
+                       Current cell volume = 1000.000000       A**3
+                                   density =    0.028013   AMU/A**3
+                                           =    0.046517     g/cm^3
+ 
+                           -------------------------------
+                                     Cell Contents
+                           -------------------------------
+                         Total number of ions in cell =    2
+                      Total number of species in cell =    1
+                        Max number of any one species =    2
+ 
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x  Element    Atom        Fractional coordinates of atoms  x
+            x            Number           u          v          w      x
+            x----------------------------------------------------------x
+            x  N            1         0.500000   0.500000   0.500000   x 
+            x  N            2         0.615000   0.500000   0.500000   x 
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+ 
+                         No user defined ionic velocities
+ 
+                           -------------------------------
+                                   Details of Species
+                           -------------------------------
+ 
+                               Mass of species in AMU
+                                    N   14.0067400
+ 
+                          Electric Quadrupole Moment (Barn)
+                                    N    0.0204400 Isotope 14
+ 
+                          Files used for pseudopotentials:
+                                    N 2|1.5|8|9|10|20:21(qc=5)
+ 
+                           -------------------------------
+                              k-Points For BZ Sampling
+                           -------------------------------
+                       MP grid size for SCF calculation is  1  1  1
+                            with an offset of   0.000  0.000  0.000
+                       Number of kpoints used =             1
+ 
+                           -------------------------------
+                               Symmetry and Constraints
+                           -------------------------------
+ 
+                      Maximum deviation from symmetry =  0.00000         ANG
+ 
+                      Number of symmetry operations   =           1
+                      Number of ionic constraints     =           3
+                      Point group of crystal =     1: C1, 1, 1
+                      Space group of crystal =   123: P4/mmm, -P 4 2
+ 
+             Set iprint > 1 for details on symmetry rotations/translations
+ 
+                         Centre of mass is constrained
+             Set iprint > 1 for details of linear ionic constraints
+ 
+                         Number of cell constraints= 6
+                         Cell constraints are:  0 0 0 0 0 0
+ 
+                         External pressure/stress (GPa)
+                          0.00000   0.00000   0.00000
+                                    0.00000   0.00000
+                                              0.00000
+  
++---------------- MEMORY AND SCRATCH DISK ESTIMATES PER PROCESS --------------+
+|                                                     Memory          Disk    |
+| Baseline code, static data and system overhead       66.0 MB         0.0 MB |
+| BLAS internal memory storage                          0.0 MB         0.0 MB |
+| Model and support data                               30.5 MB         0.0 MB |
+| Electronic energy minimisation requirements          13.5 MB         0.0 MB |
+| Force calculation requirements                        6.1 MB         0.0 MB |
+|                                               ----------------------------- |
+| Approx. total storage required per process          110.0 MB         0.0 MB |
+|                                                                             |
+| Requirements will fluctuate during execution and may exceed these estimates |
++-----------------------------------------------------------------------------+
+Calculating total energy with cut-off of  250.000 eV.
+------------------------------------------------------------------------ <-- SCF
+SCF loop      Energy           Fermi           Energy gain       Timer   <-- SCF
+                               energy          per atom          (sec)   <-- SCF
+------------------------------------------------------------------------ <-- SCF
+Initial  -2.94366523E+002  0.00000000E+000                         1.74  <-- SCF
+      1  -4.72153206E+002  3.89957579E+000   8.88933419E+001       1.86  <-- SCF
+      2  -5.41006015E+002 -5.26476377E+000   3.44264041E+001       1.95  <-- SCF
+      3  -5.42869089E+002 -5.27592327E+000   9.31537022E-001       2.01  <-- SCF
+      4  -5.42190720E+002 -3.99087955E+000  -3.39184190E-001       2.15  <-- SCF
+      5  -5.42273614E+002 -4.02909843E+000   4.14470309E-002       2.30  <-- SCF
+      6  -5.42235688E+002 -4.00617467E+000  -1.89631203E-002       2.43  <-- SCF
+      7  -5.42241442E+002 -3.95493497E+000   2.87686886E-003       2.57  <-- SCF
+      8  -5.42242732E+002 -3.92068166E+000   6.45169449E-004       2.72  <-- SCF
+      9  -5.42244361E+002 -3.87435481E+000   8.14554625E-004       2.86  <-- SCF
+     10  -5.42245539E+002 -3.86314293E+000   5.88658463E-004       2.98  <-- SCF
+     11  -5.42246896E+002 -3.85650079E+000   6.78497670E-004       3.11  <-- SCF
+     12  -5.42247544E+002 -3.85102383E+000   3.24246414E-004       3.26  <-- SCF
+     13  -5.42247916E+002 -3.85235477E+000   1.85905534E-004       3.40  <-- SCF
+     14  -5.42248239E+002 -3.85130522E+000   1.61548062E-004       3.55  <-- SCF
+     15  -5.42248293E+002 -3.85131453E+000   2.70642383E-005       3.69  <-- SCF
+     16  -5.42248355E+002 -3.85174437E+000   3.10102948E-005       3.83  <-- SCF
+     17  -5.42248372E+002 -3.85156083E+000   8.48353769E-006       3.97  <-- SCF
+     18  -5.42248379E+002 -3.85153195E+000   3.28227873E-006       4.10  <-- SCF
+     19  -5.42248381E+002 -3.85154117E+000   9.73263569E-007       4.24  <-- SCF
+     20  -5.42248382E+002 -3.85152951E+000   9.52853265E-007       4.37  <-- SCF
+     21  -5.42248383E+002 -3.85153804E+000   7.52573345E-008       4.51  <-- SCF
+     22  -5.42248383E+002 -3.85154851E+000   4.77147411E-008       4.63  <-- SCF
+     23  -5.42248383E+002 -3.85155148E+000   1.81470154E-008       4.74  <-- SCF
+------------------------------------------------------------------------ <-- SCF
+ 
+Final energy, E             =  -542.2483827348     eV
+Final free energy (E-TS)    =  -542.2483827348     eV
+(energies not corrected for finite basis set)
+ 
+NB est. 0K energy (E-0.5TS)      =  -542.2483827348     eV
+ 
+ Starting MD
+ 
+ ************************************** Forces **************************************
+ *                                                                                  *
+ *                           Cartesian components (eV/A)                            *
+ * -------------------------------------------------------------------------------- *
+ *                         x                    y                    z              *
+ *                                                                                  *
+ * N               1      2.40468             -0.00000             -0.00000         *
+ * N               2     -2.40468              0.00000              0.00000         *
+ *                                                                                  *
+ ************************************************************************************
+  
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x                                               MD Data:     x
+            x                                                            x
+            x              time :      0.000000                   ps     x
+            x                                                            x
+            x   Potential Energy:   -542.248383                   eV     x
+            x   Kinetic   Energy:      0.038778                   eV     x
+            x   Total     Energy:   -542.209605                   eV     x
+            x   Hamilt    Energy:   -542.209605                   eV     x
+            x                                                            x
+            x        Temperature:    300.000000                    K     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+
+================================================================================
+ Starting MD iteration          1 ...
+================================================================================
+ 
++---------------- MEMORY AND SCRATCH DISK ESTIMATES PER PROCESS --------------+
+|                                                     Memory          Disk    |
+| Model and support data                               40.2 MB         0.0 MB |
+| Molecular Dynamics requirements                      15.4 MB         0.0 MB |
+|                                               ----------------------------- |
+| Approx. total storage required per process           55.7 MB         0.0 MB |
+|                                                                             |
+| Requirements will fluctuate during execution and may exceed these estimates |
++-----------------------------------------------------------------------------+
+ 
+ 
+                           -------------------------------
+                                     Cell Contents
+                           -------------------------------
+ 
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x  Element    Atom        Fractional coordinates of atoms    x
+            x            Number           u          v          w        x
+            x------------------------------------------------------------x
+            x   N          1          0.500379   0.500297   0.499703     x
+            x   N          2          0.614621   0.499703   0.500297     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+------------------------------------------------------------------------ <-- SCF
+SCF loop      Energy           Fermi           Energy gain       Timer   <-- SCF
+                               energy          per atom          (sec)   <-- SCF
+------------------------------------------------------------------------ <-- SCF
+Initial  -5.42345503E+002  0.00000000E+000                         4.88  <-- SCF
+      1  -5.42263009E+002 -3.81485536E+000  -4.12472354E-002       4.94  <-- SCF
+      2  -5.42263092E+002 -3.81486047E+000   4.15733431E-005       5.07  <-- SCF
+      3  -5.42261893E+002 -3.77357180E+000  -5.99421460E-004       5.19  <-- SCF
+      4  -5.42262469E+002 -3.77762512E+000   2.87934022E-004       5.31  <-- SCF
+      5  -5.42262507E+002 -3.77663490E+000   1.92235166E-005       5.43  <-- SCF
+      6  -5.42262511E+002 -3.77621633E+000   1.62133402E-006       5.53  <-- SCF
+      7  -5.42262510E+002 -3.77595034E+000  -2.21748082E-007       5.64  <-- SCF
+      8  -5.42262513E+002 -3.77562833E+000   1.13566811E-006       5.75  <-- SCF
+      9  -5.42262515E+002 -3.77536142E+000   1.05730637E-006       5.86  <-- SCF
+     10  -5.42262517E+002 -3.77502254E+000   1.37334801E-006       5.96  <-- SCF
+     11  -5.42262519E+002 -3.77502346E+000   8.00210554E-007       6.07  <-- SCF
+     12  -5.42262521E+002 -3.77501883E+000   1.07892370E-006       6.18  <-- SCF
+     13  -5.42262522E+002 -3.77500233E+000   3.42752740E-007       6.29  <-- SCF
+     14  -5.42262522E+002 -3.77499260E+000   1.56443363E-007       6.40  <-- SCF
+     15  -5.42262522E+002 -3.77500457E+000   1.22616653E-007       6.51  <-- SCF
+     16  -5.42262522E+002 -3.77500406E+000   3.74756319E-008       6.62  <-- SCF
+     17  -5.42262522E+002 -3.77500169E+000   5.17444143E-009       6.73  <-- SCF
+------------------------------------------------------------------------ <-- SCF
+ 
+Final energy, E             =  -542.2625224615     eV
+Final free energy (E-TS)    =  -542.2625224615     eV
+(energies not corrected for finite basis set)
+ 
+NB est. 0K energy (E-0.5TS)      =  -542.2625224615     eV
+ 
+ 
+ ************************************** Forces **************************************
+ *                                                                                  *
+ *                           Cartesian components (eV/A)                            *
+ * -------------------------------------------------------------------------------- *
+ *                         x                    y                    z              *
+ *                                                                                  *
+ * N               1      1.31990             -0.00638              0.00638         *
+ * N               2     -1.31990              0.00638             -0.00638         *
+ *                                                                                  *
+ ************************************************************************************
+  
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x                                               MD Data:     x
+            x                                                            x
+            x              time :      0.001000                   ps     x
+            x                                                            x
+            x   Potential Energy:   -542.262522                   eV     x
+            x   Kinetic   Energy:      0.050056                   eV     x
+            x   Total     Energy:   -542.212466                   eV     x
+            x   Hamilt    Energy:   -542.212466                   eV     x
+            x                                                            x
+            x        Temperature:    387.254124                    K     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+
+--------------------------------------------------------------------------------
+ ... finished MD iteration          1
+
+================================================================================
+ Starting MD iteration          2 ...
+================================================================================
+ 
+                           -------------------------------
+                                     Cell Contents
+                           -------------------------------
+ 
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x  Element    Atom        Fractional coordinates of atoms    x
+            x            Number           u          v          w        x
+            x------------------------------------------------------------x
+            x   N          1          0.500864   0.500560   0.499435     x
+            x   N          2          0.614136   0.499440   0.500565     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+------------------------------------------------------------------------ <-- SCF
+SCF loop      Energy           Fermi           Energy gain       Timer   <-- SCF
+                               energy          per atom          (sec)   <-- SCF
+------------------------------------------------------------------------ <-- SCF
+Initial  -5.42429501E+002  0.00000000E+000                         6.86  <-- SCF
+      1  -5.42268244E+002 -3.68518254E+000  -8.06287600E-002       6.94  <-- SCF
+      2  -5.42268248E+002 -3.68522430E+000   2.28840633E-006       7.06  <-- SCF
+      3  -5.42268170E+002 -3.67611939E+000  -3.93814448E-005       7.16  <-- SCF
+      4  -5.42268217E+002 -3.67700141E+000   2.36908228E-005       7.27  <-- SCF
+      5  -5.42268222E+002 -3.67681153E+000   2.71599634E-006       7.37  <-- SCF
+      6  -5.42268222E+002 -3.67674542E+000  -4.58089531E-008       7.48  <-- SCF
+      7  -5.42268223E+002 -3.67665341E+000   1.75334674E-007       7.58  <-- SCF
+      8  -5.42268223E+002 -3.67651525E+000   2.08073943E-008       7.68  <-- SCF
+      9  -5.42268223E+002 -3.67647473E+000   4.03864939E-008       7.78  <-- SCF
+------------------------------------------------------------------------ <-- SCF
+ 
+Final energy, E             =  -542.2682227153     eV
+Final free energy (E-TS)    =  -542.2682227153     eV
+(energies not corrected for finite basis set)
+ 
+NB est. 0K energy (E-0.5TS)      =  -542.2682227153     eV
+ 
+ 
+ ************************************** Forces **************************************
+ *                                                                                  *
+ *                           Cartesian components (eV/A)                            *
+ * -------------------------------------------------------------------------------- *
+ *                         x                    y                    z              *
+ *                                                                                  *
+ * N               1     -0.15555              0.00261             -0.00263         *
+ * N               2      0.15555             -0.00261              0.00263         *
+ *                                                                                  *
+ ************************************************************************************
+  
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x                                               MD Data:     x
+            x                                                            x
+            x              time :      0.002000                   ps     x
+            x                                                            x
+            x   Potential Energy:   -542.268223                   eV     x
+            x   Kinetic   Energy:      0.052488                   eV     x
+            x   Total     Energy:   -542.215734                   eV     x
+            x   Hamilt    Energy:   -542.215734                   eV     x
+            x                                                            x
+            x        Temperature:    406.068835                    K     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+
+--------------------------------------------------------------------------------
+ ... finished MD iteration          2
+
+================================================================================
+ Starting MD iteration          3 ...
+================================================================================
+ 
+                           -------------------------------
+                                     Cell Contents
+                           -------------------------------
+ 
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x  Element    Atom        Fractional coordinates of atoms    x
+            x            Number           u          v          w        x
+            x------------------------------------------------------------x
+            x   N          1          0.501320   0.500801   0.499150     x
+            x   N          2          0.613680   0.499199   0.500850     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+------------------------------------------------------------------------ <-- SCF
+SCF loop      Energy           Fermi           Energy gain       Timer   <-- SCF
+                               energy          per atom          (sec)   <-- SCF
+------------------------------------------------------------------------ <-- SCF
+Initial  -5.42572242E+002  0.00000000E+000                         7.91  <-- SCF
+      1  -5.42260179E+002 -3.58222067E+000  -1.56031442E-001       7.98  <-- SCF
+      2  -5.42260260E+002 -3.58224818E+000   4.03283791E-005       8.10  <-- SCF
+      3  -5.42260236E+002 -3.58294720E+000  -1.19448719E-005       8.22  <-- SCF
+      4  -5.42260260E+002 -3.58272979E+000   1.17849570E-005       8.32  <-- SCF
+      5  -5.42260261E+002 -3.58278043E+000   4.90322228E-007       8.43  <-- SCF
+      6  -5.42260261E+002 -3.58278909E+000   3.59137626E-008       8.54  <-- SCF
+      7  -5.42260261E+002 -3.58279733E+000   4.37793737E-008       8.64  <-- SCF
+------------------------------------------------------------------------ <-- SCF
+ 
+Final energy, E             =  -542.2602607812     eV
+Final free energy (E-TS)    =  -542.2602607812     eV
+(energies not corrected for finite basis set)
+ 
+NB est. 0K energy (E-0.5TS)      =  -542.2602607812     eV
+ 
+ 
+ ************************************** Forces **************************************
+ *                                                                                  *
+ *                           Cartesian components (eV/A)                            *
+ * -------------------------------------------------------------------------------- *
+ *                         x                    y                    z              *
+ *                                                                                  *
+ * N               1     -1.63883              0.02516             -0.02667         *
+ * N               2      1.63883             -0.02516              0.02667         *
+ *                                                                                  *
+ ************************************************************************************
+  
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x                                               MD Data:     x
+            x                                                            x
+            x              time :      0.003000                   ps     x
+            x                                                            x
+            x   Potential Energy:   -542.260261                   eV     x
+            x   Kinetic   Energy:      0.038520                   eV     x
+            x   Total     Energy:   -542.221741                   eV     x
+            x   Hamilt    Energy:   -542.221741                   eV     x
+            x                                                            x
+            x        Temperature:    298.004542                    K     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+
+--------------------------------------------------------------------------------
+ ... finished MD iteration          3
+
+================================================================================
+ Starting MD iteration          4 ...
+================================================================================
+ 
+                           -------------------------------
+                                     Cell Contents
+                           -------------------------------
+ 
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x  Element    Atom        Fractional coordinates of atoms    x
+            x            Number           u          v          w        x
+            x------------------------------------------------------------x
+            x   N          1          0.501610   0.501016   0.498890     x
+            x   N          2          0.613390   0.498984   0.501110     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+------------------------------------------------------------------------ <-- SCF
+SCF loop      Energy           Fermi           Energy gain       Timer   <-- SCF
+                               energy          per atom          (sec)   <-- SCF
+------------------------------------------------------------------------ <-- SCF
+Initial  -5.42377335E+002  0.00000000E+000                         8.78  <-- SCF
+      1  -5.42248338E+002 -3.51831537E+000  -6.44987796E-002       8.85  <-- SCF
+      2  -5.42248355E+002 -3.51833399E+000   8.80567813E-006       8.98  <-- SCF
+      3  -5.42248292E+002 -3.52390045E+000  -3.15611687E-005       9.08  <-- SCF
+      4  -5.42248340E+002 -3.52328612E+000   2.40380894E-005       9.19  <-- SCF
+      5  -5.42248343E+002 -3.52342619E+000   1.47217487E-006       9.30  <-- SCF
+      6  -5.42248344E+002 -3.52350642E+000   1.11801317E-007       9.40  <-- SCF
+      7  -5.42248344E+002 -3.52355528E+000   1.45252592E-008       9.50  <-- SCF
+      8  -5.42248344E+002 -3.52360396E+000   6.21046081E-008       9.60  <-- SCF
+------------------------------------------------------------------------ <-- SCF
+ 
+Final energy, E             =  -542.2483436657     eV
+Final free energy (E-TS)    =  -542.2483436657     eV
+(energies not corrected for finite basis set)
+ 
+NB est. 0K energy (E-0.5TS)      =  -542.2483436657     eV
+ 
+ 
+ ************************************** Forces **************************************
+ *                                                                                  *
+ *                           Cartesian components (eV/A)                            *
+ * -------------------------------------------------------------------------------- *
+ *                         x                    y                    z              *
+ *                                                                                  *
+ * N               1     -2.61705              0.04990             -0.05447         *
+ * N               2      2.61705             -0.04990              0.05447         *
+ *                                                                                  *
+ ************************************************************************************
+  
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x                                               MD Data:     x
+            x                                                            x
+            x              time :      0.004000                   ps     x
+            x                                                            x
+            x   Potential Energy:   -542.248344                   eV     x
+            x   Kinetic   Energy:      0.020497                   eV     x
+            x   Total     Energy:   -542.227847                   eV     x
+            x   Hamilt    Energy:   -542.227847                   eV     x
+            x                                                            x
+            x        Temperature:    158.572151                    K     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+
+--------------------------------------------------------------------------------
+ ... finished MD iteration          4
+
+================================================================================
+ Starting MD iteration          5 ...
+================================================================================
+ 
+                           -------------------------------
+                                     Cell Contents
+                           -------------------------------
+ 
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x  Element    Atom        Fractional coordinates of atoms    x
+            x            Number           u          v          w        x
+            x------------------------------------------------------------x
+            x   N          1          0.501714   0.501212   0.498658     x
+            x   N          2          0.613286   0.498788   0.501342     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+------------------------------------------------------------------------ <-- SCF
+SCF loop      Energy           Fermi           Energy gain       Timer   <-- SCF
+                               energy          per atom          (sec)   <-- SCF
+------------------------------------------------------------------------ <-- SCF
+Initial  -5.42314619E+002  0.00000000E+000                         9.74  <-- SCF
+      1  -5.42243098E+002 -3.49333885E+000  -3.57605224E-002       9.81  <-- SCF
+      2  -5.42243106E+002 -3.49336713E+000   4.43047060E-006       9.94  <-- SCF
+      3  -5.42242994E+002 -3.50393759E+000  -5.61962741E-005      10.05  <-- SCF
+      4  -5.42243063E+002 -3.50285616E+000   3.47272193E-005      10.16  <-- SCF
+      5  -5.42243069E+002 -3.50312032E+000   2.91256097E-006      10.27  <-- SCF
+      6  -5.42243070E+002 -3.50322854E+000   2.08032712E-007      10.37  <-- SCF
+      7  -5.42243070E+002 -3.50332349E+000   5.31880994E-008      10.47  <-- SCF
+      8  -5.42243070E+002 -3.50344975E+000   1.91112735E-007      10.57  <-- SCF
+      9  -5.42243071E+002 -3.50351930E+000   2.06104689E-007      10.67  <-- SCF
+     10  -5.42243071E+002 -3.50363034E+000   3.36893265E-007      10.78  <-- SCF
+     11  -5.42243072E+002 -3.50362471E+000   1.27076961E-007      10.89  <-- SCF
+     12  -5.42243072E+002 -3.50362540E+000   1.68829849E-007      10.99  <-- SCF
+     13  -5.42243072E+002 -3.50362443E+000   4.95679384E-008      11.10  <-- SCF
+     14  -5.42243072E+002 -3.50362655E+000   2.00558003E-008      11.19  <-- SCF
+------------------------------------------------------------------------ <-- SCF
+ 
+Final energy, E             =  -542.2430720273     eV
+Final free energy (E-TS)    =  -542.2430720273     eV
+(energies not corrected for finite basis set)
+ 
+NB est. 0K energy (E-0.5TS)      =  -542.2430720273     eV
+ 
+ 
+ ************************************** Forces **************************************
+ *                                                                                  *
+ *                           Cartesian components (eV/A)                            *
+ * -------------------------------------------------------------------------------- *
+ *                         x                    y                    z              *
+ *                                                                                  *
+ * N               1     -2.95571              0.06708             -0.07422         *
+ * N               2      2.95571             -0.06708              0.07422         *
+ *                                                                                  *
+ ************************************************************************************
+  
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x                                               MD Data:     x
+            x                                                            x
+            x              time :      0.005000                   ps     x
+            x                                                            x
+            x   Potential Energy:   -542.243072                   eV     x
+            x   Kinetic   Energy:      0.017504                   eV     x
+            x   Total     Energy:   -542.225568                   eV     x
+            x   Hamilt    Energy:   -542.225568                   eV     x
+            x                                                            x
+            x        Temperature:    135.419632                    K     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+
+--------------------------------------------------------------------------------
+ ... finished MD iteration          5
+
+================================================================================
+ Starting MD iteration          6 ...
+================================================================================
+ 
+                           -------------------------------
+                                     Cell Contents
+                           -------------------------------
+ 
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x  Element    Atom        Fractional coordinates of atoms    x
+            x            Number           u          v          w        x
+            x------------------------------------------------------------x
+            x   N          1          0.501610   0.501459   0.498355     x
+            x   N          2          0.613390   0.498541   0.501645     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+------------------------------------------------------------------------ <-- SCF
+SCF loop      Energy           Fermi           Energy gain       Timer   <-- SCF
+                               energy          per atom          (sec)   <-- SCF
+------------------------------------------------------------------------ <-- SCF
+Initial  -5.42375543E+002  0.00000000E+000                        11.33  <-- SCF
+      1  -5.42249725E+002 -3.50467518E+000  -6.29094613E-002      11.40  <-- SCF
+      2  -5.42249747E+002 -3.50470009E+000   1.11632276E-005      11.53  <-- SCF
+      3  -5.42249404E+002 -3.52942621E+000  -1.71558531E-004      11.65  <-- SCF
+      4  -5.42249548E+002 -3.52692977E+000   7.22045521E-005      11.77  <-- SCF
+      5  -5.42249567E+002 -3.52746920E+000   9.41968304E-006      11.88  <-- SCF
+      6  -5.42249569E+002 -3.52772726E+000   8.29193545E-007      11.99  <-- SCF
+      7  -5.42249569E+002 -3.52791098E+000  -7.15133338E-008      12.10  <-- SCF
+      8  -5.42249569E+002 -3.52814037E+000   3.23359110E-007      12.19  <-- SCF
+      9  -5.42249570E+002 -3.52827849E+000   3.03768458E-007      12.30  <-- SCF
+     10  -5.42249571E+002 -3.52847602E+000   4.65200890E-007      12.40  <-- SCF
+     11  -5.42249571E+002 -3.52847583E+000   3.18221550E-007      12.50  <-- SCF
+     12  -5.42249572E+002 -3.52847999E+000   4.17109602E-007      12.60  <-- SCF
+     13  -5.42249572E+002 -3.52848564E+000   1.38609137E-007      12.71  <-- SCF
+     14  -5.42249573E+002 -3.52848847E+000   6.86393047E-008      12.82  <-- SCF
+     15  -5.42249573E+002 -3.52848107E+000   5.12719672E-008      12.93  <-- SCF
+     16  -5.42249573E+002 -3.52848248E+000   7.76173465E-009      13.06  <-- SCF
+------------------------------------------------------------------------ <-- SCF
+ 
+Final energy, E             =  -542.2495727165     eV
+Final free energy (E-TS)    =  -542.2495727165     eV
+(energies not corrected for finite basis set)
+ 
+NB est. 0K energy (E-0.5TS)      =  -542.2495727165     eV
+ 
+ 
+ ************************************** Forces **************************************
+ *                                                                                  *
+ *                           Cartesian components (eV/A)                            *
+ * -------------------------------------------------------------------------------- *
+ *                         x                    y                    z              *
+ *                                                                                  *
+ * N               1     -2.53470              0.06951             -0.07839         *
+ * N               2      2.53470             -0.06951              0.07839         *
+ *                                                                                  *
+ ************************************************************************************
+  
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x                                               MD Data:     x
+            x                                                            x
+            x              time :      0.006000                   ps     x
+            x                                                            x
+            x   Potential Energy:   -542.249573                   eV     x
+            x   Kinetic   Energy:      0.032792                   eV     x
+            x   Total     Energy:   -542.216781                   eV     x
+            x   Hamilt    Energy:   -542.216781                   eV     x
+            x                                                            x
+            x        Temperature:    253.690657                    K     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+
+--------------------------------------------------------------------------------
+ ... finished MD iteration          6
+
+================================================================================
+ Starting MD iteration          7 ...
+================================================================================
+ 
+                           -------------------------------
+                                     Cell Contents
+                           -------------------------------
+ 
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x  Element    Atom        Fractional coordinates of atoms    x
+            x            Number           u          v          w        x
+            x------------------------------------------------------------x
+            x   N          1          0.501258   0.501767   0.498037     x
+            x   N          2          0.613742   0.498233   0.501963     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+------------------------------------------------------------------------ <-- SCF
+SCF loop      Energy           Fermi           Energy gain       Timer   <-- SCF
+                               energy          per atom          (sec)   <-- SCF
+------------------------------------------------------------------------ <-- SCF
+Initial  -5.42121860E+002  0.00000000E+000                        13.22  <-- SCF
+      1  -5.42263785E+002 -3.58228511E+000   7.09625031E-002      13.30  <-- SCF
+      2  -5.42263822E+002 -3.58232140E+000   1.87298192E-005      13.46  <-- SCF
+      3  -5.42263461E+002 -3.60710404E+000  -1.80495863E-004      13.61  <-- SCF
+      4  -5.42263619E+002 -3.60471950E+000   7.87674890E-005      13.75  <-- SCF
+      5  -5.42263637E+002 -3.60528453E+000   9.06567862E-006      13.86  <-- SCF
+      6  -5.42263639E+002 -3.60558375E+000   8.50060781E-007      13.97  <-- SCF
+      7  -5.42263639E+002 -3.60576260E+000  -8.58738117E-008      14.08  <-- SCF
+      8  -5.42263639E+002 -3.60596971E+000   4.05082261E-007      14.18  <-- SCF
+      9  -5.42263640E+002 -3.60613168E+000   4.46682887E-007      14.28  <-- SCF
+     10  -5.42263641E+002 -3.60631495E+000   5.62876550E-007      14.37  <-- SCF
+     11  -5.42263642E+002 -3.60631347E+000   3.74527104E-007      14.50  <-- SCF
+     12  -5.42263643E+002 -3.60632289E+000   4.72748878E-007      14.63  <-- SCF
+     13  -5.42263643E+002 -3.60632804E+000   1.25247256E-007      14.76  <-- SCF
+     14  -5.42263644E+002 -3.60633006E+000   8.79109801E-008      14.89  <-- SCF
+     15  -5.42263644E+002 -3.60632334E+000   5.01488057E-008      15.01  <-- SCF
+     16  -5.42263644E+002 -3.60632500E+000   5.23718303E-009      15.14  <-- SCF
+------------------------------------------------------------------------ <-- SCF
+ 
+Final energy, E             =  -542.2636436990     eV
+Final free energy (E-TS)    =  -542.2636436990     eV
+(energies not corrected for finite basis set)
+ 
+NB est. 0K energy (E-0.5TS)      =  -542.2636436990     eV
+ 
+ 
+ ************************************** Forces **************************************
+ *                                                                                  *
+ *                           Cartesian components (eV/A)                            *
+ * -------------------------------------------------------------------------------- *
+ *                         x                    y                    z              *
+ *                                                                                  *
+ * N               1     -1.25670              0.04325             -0.04804         *
+ * N               2      1.25670             -0.04325              0.04804         *
+ *                                                                                  *
+ ************************************************************************************
+  
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x                                               MD Data:     x
+            x                                                            x
+            x              time :      0.007000                   ps     x
+            x                                                            x
+            x   Potential Energy:   -542.263644                   eV     x
+            x   Kinetic   Energy:      0.051396                   eV     x
+            x   Total     Energy:   -542.212248                   eV     x
+            x   Hamilt    Energy:   -542.212248                   eV     x
+            x                                                            x
+            x        Temperature:    397.613551                    K     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+
+--------------------------------------------------------------------------------
+ ... finished MD iteration          7
+
+================================================================================
+ Starting MD iteration          8 ...
+================================================================================
+ 
+                           -------------------------------
+                                     Cell Contents
+                           -------------------------------
+ 
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x  Element    Atom        Fractional coordinates of atoms    x
+            x            Number           u          v          w        x
+            x------------------------------------------------------------x
+            x   N          1          0.500875   0.502107   0.497680     x
+            x   N          2          0.614125   0.497893   0.502320     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+------------------------------------------------------------------------ <-- SCF
+SCF loop      Energy           Fermi           Energy gain       Timer   <-- SCF
+                               energy          per atom          (sec)   <-- SCF
+------------------------------------------------------------------------ <-- SCF
+Initial  -5.41560001E+002  0.00000000E+000                        15.30  <-- SCF
+      1  -5.42268433E+002 -3.69131068E+000   3.54215927E-001      15.39  <-- SCF
+      2  -5.42268487E+002 -3.69134191E+000   2.69916596E-005      15.54  <-- SCF
+      3  -5.42268474E+002 -3.69067214E+000  -6.37956033E-006      15.68  <-- SCF
+      4  -5.42268486E+002 -3.69089802E+000   5.82839287E-006      15.79  <-- SCF
+      5  -5.42268488E+002 -3.69087319E+000   8.52639035E-007      15.91  <-- SCF
+      6  -5.42268488E+002 -3.69086224E+000   2.38755453E-008      16.02  <-- SCF
+      7  -5.42268488E+002 -3.69086294E+000   6.17990207E-010      16.13  <-- SCF
+------------------------------------------------------------------------ <-- SCF
+ 
+Final energy, E             =  -542.2684878996     eV
+Final free energy (E-TS)    =  -542.2684878996     eV
+(energies not corrected for finite basis set)
+ 
+NB est. 0K energy (E-0.5TS)      =  -542.2684878996     eV
+ 
+ 
+ ************************************** Forces **************************************
+ *                                                                                  *
+ *                           Cartesian components (eV/A)                            *
+ * -------------------------------------------------------------------------------- *
+ *                         x                    y                    z              *
+ *                                                                                  *
+ * N               1      0.06623              0.00173             -0.00197         *
+ * N               2     -0.06623             -0.00173              0.00197         *
+ *                                                                                  *
+ ************************************************************************************
+  
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x                                               MD Data:     x
+            x                                                            x
+            x              time :      0.008000                   ps     x
+            x                                                            x
+            x   Potential Energy:   -542.268488                   eV     x
+            x   Kinetic   Energy:      0.052234                   eV     x
+            x   Total     Energy:   -542.216254                   eV     x
+            x   Hamilt    Energy:   -542.216254                   eV     x
+            x                                                            x
+            x        Temperature:    404.098367                    K     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+
+--------------------------------------------------------------------------------
+ ... finished MD iteration          8
+
+================================================================================
+ Starting MD iteration          9 ...
+================================================================================
+ 
+                           -------------------------------
+                                     Cell Contents
+                           -------------------------------
+ 
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x  Element    Atom        Fractional coordinates of atoms    x
+            x            Number           u          v          w        x
+            x------------------------------------------------------------x
+            x   N          1          0.500492   0.502373   0.497340     x
+            x   N          2          0.614508   0.497627   0.502660     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+------------------------------------------------------------------------ <-- SCF
+SCF loop      Energy           Fermi           Energy gain       Timer   <-- SCF
+                               energy          per atom          (sec)   <-- SCF
+------------------------------------------------------------------------ <-- SCF
+Initial  -5.41603250E+002  0.00000000E+000                        16.26  <-- SCF
+      1  -5.42262796E+002 -3.77132621E+000   3.29773271E-001      16.35  <-- SCF
+      2  -5.42262872E+002 -3.77140989E+000   3.75533786E-005      16.49  <-- SCF
+      3  -5.42262829E+002 -3.77442190E+000  -2.14734497E-005      16.59  <-- SCF
+      4  -5.42262866E+002 -3.77422309E+000   1.85492648E-005      16.69  <-- SCF
+      5  -5.42262868E+002 -3.77434103E+000   1.17867655E-006      16.80  <-- SCF
+      6  -5.42262868E+002 -3.77437348E+000  -2.15428921E-008      16.90  <-- SCF
+      7  -5.42262868E+002 -3.77441105E+000   4.66178750E-008      17.00  <-- SCF
+------------------------------------------------------------------------ <-- SCF
+ 
+Final energy, E             =  -542.2628681470     eV
+Final free energy (E-TS)    =  -542.2628681470     eV
+(energies not corrected for finite basis set)
+ 
+NB est. 0K energy (E-0.5TS)      =  -542.2628681470     eV
+ 
+ 
+ ************************************** Forces **************************************
+ *                                                                                  *
+ *                           Cartesian components (eV/A)                            *
+ * -------------------------------------------------------------------------------- *
+ *                         x                    y                    z              *
+ *                                                                                  *
+ * N               1      1.30989             -0.05014              0.05602         *
+ * N               2     -1.30989              0.05014             -0.05602         *
+ *                                                                                  *
+ ************************************************************************************
+  
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x                                               MD Data:     x
+            x                                                            x
+            x              time :      0.009000                   ps     x
+            x                                                            x
+            x   Potential Energy:   -542.262868                   eV     x
+            x   Kinetic   Energy:      0.048261                   eV     x
+            x   Total     Energy:   -542.214607                   eV     x
+            x   Hamilt    Energy:   -542.214607                   eV     x
+            x                                                            x
+            x        Temperature:    373.361915                    K     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+
+--------------------------------------------------------------------------------
+ ... finished MD iteration          9
+
+================================================================================
+ Starting MD iteration         10 ...
+================================================================================
+ 
+                           -------------------------------
+                                     Cell Contents
+                           -------------------------------
+ 
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x  Element    Atom        Fractional coordinates of atoms    x
+            x            Number           u          v          w        x
+            x------------------------------------------------------------x
+            x   N          1          0.500207   0.502695   0.496947     x
+            x   N          2          0.614793   0.497305   0.503053     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+------------------------------------------------------------------------ <-- SCF
+SCF loop      Energy           Fermi           Energy gain       Timer   <-- SCF
+                               energy          per atom          (sec)   <-- SCF
+------------------------------------------------------------------------ <-- SCF
+Initial  -5.41710490E+002  0.00000000E+000                        17.14  <-- SCF
+      1  -5.42251610E+002 -3.84816258E+000   2.70560199E-001      17.21  <-- SCF
+      2  -5.42251630E+002 -3.84822464E+000   1.00112737E-005      17.34  <-- SCF
+      3  -5.42251536E+002 -3.83868308E+000  -4.71401032E-005      17.46  <-- SCF
+      4  -5.42251596E+002 -3.83971793E+000   2.98497460E-005      17.58  <-- SCF
+      5  -5.42251602E+002 -3.83951662E+000   3.14413464E-006      17.68  <-- SCF
+      6  -5.42251602E+002 -3.83943301E+000   1.36612959E-007      17.79  <-- SCF
+      7  -5.42251602E+002 -3.83936351E+000   1.66425222E-008      17.90  <-- SCF
+      8  -5.42251603E+002 -3.83928720E+000   4.76320363E-008      18.01  <-- SCF
+------------------------------------------------------------------------ <-- SCF
+ 
+Final energy, E             =  -542.2516025338     eV
+Final free energy (E-TS)    =  -542.2516025338     eV
+(energies not corrected for finite basis set)
+ 
+NB est. 0K energy (E-0.5TS)      =  -542.2516025338     eV
+ 
+ 
+ ************************************** Forces **************************************
+ *                                                                                  *
+ *                           Cartesian components (eV/A)                            *
+ * -------------------------------------------------------------------------------- *
+ *                         x                    y                    z              *
+ *                                                                                  *
+ * N               1      2.22615             -0.09999              0.11305         *
+ * N               2     -2.22615              0.09999             -0.11305         *
+ *                                                                                  *
+ ************************************************************************************
+  
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x                                               MD Data:     x
+            x                                                            x
+            x              time :      0.010000                   ps     x
+            x                                                            x
+            x   Potential Energy:   -542.251603                   eV     x
+            x   Kinetic   Energy:      0.044158                   eV     x
+            x   Total     Energy:   -542.207445                   eV     x
+            x   Hamilt    Energy:   -542.207445                   eV     x
+            x                                                            x
+            x        Temperature:    341.619425                    K     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+
+--------------------------------------------------------------------------------
+ ... finished MD iteration         10
+
+================================================================================
+ Starting MD iteration         11 ...
+================================================================================
+ 
+                           -------------------------------
+                                     Cell Contents
+                           -------------------------------
+ 
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x  Element    Atom        Fractional coordinates of atoms    x
+            x            Number           u          v          w        x
+            x------------------------------------------------------------x
+            x   N          1          0.500063   0.503020   0.496556     x
+            x   N          2          0.614937   0.496980   0.503444     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+------------------------------------------------------------------------ <-- SCF
+SCF loop      Energy           Fermi           Energy gain       Timer   <-- SCF
+                               energy          per atom          (sec)   <-- SCF
+------------------------------------------------------------------------ <-- SCF
+Initial  -5.42015978E+002  0.00000000E+000                        18.14  <-- SCF
+      1  -5.42242619E+002 -3.88648872E+000   1.13320240E-001      18.22  <-- SCF
+      2  -5.42242637E+002 -3.88649848E+000   8.95880856E-006      18.35  <-- SCF
+      3  -5.42242539E+002 -3.87554543E+000  -4.86498847E-005      18.46  <-- SCF
+      4  -5.42242596E+002 -3.87667641E+000   2.82509165E-005      18.58  <-- SCF
+      5  -5.42242602E+002 -3.87640546E+000   2.99000754E-006      18.69  <-- SCF
+      6  -5.42242602E+002 -3.87630935E+000   1.21274766E-007      18.80  <-- SCF
+      7  -5.42242602E+002 -3.87620059E+000   9.91777850E-008      18.90  <-- SCF
+      8  -5.42242603E+002 -3.87604223E+000   2.07861550E-007      19.01  <-- SCF
+      9  -5.42242603E+002 -3.87596943E+000   1.94611763E-007      19.11  <-- SCF
+     10  -5.42242604E+002 -3.87583830E+000   3.13739925E-007      19.22  <-- SCF
+     11  -5.42242604E+002 -3.87584467E+000   1.14562768E-007      19.35  <-- SCF
+     12  -5.42242604E+002 -3.87584192E+000   1.50137011E-007      19.48  <-- SCF
+     13  -5.42242604E+002 -3.87584522E+000   5.21979616E-008      19.59  <-- SCF
+     14  -5.42242604E+002 -3.87584275E+000   1.61085419E-008      19.70  <-- SCF
+------------------------------------------------------------------------ <-- SCF
+ 
+Final energy, E             =  -542.2426042598     eV
+Final free energy (E-TS)    =  -542.2426042598     eV
+(energies not corrected for finite basis set)
+ 
+NB est. 0K energy (E-0.5TS)      =  -542.2426042598     eV
+ 
+ 
+ ************************************** Forces **************************************
+ *                                                                                  *
+ *                           Cartesian components (eV/A)                            *
+ * -------------------------------------------------------------------------------- *
+ *                         x                    y                    z              *
+ *                                                                                  *
+ * N               1      2.72859             -0.13823              0.15741         *
+ * N               2     -2.72859              0.13823             -0.15741         *
+ *                                                                                  *
+ ************************************************************************************
+  
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x                                               MD Data:     x
+            x                                                            x
+            x              time :      0.011000                   ps     x
+            x                                                            x
+            x   Potential Energy:   -542.242604                   eV     x
+            x   Kinetic   Energy:      0.043049                   eV     x
+            x   Total     Energy:   -542.199556                   eV     x
+            x   Hamilt    Energy:   -542.199556                   eV     x
+            x                                                            x
+            x        Temperature:    333.038525                    K     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+
+--------------------------------------------------------------------------------
+ ... finished MD iteration         11
+
+================================================================================
+ Starting MD iteration         12 ...
+================================================================================
+ 
+                           -------------------------------
+                                     Cell Contents
+                           -------------------------------
+ 
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x  Element    Atom        Fractional coordinates of atoms    x
+            x            Number           u          v          w        x
+            x------------------------------------------------------------x
+            x   N          1          0.500111   0.503377   0.496103     x
+            x   N          2          0.614889   0.496623   0.503897     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+------------------------------------------------------------------------ <-- SCF
+SCF loop      Energy           Fermi           Energy gain       Timer   <-- SCF
+                               energy          per atom          (sec)   <-- SCF
+------------------------------------------------------------------------ <-- SCF
+Initial  -5.41966655E+002  0.00000000E+000                        19.84  <-- SCF
+      1  -5.42242732E+002 -3.89514855E+000   1.38038542E-001      19.91  <-- SCF
+      2  -5.42242763E+002 -3.89515995E+000   1.57904972E-005      20.04  <-- SCF
+      3  -5.42242520E+002 -3.87516841E+000  -1.21682966E-004      20.16  <-- SCF
+      4  -5.42242637E+002 -3.87721390E+000   5.87161172E-005      20.27  <-- SCF
+      5  -5.42242650E+002 -3.87680196E+000   6.50171744E-006      20.38  <-- SCF
+      6  -5.42242651E+002 -3.87664825E+000   4.44860529E-007      20.51  <-- SCF
+      7  -5.42242651E+002 -3.87650196E+000   1.60750926E-008      20.63  <-- SCF
+      8  -5.42242652E+002 -3.87630690E+000   1.70588161E-007      20.74  <-- SCF
+      9  -5.42242652E+002 -3.87620411E+000   1.55851233E-007      20.84  <-- SCF
+     10  -5.42242652E+002 -3.87604371E+000   2.26649322E-007      20.93  <-- SCF
+     11  -5.42242653E+002 -3.87604639E+000   1.63971581E-007      21.03  <-- SCF
+     12  -5.42242653E+002 -3.87603533E+000   2.09838442E-007      21.14  <-- SCF
+     13  -5.42242653E+002 -3.87603184E+000   6.56960085E-008      21.24  <-- SCF
+     14  -5.42242653E+002 -3.87602889E+000   2.78560113E-008      21.35  <-- SCF
+------------------------------------------------------------------------ <-- SCF
+ 
+Final energy, E             =  -542.2426533248     eV
+Final free energy (E-TS)    =  -542.2426533248     eV
+(energies not corrected for finite basis set)
+ 
+NB est. 0K energy (E-0.5TS)      =  -542.2426533248     eV
+ 
+ 
+ ************************************** Forces **************************************
+ *                                                                                  *
+ *                           Cartesian components (eV/A)                            *
+ * -------------------------------------------------------------------------------- *
+ *                         x                    y                    z              *
+ *                                                                                  *
+ * N               1      2.72948             -0.15471              0.17828         *
+ * N               2     -2.72948              0.15471             -0.17828         *
+ *                                                                                  *
+ ************************************************************************************
+  
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x                                               MD Data:     x
+            x                                                            x
+            x              time :      0.012000                   ps     x
+            x                                                            x
+            x   Potential Energy:   -542.242653                   eV     x
+            x   Kinetic   Energy:      0.046933                   eV     x
+            x   Total     Energy:   -542.195720                   eV     x
+            x   Hamilt    Energy:   -542.195720                   eV     x
+            x                                                            x
+            x        Temperature:    363.089660                    K     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+
+--------------------------------------------------------------------------------
+ ... finished MD iteration         12
+
+================================================================================
+ Starting MD iteration         13 ...
+================================================================================
+ 
+                           -------------------------------
+                                     Cell Contents
+                           -------------------------------
+ 
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x  Element    Atom        Fractional coordinates of atoms    x
+            x            Number           u          v          w        x
+            x------------------------------------------------------------x
+            x   N          1          0.500326   0.503700   0.495683     x
+            x   N          2          0.614674   0.496300   0.504317     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+------------------------------------------------------------------------ <-- SCF
+SCF loop      Energy           Fermi           Energy gain       Timer   <-- SCF
+                               energy          per atom          (sec)   <-- SCF
+------------------------------------------------------------------------ <-- SCF
+Initial  -5.42288593E+002  0.00000000E+000                        21.48  <-- SCF
+      1  -5.42251072E+002 -3.85994196E+000  -1.87605416E-002      21.55  <-- SCF
+      2  -5.42251117E+002 -3.85998825E+000   2.22288631E-005      21.68  <-- SCF
+      3  -5.42250933E+002 -3.84239490E+000  -9.16374369E-005      21.78  <-- SCF
+      4  -5.42251019E+002 -3.84405608E+000   4.28574523E-005      21.89  <-- SCF
+      5  -5.42251030E+002 -3.84369334E+000   5.33455131E-006      22.00  <-- SCF
+      6  -5.42251030E+002 -3.84349961E+000   2.64198910E-007      22.10  <-- SCF
+      7  -5.42251030E+002 -3.84337594E+000  -7.83126762E-008      22.21  <-- SCF
+      8  -5.42251030E+002 -3.84322148E+000   1.77091487E-007      22.32  <-- SCF
+      9  -5.42251031E+002 -3.84311650E+000   1.66157483E-007      22.43  <-- SCF
+     10  -5.42251031E+002 -3.84296715E+000   2.60436203E-007      22.52  <-- SCF
+     11  -5.42251032E+002 -3.84296766E+000   1.64896125E-007      22.62  <-- SCF
+     12  -5.42251032E+002 -3.84296850E+000   2.01578835E-007      22.72  <-- SCF
+     13  -5.42251032E+002 -3.84296163E+000   6.69145876E-008      22.83  <-- SCF
+     14  -5.42251032E+002 -3.84296086E+000   2.50409535E-008      22.94  <-- SCF
+------------------------------------------------------------------------ <-- SCF
+ 
+Final energy, E             =  -542.2510321134     eV
+Final free energy (E-TS)    =  -542.2510321134     eV
+(energies not corrected for finite basis set)
+ 
+NB est. 0K energy (E-0.5TS)      =  -542.2510321134     eV
+ 
+ 
+ ************************************** Forces **************************************
+ *                                                                                  *
+ *                           Cartesian components (eV/A)                            *
+ * -------------------------------------------------------------------------------- *
+ *                         x                    y                    z              *
+ *                                                                                  *
+ * N               1      2.27545             -0.14052              0.16376         *
+ * N               2     -2.27545              0.14052             -0.16376         *
+ *                                                                                  *
+ ************************************************************************************
+  
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x                                               MD Data:     x
+            x                                                            x
+            x              time :      0.013000                   ps     x
+            x                                                            x
+            x   Potential Energy:   -542.251032                   eV     x
+            x   Kinetic   Energy:      0.057915                   eV     x
+            x   Total     Energy:   -542.193117                   eV     x
+            x   Hamilt    Energy:   -542.193117                   eV     x
+            x                                                            x
+            x        Temperature:    448.054356                    K     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+
+--------------------------------------------------------------------------------
+ ... finished MD iteration         13
+
+================================================================================
+ Starting MD iteration         14 ...
+================================================================================
+ 
+                           -------------------------------
+                                     Cell Contents
+                           -------------------------------
+ 
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x  Element    Atom        Fractional coordinates of atoms    x
+            x            Number           u          v          w        x
+            x------------------------------------------------------------x
+            x   N          1          0.500773   0.504099   0.495305     x
+            x   N          2          0.614227   0.495901   0.504695     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+------------------------------------------------------------------------ <-- SCF
+SCF loop      Energy           Fermi           Energy gain       Timer   <-- SCF
+                               energy          per atom          (sec)   <-- SCF
+------------------------------------------------------------------------ <-- SCF
+Initial  -5.42629822E+002  0.00000000E+000                        23.07  <-- SCF
+      1  -5.42264626E+002 -3.78473137E+000  -1.82598257E-001      23.15  <-- SCF
+      2  -5.42264733E+002 -3.78474694E+000   5.35102716E-005      23.27  <-- SCF
+      3  -5.42264446E+002 -3.76375188E+000  -1.43560840E-004      23.38  <-- SCF
+      4  -5.42264586E+002 -3.76571303E+000   7.01885535E-005      23.50  <-- SCF
+      5  -5.42264601E+002 -3.76522777E+000   7.36246754E-006      23.61  <-- SCF
+      6  -5.42264601E+002 -3.76498484E+000   3.59541337E-007      23.71  <-- SCF
+      7  -5.42264601E+002 -3.76484773E+000  -6.77213343E-008      23.82  <-- SCF
+      8  -5.42264602E+002 -3.76467891E+000   2.49562234E-007      23.93  <-- SCF
+      9  -5.42264602E+002 -3.76451803E+000   2.58063092E-007      24.04  <-- SCF
+     10  -5.42264603E+002 -3.76436080E+000   3.26264414E-007      24.13  <-- SCF
+     11  -5.42264603E+002 -3.76436581E+000   2.50492772E-007      24.23  <-- SCF
+     12  -5.42264604E+002 -3.76435032E+000   2.99213457E-007      24.34  <-- SCF
+     13  -5.42264604E+002 -3.76434809E+000   6.26050907E-008      24.45  <-- SCF
+     14  -5.42264604E+002 -3.76434806E+000   5.20973237E-008      24.54  <-- SCF
+     15  -5.42264604E+002 -3.76435383E+000   2.59423927E-008      24.65  <-- SCF
+------------------------------------------------------------------------ <-- SCF
+ 
+Final energy, E             =  -542.2646042683     eV
+Final free energy (E-TS)    =  -542.2646042683     eV
+(energies not corrected for finite basis set)
+ 
+NB est. 0K energy (E-0.5TS)      =  -542.2646042683     eV
+ 
+ 
+ ************************************** Forces **************************************
+ *                                                                                  *
+ *                           Cartesian components (eV/A)                            *
+ * -------------------------------------------------------------------------------- *
+ *                         x                    y                    z              *
+ *                                                                                  *
+ * N               1      1.16042             -0.07592              0.08662         *
+ * N               2     -1.16042              0.07592             -0.08662         *
+ *                                                                                  *
+ ************************************************************************************
+  
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x                                               MD Data:     x
+            x                                                            x
+            x              time :      0.014000                   ps     x
+            x                                                            x
+            x   Potential Energy:   -542.264604                   eV     x
+            x   Kinetic   Energy:      0.078435                   eV     x
+            x   Total     Energy:   -542.186169                   eV     x
+            x   Hamilt    Energy:   -542.186169                   eV     x
+            x                                                            x
+            x        Temperature:    606.799415                    K     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+
+--------------------------------------------------------------------------------
+ ... finished MD iteration         14
+
+================================================================================
+ Starting MD iteration         15 ...
+================================================================================
+ 
+                           -------------------------------
+                                     Cell Contents
+                           -------------------------------
+ 
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x  Element    Atom        Fractional coordinates of atoms    x
+            x            Number           u          v          w        x
+            x------------------------------------------------------------x
+            x   N          1          0.501305   0.504510   0.494944     x
+            x   N          2          0.613695   0.495490   0.505056     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+------------------------------------------------------------------------ <-- SCF
+SCF loop      Energy           Fermi           Energy gain       Timer   <-- SCF
+                               energy          per atom          (sec)   <-- SCF
+------------------------------------------------------------------------ <-- SCF
+Initial  -5.43113495E+002  0.00000000E+000                        24.78  <-- SCF
+      1  -5.42268875E+002 -3.67409853E+000  -4.22309697E-001      24.85  <-- SCF
+      2  -5.42269019E+002 -3.67411422E+000   7.17706921E-005      24.97  <-- SCF
+      3  -5.42268978E+002 -3.66856139E+000  -2.03575923E-005      25.08  <-- SCF
+      4  -5.42269006E+002 -3.66884868E+000   1.41535645E-005      25.17  <-- SCF
+      5  -5.42269010E+002 -3.66864885E+000   1.60012693E-006      25.28  <-- SCF
+      6  -5.42269010E+002 -3.66859346E+000  -3.76461170E-008      25.38  <-- SCF
+      7  -5.42269010E+002 -3.66852799E+000   5.18877339E-008      25.49  <-- SCF
+------------------------------------------------------------------------ <-- SCF
+ 
+Final energy, E             =  -542.2690097089     eV
+Final free energy (E-TS)    =  -542.2690097089     eV
+(energies not corrected for finite basis set)
+ 
+NB est. 0K energy (E-0.5TS)      =  -542.2690097089     eV
+ 
+ 
+ ************************************** Forces **************************************
+ *                                                                                  *
+ *                           Cartesian components (eV/A)                            *
+ * -------------------------------------------------------------------------------- *
+ *                         x                    y                    z              *
+ *                                                                                  *
+ * N               1     -0.27105              0.03172             -0.03573         *
+ * N               2      0.27105             -0.03172              0.03573         *
+ *                                                                                  *
+ ************************************************************************************
+  
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x                                               MD Data:     x
+            x                                                            x
+            x              time :      0.015000                   ps     x
+            x                                                            x
+            x   Potential Energy:   -542.269010                   eV     x
+            x   Kinetic   Energy:      0.081976                   eV     x
+            x   Total     Energy:   -542.187033                   eV     x
+            x   Hamilt    Energy:   -542.187033                   eV     x
+            x                                                            x
+            x        Temperature:    634.196964                    K     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+
+--------------------------------------------------------------------------------
+ ... finished MD iteration         15
+
+================================================================================
+ Starting MD iteration         16 ...
+================================================================================
+ 
+                           -------------------------------
+                                     Cell Contents
+                           -------------------------------
+ 
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x  Element    Atom        Fractional coordinates of atoms    x
+            x            Number           u          v          w        x
+            x------------------------------------------------------------x
+            x   N          1          0.501801   0.504872   0.494529     x
+            x   N          2          0.613199   0.495128   0.505471     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+------------------------------------------------------------------------ <-- SCF
+SCF loop      Energy           Fermi           Energy gain       Timer   <-- SCF
+                               energy          per atom          (sec)   <-- SCF
+------------------------------------------------------------------------ <-- SCF
+Initial  -5.42609491E+002  0.00000000E+000                        25.62  <-- SCF
+      1  -5.42261001E+002 -3.57775264E+000  -1.74245430E-001      25.71  <-- SCF
+      2  -5.42261044E+002 -3.57780682E+000   2.15155512E-005      25.84  <-- SCF
+      3  -5.42260975E+002 -3.58063773E+000  -3.43841663E-005      25.95  <-- SCF
+      4  -5.42261035E+002 -3.58010748E+000   3.02899219E-005      26.04  <-- SCF
+      5  -5.42261038E+002 -3.58020674E+000   1.49392150E-006      26.14  <-- SCF
+      6  -5.42261039E+002 -3.58024048E+000   8.65617458E-008      26.25  <-- SCF
+      7  -5.42261039E+002 -3.58024772E+000   1.09829693E-008      26.36  <-- SCF
+------------------------------------------------------------------------ <-- SCF
+ 
+Final energy, E             =  -542.2610385919     eV
+Final free energy (E-TS)    =  -542.2610385919     eV
+(energies not corrected for finite basis set)
+ 
+NB est. 0K energy (E-0.5TS)      =  -542.2610385919     eV
+ 
+ 
+ ************************************** Forces **************************************
+ *                                                                                  *
+ *                           Cartesian components (eV/A)                            *
+ * -------------------------------------------------------------------------------- *
+ *                         x                    y                    z              *
+ *                                                                                  *
+ * N               1     -1.65552              0.15677             -0.17617         *
+ * N               2      1.65552             -0.15677              0.17617         *
+ *                                                                                  *
+ ************************************************************************************
+  
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x                                               MD Data:     x
+            x                                                            x
+            x              time :      0.016000                   ps     x
+            x                                                            x
+            x   Potential Energy:   -542.261039                   eV     x
+            x   Kinetic   Energy:      0.073186                   eV     x
+            x   Total     Energy:   -542.187852                   eV     x
+            x   Hamilt    Energy:   -542.187852                   eV     x
+            x                                                            x
+            x        Temperature:    566.194259                    K     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+
+--------------------------------------------------------------------------------
+ ... finished MD iteration         16
+
+================================================================================
+ Starting MD iteration         17 ...
+================================================================================
+ 
+                           -------------------------------
+                                     Cell Contents
+                           -------------------------------
+ 
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x  Element    Atom        Fractional coordinates of atoms    x
+            x            Number           u          v          w        x
+            x------------------------------------------------------------x
+            x   N          1          0.502167   0.505249   0.494092     x
+            x   N          2          0.612833   0.494751   0.505908     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+------------------------------------------------------------------------ <-- SCF
+SCF loop      Energy           Fermi           Energy gain       Timer   <-- SCF
+                               energy          per atom          (sec)   <-- SCF
+------------------------------------------------------------------------ <-- SCF
+Initial  -5.42508329E+002  0.00000000E+000                        26.49  <-- SCF
+      1  -5.42248991E+002 -3.50965551E+000  -1.29668974E-001      26.57  <-- SCF
+      2  -5.42249066E+002 -3.50974424E+000   3.77657700E-005      26.70  <-- SCF
+      3  -5.42248936E+002 -3.52100949E+000  -6.52928926E-005      26.81  <-- SCF
+      4  -5.42249019E+002 -3.51969979E+000   4.16903819E-005      26.92  <-- SCF
+      5  -5.42249026E+002 -3.51997763E+000   3.23043517E-006      27.01  <-- SCF
+      6  -5.42249026E+002 -3.52007915E+000   4.07081871E-007      27.12  <-- SCF
+      7  -5.42249027E+002 -3.52017958E+000   1.05953539E-007      27.23  <-- SCF
+      8  -5.42249027E+002 -3.52031116E+000   1.61543172E-007      27.33  <-- SCF
+      9  -5.42249027E+002 -3.52037906E+000   1.58835229E-007      27.44  <-- SCF
+     10  -5.42249028E+002 -3.52048288E+000   2.18423745E-007      27.53  <-- SCF
+     11  -5.42249028E+002 -3.52047859E+000   1.29528234E-007      27.64  <-- SCF
+     12  -5.42249028E+002 -3.52048386E+000   1.71846280E-007      27.74  <-- SCF
+     13  -5.42249028E+002 -3.52048238E+000   5.75498970E-008      27.85  <-- SCF
+     14  -5.42249029E+002 -3.52048443E+000   2.13704736E-008      27.96  <-- SCF
+------------------------------------------------------------------------ <-- SCF
+ 
+Final energy, E             =  -542.2490285227     eV
+Final free energy (E-TS)    =  -542.2490285227     eV
+(energies not corrected for finite basis set)
+ 
+NB est. 0K energy (E-0.5TS)      =  -542.2490285227     eV
+ 
+ 
+ ************************************** Forces **************************************
+ *                                                                                  *
+ *                           Cartesian components (eV/A)                            *
+ * -------------------------------------------------------------------------------- *
+ *                         x                    y                    z              *
+ *                                                                                  *
+ * N               1     -2.62826              0.26346             -0.29666         *
+ * N               2      2.62826             -0.26346              0.29666         *
+ *                                                                                  *
+ ************************************************************************************
+  
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x                                               MD Data:     x
+            x                                                            x
+            x              time :      0.017000                   ps     x
+            x                                                            x
+            x   Potential Energy:   -542.249029                   eV     x
+            x   Kinetic   Energy:      0.059219                   eV     x
+            x   Total     Energy:   -542.189809                   eV     x
+            x   Hamilt    Energy:   -542.189809                   eV     x
+            x                                                            x
+            x        Temperature:    458.142308                    K     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+
+--------------------------------------------------------------------------------
+ ... finished MD iteration         17
+
+================================================================================
+ Starting MD iteration         18 ...
+================================================================================
+ 
+                           -------------------------------
+                                     Cell Contents
+                           -------------------------------
+ 
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x  Element    Atom        Fractional coordinates of atoms    x
+            x            Number           u          v          w        x
+            x------------------------------------------------------------x
+            x   N          1          0.502375   0.505581   0.493635     x
+            x   N          2          0.612625   0.494419   0.506365     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+------------------------------------------------------------------------ <-- SCF
+SCF loop      Energy           Fermi           Energy gain       Timer   <-- SCF
+                               energy          per atom          (sec)   <-- SCF
+------------------------------------------------------------------------ <-- SCF
+Initial  -5.42669802E+002  0.00000000E+000                        28.10  <-- SCF
+      1  -5.42242257E+002 -3.48119715E+000  -2.13772206E-001      28.19  <-- SCF
+      2  -5.42242285E+002 -3.48125386E+000   1.35946474E-005      28.32  <-- SCF
+      3  -5.42242126E+002 -3.49506497E+000  -7.90767599E-005      28.43  <-- SCF
+      4  -5.42242216E+002 -3.49353460E+000   4.47992362E-005      28.55  <-- SCF
+      5  -5.42242224E+002 -3.49384601E+000   4.04144767E-006      28.65  <-- SCF
+      6  -5.42242225E+002 -3.49408914E+000   3.45396926E-007      28.76  <-- SCF
+      7  -5.42242225E+002 -3.49420477E+000   1.32142354E-007      28.86  <-- SCF
+      8  -5.42242225E+002 -3.49435721E+000   1.83953571E-007      28.96  <-- SCF
+      9  -5.42242226E+002 -3.49438767E+000   1.90465839E-007      29.07  <-- SCF
+     10  -5.42242226E+002 -3.49439237E+000   1.07658341E-007      29.17  <-- SCF
+     11  -5.42242226E+002 -3.49440233E+000   1.52936263E-007      29.28  <-- SCF
+     12  -5.42242227E+002 -3.49442014E+000   2.11241572E-007      29.38  <-- SCF
+     13  -5.42242227E+002 -3.49442024E+000   5.24015576E-008      29.49  <-- SCF
+     14  -5.42242227E+002 -3.49441761E+000   3.74437777E-008      29.59  <-- SCF
+------------------------------------------------------------------------ <-- SCF
+ 
+Final energy, E             =  -542.2422269812     eV
+Final free energy (E-TS)    =  -542.2422269812     eV
+(energies not corrected for finite basis set)
+ 
+NB est. 0K energy (E-0.5TS)      =  -542.2422269812     eV
+ 
+ 
+ ************************************** Forces **************************************
+ *                                                                                  *
+ *                           Cartesian components (eV/A)                            *
+ * -------------------------------------------------------------------------------- *
+ *                         x                    y                    z              *
+ *                                                                                  *
+ * N               1     -3.05793              0.32502             -0.37082         *
+ * N               2      3.05793             -0.32502              0.37082         *
+ *                                                                                  *
+ ************************************************************************************
+  
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x                                               MD Data:     x
+            x                                                            x
+            x              time :      0.018000                   ps     x
+            x                                                            x
+            x   Potential Energy:   -542.242227                   eV     x
+            x   Kinetic   Energy:      0.054830                   eV     x
+            x   Total     Energy:   -542.187397                   eV     x
+            x   Hamilt    Energy:   -542.187397                   eV     x
+            x                                                            x
+            x        Temperature:    424.184100                    K     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+
+--------------------------------------------------------------------------------
+ ... finished MD iteration         18
+
+================================================================================
+ Starting MD iteration         19 ...
+================================================================================
+ 
+                           -------------------------------
+                                     Cell Contents
+                           -------------------------------
+ 
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x  Element    Atom        Fractional coordinates of atoms    x
+            x            Number           u          v          w        x
+            x------------------------------------------------------------x
+            x   N          1          0.502309   0.506008   0.493136     x
+            x   N          2          0.612691   0.493992   0.506864     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+------------------------------------------------------------------------ <-- SCF
+SCF loop      Energy           Fermi           Energy gain       Timer   <-- SCF
+                               energy          per atom          (sec)   <-- SCF
+------------------------------------------------------------------------ <-- SCF
+Initial  -5.42399903E+002  0.00000000E+000                        29.73  <-- SCF
+      1  -5.42252202E+002 -3.49809042E+000  -7.38506547E-002      29.79  <-- SCF
+      2  -5.42252265E+002 -3.49820167E+000   3.12892001E-005      29.93  <-- SCF
+      3  -5.42251700E+002 -3.53108305E+000  -2.82533327E-004      30.05  <-- SCF
+      4  -5.42251913E+002 -3.52777077E+000   1.06974049E-004      30.16  <-- SCF
+      5  -5.42251939E+002 -3.52848386E+000   1.29587089E-005      30.27  <-- SCF
+      6  -5.42251942E+002 -3.52890823E+000   1.19239057E-006      30.38  <-- SCF
+      7  -5.42251942E+002 -3.52914282E+000  -5.72370108E-008      30.48  <-- SCF
+      8  -5.42251943E+002 -3.52939851E+000   7.18900009E-007      30.58  <-- SCF
+      9  -5.42251945E+002 -3.52964024E+000   9.21753590E-007      30.68  <-- SCF
+     10  -5.42251947E+002 -3.52984061E+000   1.01282785E-006      30.79  <-- SCF
+     11  -5.42251948E+002 -3.52984172E+000   7.22694473E-007      30.89  <-- SCF
+     12  -5.42251950E+002 -3.52985520E+000   8.41889679E-007      31.01  <-- SCF
+     13  -5.42251950E+002 -3.52985948E+000   1.90352778E-007      31.13  <-- SCF
+     14  -5.42251951E+002 -3.52986001E+000   1.74633640E-007      31.22  <-- SCF
+     15  -5.42251951E+002 -3.52985140E+000   7.16281828E-008      31.35  <-- SCF
+     16  -5.42251951E+002 -3.52985358E+000   7.26816422E-009      31.47  <-- SCF
+------------------------------------------------------------------------ <-- SCF
+ 
+Final energy, E             =  -542.2519509993     eV
+Final free energy (E-TS)    =  -542.2519509993     eV
+(energies not corrected for finite basis set)
+ 
+NB est. 0K energy (E-0.5TS)      =  -542.2519509993     eV
+ 
+ 
+ ************************************** Forces **************************************
+ *                                                                                  *
+ *                           Cartesian components (eV/A)                            *
+ * -------------------------------------------------------------------------------- *
+ *                         x                    y                    z              *
+ *                                                                                  *
+ * N               1     -2.45637              0.28357             -0.32399         *
+ * N               2      2.45637             -0.28357              0.32399         *
+ *                                                                                  *
+ ************************************************************************************
+  
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x                                               MD Data:     x
+            x                                                            x
+            x              time :      0.019000                   ps     x
+            x                                                            x
+            x   Potential Energy:   -542.251951                   eV     x
+            x   Kinetic   Energy:      0.066155                   eV     x
+            x   Total     Energy:   -542.185796                   eV     x
+            x   Hamilt    Energy:   -542.185796                   eV     x
+            x                                                            x
+            x        Temperature:    511.794408                    K     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+
+--------------------------------------------------------------------------------
+ ... finished MD iteration         19
+
+================================================================================
+ Starting MD iteration         20 ...
+================================================================================
+ 
+                           -------------------------------
+                                     Cell Contents
+                           -------------------------------
+ 
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x  Element    Atom        Fractional coordinates of atoms    x
+            x            Number           u          v          w        x
+            x------------------------------------------------------------x
+            x   N          1          0.502058   0.506466   0.492666     x
+            x   N          2          0.612942   0.493534   0.507334     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+------------------------------------------------------------------------ <-- SCF
+SCF loop      Energy           Fermi           Energy gain       Timer   <-- SCF
+                               energy          per atom          (sec)   <-- SCF
+------------------------------------------------------------------------ <-- SCF
+Initial  -5.42040294E+002  0.00000000E+000                        31.61  <-- SCF
+      1  -5.42265744E+002 -3.58472392E+000   1.12724724E-001      31.70  <-- SCF
+      2  -5.42265781E+002 -3.58472669E+000   1.87588888E-005      31.85  <-- SCF
+      3  -5.42265496E+002 -3.60563192E+000  -1.42770506E-004      31.97  <-- SCF
+      4  -5.42265634E+002 -3.60346368E+000   6.89133027E-005      32.11  <-- SCF
+      5  -5.42265649E+002 -3.60391117E+000   7.75978522E-006      32.22  <-- SCF
+      6  -5.42265651E+002 -3.60413851E+000   6.73552482E-007      32.33  <-- SCF
+      7  -5.42265650E+002 -3.60428846E+000  -5.91272342E-008      32.46  <-- SCF
+      8  -5.42265651E+002 -3.60447227E+000   3.74001438E-007      32.59  <-- SCF
+      9  -5.42265652E+002 -3.60459436E+000   3.91716803E-007      32.72  <-- SCF
+     10  -5.42265653E+002 -3.60474151E+000   5.39452377E-007      32.85  <-- SCF
+     11  -5.42265654E+002 -3.60474310E+000   3.04734717E-007      32.97  <-- SCF
+     12  -5.42265654E+002 -3.60475793E+000   3.63650863E-007      33.09  <-- SCF
+     13  -5.42265655E+002 -3.60475840E+000   1.44186614E-007      33.21  <-- SCF
+     14  -5.42265655E+002 -3.60475980E+000   6.47479240E-008      33.32  <-- SCF
+     15  -5.42265655E+002 -3.60475618E+000   4.09459962E-008      33.43  <-- SCF
+     16  -5.42265655E+002 -3.60475777E+000   2.84686361E-009      33.56  <-- SCF
+------------------------------------------------------------------------ <-- SCF
+ 
+Final energy, E             =  -542.2656549251     eV
+Final free energy (E-TS)    =  -542.2656549251     eV
+(energies not corrected for finite basis set)
+ 
+NB est. 0K energy (E-0.5TS)      =  -542.2656549251     eV
+ 
+ 
+ ************************************** Forces **************************************
+ *                                                                                  *
+ *                           Cartesian components (eV/A)                            *
+ * -------------------------------------------------------------------------------- *
+ *                         x                    y                    z              *
+ *                                                                                  *
+ * N               1     -1.23688              0.16052             -0.18176         *
+ * N               2      1.23688             -0.16052              0.18176         *
+ *                                                                                  *
+ ************************************************************************************
+  
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x                                               MD Data:     x
+            x                                                            x
+            x              time :      0.020000                   ps     x
+            x                                                            x
+            x   Potential Energy:   -542.265655                   eV     x
+            x   Kinetic   Energy:      0.074696                   eV     x
+            x   Total     Energy:   -542.190959                   eV     x
+            x   Hamilt    Energy:   -542.190959                   eV     x
+            x                                                            x
+            x        Temperature:    577.872775                    K     x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+
+--------------------------------------------------------------------------------
+ ... finished MD iteration         20
+ Finished MD
+ 
+ ******************************** Constrained Forces ********************************
+ *                                                                                  *
+ *                           Cartesian components (eV/A)                            *
+ * -------------------------------------------------------------------------------- *
+ *                         x                    y                    z              *
+ *                                                                                  *
+ * N               1     -1.20079             -0.77671             -0.66768         *
+ * N               2      1.20079              0.77671              0.66768         *
+ *                                                                                  *
+ ************************************************************************************
+ 
+ Pseudo atomic calculation performed for N 2s2 2p3
+ 
+ Converged in 27 iterations to a total energy of -262.5262 eV
+ 
+Charge spilling parameter for spin component 1 = 1.93%
+ 
+     Atomic Populations (Mulliken)
+     -----------------------------
+Species          Ion     s      p      d      f     Total  Charge (e)
+=====================================================================
+  N               1     1.72   3.28   0.00   0.00   5.00     0.00
+  N               2     1.72   3.28   0.00   0.00   5.00    -0.00
+=====================================================================
+ 
+                 Bond                   Population      Length (A)
+======================================================================
+               N 1 -- N 2                    1.36        1.12596
+======================================================================
+ 
+Initialisation time =      1.52 s
+Calculation time    =     32.22 s
+Finalisation time   =      0.03 s
+Total time          =     33.77 s
+Peak Memory Use     = 167884 kB
+  
+Overall parallel efficiency rating: Satisfactory (65%)                          
+  
+Data was distributed by:-
+G-vector (2-way); efficiency rating: Satisfactory (66%)                         
+  
+Parallel notes:
+1) Calculation only took 33.7 s, so efficiency estimates may be inaccurate.     

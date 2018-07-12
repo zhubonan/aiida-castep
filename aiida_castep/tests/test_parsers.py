@@ -27,7 +27,7 @@ class TestParsers(unittest.TestCase):
     def test_parse_geom(self):
         res = parse_geom_text_output(self.geom_lines, None)
         self.assertEqual(res["symbols"], ["H", "H"])
-        self.assertEqual(res["geom_energy"].shape[0], 5)
+        self.assertEqual(res["geom_total_energy"].shape[0], 5)
         self.assertEqual(res["positions"].shape[0], 5)
         self.assertEqual(res["forces"].shape[0], 5)
 
