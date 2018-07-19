@@ -1,5 +1,7 @@
 AiiDA plugin for working with CASTEP
 ====================================
+[![Documentation Status](https://readthedocs.org/projects/aiida-castep/badge/?version=master)](https://aiida-castep.readthedocs.io/en/master/?badge=master)
+[![pipeline status](https://gitlab.com/bz1/aiida-castep/badges/master/pipeline.svg)](https://gitlab.com/bz1/aiida-castep/commits/master)
 
 This is a  plugin for using CASTEP in AiiDA.
 The plugin is OK for production but still under active development.
