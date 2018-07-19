@@ -248,5 +248,8 @@ Use ``calc.get_outputs_dict()`` to access the output nodes.
 Alternatively, the main ``ParameterData`` node's content can be return using
 ``calc.res.<tab completion>``. 
 Other nodes can be access using ``calc.out.<tab completion>``. 
-We only set the calculation as "FINISHED" when is really finished. 
-For example, non-converged geometry optimization run will be marked ad "FAILED". 
+The calculation's state is set to "FINISHED" after it is completed without error.
+This does not mean that the underlying task has succeeded.
+For example, an unconverged geometry optimization due to the maximum iteration being reached is still an "FINISHED" calculation,
+as CASTEP has completed what the user has requested.
+On the other hand, if the caluclation is terminated due to the time limit (cleanly exited or not), it will be set to the "FAILED" state.
