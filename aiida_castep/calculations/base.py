@@ -578,10 +578,12 @@ class BaseCastepInputGenerator(object):
         # If we are doing geometryoptimisation retrived the geom file and -out.cell file
         calculation_mode = parameters.get_dict().get("PARAM", {}).get("task")
 
-        if calculation_mode in ["geometryoptimisation", "geometryoptimization"]:
+        if calculation_mode.lower() in ["geometryoptimisation", "geometryoptimization"]:
             settings_retrieve_list.append(self._SEED_NAME + ".geom")
-            if parameters.get_dict().get("PARAM", {}).get("write_cell_structure"):
-                settings_retrieve_list.append(self._SEED_NAME + "-out.cell")
+        if parameters.get_dict().get("PARAM", {}).get("write_cell_structure"):
+            settings_retrieve_list.append(self._SEED_NAME + "-out.cell")
+        if calculation_mode.lower() == "transitionstatesearch":
+            settings_retrieve_list.append(self._SEED_NAME + ".ts")
         # For MD calculation retrieve the *.md file
         if calculation_mode.lower() == "molecular dynamics":
             settings_retrieve_list.append(self._SEED_NAME + ".md")
