@@ -580,13 +580,18 @@ class BaseCastepInputGenerator(object):
 
         if calculation_mode.lower() in ["geometryoptimisation", "geometryoptimization"]:
             settings_retrieve_list.append(self._SEED_NAME + ".geom")
+        # Retrieve output cell file if requested
         if parameters.get_dict().get("PARAM", {}).get("write_cell_structure"):
             settings_retrieve_list.append(self._SEED_NAME + "-out.cell")
+        # For transition state search
         if calculation_mode.lower() == "transitionstatesearch":
             settings_retrieve_list.append(self._SEED_NAME + ".ts")
         # For MD calculation retrieve the *.md file
         if calculation_mode.lower() == "molecular dynamics":
             settings_retrieve_list.append(self._SEED_NAME + ".md")
+        # For phonon calculation
+        if calculation_mode.lower() == "phonon":
+            settings_retrieve_list.append(self._SEED_NAME + ".phonon")
 
         calcinfo.retrieve_list += settings_retrieve_list
         calcinfo.retrieve_list += self._internal_retrieve_list
