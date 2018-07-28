@@ -30,8 +30,9 @@ def test_ase_to_castep_index(unsorted_atoms):
 
 
 def test_sort_atoms(unsorted_atoms, sorted_atoms):
-    unsorted_atoms = sort_atoms_castep(unsorted_atoms, copy=True)
+    unsorted_atoms = sort_atoms_castep(unsorted_atoms, copy=True, order=None)
     assert np.all(unsorted_atoms.numbers == sorted_atoms.numbers)
+    assert np.all(unsorted_atoms.positions == sorted_atoms.positions)
 
 
 def test_check_sorted(unsorted_atoms, sorted_atoms):

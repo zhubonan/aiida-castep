@@ -84,10 +84,11 @@ def sort_atoms_castep(atoms, copy=True, order=(0, 1, 2)):
         atoms = atoms.copy()
 
     # Sort castep style
-    for i in reversed(order):
-        isort = np.argsort(atoms.positions[:, i], kind="mergesort")
-        atoms.positions = atoms.positions[isort]
-        atoms.numbers = atoms.numbers[isort]
+    if order is not None:
+        for i in reversed(order):
+            isort = np.argsort(atoms.positions[:, i], kind="mergesort")
+            atoms.positions = atoms.positions[isort]
+            atoms.numbers = atoms.numbers[isort]
 
     isort = np.argsort(atoms.numbers, kind="mergesort")
     atoms.positions = atoms.positions[isort]
