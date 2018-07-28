@@ -4,6 +4,7 @@ Tests for utils module
 
 import pytest
 import ase
+from ..utils import *
 
 @pytest.fixture
 def unsorted_atoms():
@@ -21,17 +22,18 @@ def sorted_atoms():
     return atoms
 
 
-def test_atoms_to_castep(unsorted_atoms):
-    res = atoms_to_castep(unsorted_atoms, [0, 2, 1])
+def test_ase_to_castep_index(unsorted_atoms):
+    res = ase_to_castep_index(unsorted_atoms, [0, 2, 1])
     assert res[0] == ["Ti", 1]
     assert res[1] == ["O", 2]
     assert res[2] == ["O", 1]
 
-def test_sort_atoms(unsorted_atoms):
-    sort_atoms_castep(unsorted_atoms, copy=False)
-    assert unsorted_atoms == sorted_atoms
+
+def test_sort_atoms(unsorted_atoms, sorted_atoms):
+    unsorted_atoms = sort_atoms_castep(unsorted_atoms, copy=True)
+    assert np.all(unsorted_atoms.numbers == sorted_atoms.numbers)
 
 
 def test_check_sorted(unsorted_atoms, sorted_atoms):
-    assert is_castep_sorted(unsorted_atoms) is False
-    assert is_castep_sorted(sorted_atoms) is True
+    assert is_castep_sorted(unsorted_atoms) == False
+    assert is_castep_sorted(sorted_atoms) == True

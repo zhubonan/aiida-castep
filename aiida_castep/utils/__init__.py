@@ -38,7 +38,7 @@ def ase_to_castep_index(atoms, indices):
 
         # CASTEP start counting from 1
         c = np.where(iatoms[mask] == i)[0][0] + 1
-        res.append(symbols[i], c)
+        res.append([symbols[i], c])
     return res
 
 
