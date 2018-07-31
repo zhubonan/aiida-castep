@@ -23,7 +23,7 @@
         "aiida.calculations": [
             "castep.castep = aiida_castep.calculations.castep:CastepCalculation",
             "castep.bs = aiida_castep.calculations.castep:CastepBSCalculation",
-            "castep.spec = aiida_castep.calculations.castep:CastepSpectralCalculation"
+            "castep.spec = aiida_castep.calculations.castep:CastepSpectralCalculation",
             "castep.ts = aiida_castep.calculations.castep:CastepTSCalculation"
         ],
         "aiida.parsers": [

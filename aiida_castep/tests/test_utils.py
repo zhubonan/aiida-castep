@@ -3,8 +3,12 @@ Tests for utils module
 """
 
 import pytest
-import ase
 from ..utils import *
+
+try:
+    import ase
+except ImportError:
+    ase = None
 
 @pytest.fixture
 def unsorted_atoms():
@@ -22,6 +26,7 @@ def sorted_atoms():
     return atoms
 
 
+@pytest.mark.skipif(ase is None, reason="No ase module")
 def test_ase_to_castep_index(unsorted_atoms):
     res = ase_to_castep_index(unsorted_atoms, [0, 2, 1])
     assert res[0] == ["Ti", 1]
@@ -29,12 +34,14 @@ def test_ase_to_castep_index(unsorted_atoms):
     assert res[2] == ["O", 1]
 
 
+@pytest.mark.skipif(ase is None, reason="No ase module")
 def test_sort_atoms(unsorted_atoms, sorted_atoms):
     unsorted_atoms = sort_atoms_castep(unsorted_atoms, copy=True, order=None)
     assert np.all(unsorted_atoms.numbers == sorted_atoms.numbers)
     assert np.all(unsorted_atoms.positions == sorted_atoms.positions)
 
 
+@pytest.mark.skipif(ase is None, reason="No ase module")
 def test_check_sorted(unsorted_atoms, sorted_atoms):
     assert is_castep_sorted(unsorted_atoms) == False
     assert is_castep_sorted(sorted_atoms) == True
