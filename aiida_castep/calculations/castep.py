@@ -5,11 +5,12 @@ from aiida.orm import CalculationFactory
 from aiida.orm import DataFactory
 from aiida.common.utils import classproperty
 from aiida.common.exceptions import InputValidationError
-
+from .utils import get_castep_ion_line
 from aiida_castep.calculations.base import BaseCastepInputGenerator
 
 JobCalculation = CalculationFactory("job", True)
 KpointsData = DataFactory("array.kpoints")
+StructureData = DataFactory("structure")
 
 
 class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
@@ -19,6 +20,8 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
     """
 
     _default_symlink_usage = True
+    _acceptable_tasks = ["singlepoint", "geometryoptimization",
+                         "geometryoptimisation",]
 
     def _init_internal_params(self):
 
@@ -51,13 +54,65 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
 
         return retdict
 
+class TaskSpecificCalculation(CastepCalculation):
+    """
+    Class for Calculations that only allow certain tasks
+    """
 
-class CastepExtraKpnCalculation(CastepCalculation):
+    _acceptable_tasks = []
+    def _generate_CASTEPinputdata(self, *args, **kwargs):
+        param = args[0].get_dict()
+
+        if param['PARAM']['task'].lower() not in map(str.lower, self._acceptable_tasks):
+            raise InputValidationError("Wrong TASK value {}"
+                                       " set in PARAM".format(param['PARAM']['task'].lower()))
+        return super(TaskSpecificCalculation, self)._generate_CASTEPinputdata(*args, **kwargs)
+
+
+class CastepTSCalculation(TaskSpecificCalculation):
+    """
+    CASTEP calculation for transition state search. Use an extra input product structure.
+    """
+    _acceptable_tasks = ["transitionstatesearch"]
+
+    @classproperty
+    def _use_methods(cls):
+
+        retdict = super(CastepTSCalculation, cls)._use_methods
+        retdict['product_structure'] = {
+            'valid_types': StructureData,
+            'additional_parameter': None,
+            'linkname': 'product_structure',
+            'docstring': "Use the node defining the structure as the product structure in transition state search."
+        }
+        return retdict
+
+    def _generate_CASTEPinputdata(self, *args, **kwargs):
+        """
+        Override superclass methods
+        """
+        cell, param, local_copy = super(CastepTSCalculation, self).\
+                    _generate_CASTEPinputdata(*args, **kwargs)
+        structure = args[1]
+        pdt_position_list = ["%BLOCK POSITIONS_PRODUCT_ABS"]
+        for site in structure.sites:
+            kind = structure.get_kind(site.kind_name)
+            name = kind.symbol
+            line = get_castep_ion_line(name, site.position)
+            pdt_position_list.append(line)
+
+        pdt_position_list.append("%ENDBLOCK POSITIONS_PRODUCT_ABS")
+        # Append to the cell file's string
+        cell += "\n" + "\n".join(pdt_position_list)
+        return cell, param, local_copy
+
+
+
+class CastepExtraKpnCalculation(TaskSpecificCalculation):
     """
     CASTEP calculation with extra kpoints (e.g SPEC, BS, PHONON, SPECTRAL)
     """
     KPN_NAME = ""  # Alias of the name, e.g BS for bandstructure calculation
-    TASK = ""  # The value of PARAM.task to be enforced
     CHECK_EXTRA_KPN = False  # Check the existence of extra kpoints node
 
     @classproperty
@@ -80,12 +135,6 @@ class CastepExtraKpnCalculation(CastepCalculation):
 
     def _generate_CASTEPinputdata(self, *args, **kwargs):
         """Add BS kpoints information to the calculation"""
-
-        param = args[0].get_dict()
-
-        if param['PARAM']['task'].lower() != self.TASK.lower():
-            raise InputValidationError("Wrong TASK value {}"
-                                       " set in PARAM".format(param['PARAM']['task'].lower()))
 
         cell, param, local_copy = super(
             CastepExtraKpnCalculation, self)._generate_CASTEPinputdata(*args, **kwargs)
@@ -134,7 +183,8 @@ class CastepExtraKpnCalculation(CastepCalculation):
                 bs_kpts_lines.append("{:18.10f} {:18.10f} "
                                      "{:18.10f} {:18.10f}".format(kpoint[0],
                                                                   kpoint[1],
-                                                                  kpoint[2], weight))
+                                                                  kpoint[2],
+                                                                  weight))
             bs_kpts_lines.append("%ENDBLOCK "
                                  "{}_KPOINTS_LIST".format(self.kpn_name.upper()))
             cell += "\n" + "\n".join(bs_kpts_lines)
@@ -190,6 +240,7 @@ class CastepBSCalculation(CastepExtraKpnCalculation):
     """
 
     TASK = "BANDSTRUCTURE"
+    _acceptable_tasks = [TASK]
     KPN_NAME = "BS"
 
 
@@ -198,6 +249,7 @@ class CastepSpectralCalculation(CastepExtraKpnCalculation):
     CASTEP spectral calculation
     """
     TASK = "SPECTRAL"
+    _acceptable_tasks = [TASK]
     KPN_NAME = "SPECTRAL"
 
 
@@ -206,4 +258,5 @@ class CastepOpticsCalclulation(CastepExtraKpnCalculation):
     CASTEP Optics calculation
     """
     TASK = "OPTICS"
+    _acceptable_tasks = [TASK]
     KPN_NAME = "OPTICS"

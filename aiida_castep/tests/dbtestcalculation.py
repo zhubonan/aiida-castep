@@ -10,6 +10,7 @@ from aiida.orm import DataFactory, CalculationFactory
 from aiida.backends.testbase import AiidaTestCase
 from aiida.orm import Code
 from aiida_castep.calculations.castep import CastepBSCalculation as BSCalc
+from aiida_castep.calculations.castep import CastepTSCalculation as TSCalc
 from .dbcommon import BaseDataCase, BaseCalcCase
 
 CasCalc = CalculationFactory("castep.castep")
@@ -303,6 +304,83 @@ class TestRestartGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
 
         with SandboxFolder() as f:
             c3._prepare_for_submission(f, c3_inp)
+
+
+class TestTSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
+
+
+    @classmethod
+    def setUpClass(cls, *args, **kwargs):
+        super(TestTSCalculation, cls).setUpClass(*args, **kwargs)
+        cls.setup_code_castep()
+
+    def get_default_input(self):
+
+        input_params = {
+            "PARAM": {
+                "task": "transitionstatesearch",
+                "xc_functional": "lda",
+            },
+            "CELL": {
+                "fix_all_cell": "true",
+                # "species_pot": ("Ba Ba_00.usp",)
+            }
+        }
+
+        return input_params
+
+    def setup_calculation(self, param=None):
+        from .utils import get_STO_structure
+
+        STO = get_STO_structure()
+        full, missing, C9 = self.create_family()
+        c = TSCalc()
+
+        if param:
+            pdict = param
+        else:
+            pdict = self.get_default_input()
+
+        # pdict["CELL"].pop("block species_pot")
+        p = ParameterData(dict=pdict)
+        c.use_structure(STO)
+        c.use_product_structure(STO)
+        c.use_pseudos_from_family(C9)
+        c.use_kpoints(self.get_kpoints_mesh())
+        c.use_code(self.code)
+        c.set_computer(self.computer)
+        c.set_resources({"num_machines": 1, "num_mpiprocs_per_machine": 2})
+        c.use_parameters(p)
+
+        # Check mixing libray with acutal entry
+        return c
+
+
+    def test_input_validation(self):
+        """Test input validation"""
+
+        c = self.setup_calculation()
+        pdict = c.get_inputs_dict()[c.get_linkname('parameters')].get_dict()
+        pdict['PARAM']['task'] = "singlepoint"
+        c.get_inputs_dict()[c.get_linkname('parameters')].set_dict(pdict)
+
+        with SandboxFolder() as f:
+            with self.assertRaises(InputValidationError):
+                inputs = c.get_inputs_dict()
+                c._prepare_for_submission(f, inputs)
+
+    def test_generation(self):
+        """
+        Test if the block has been generated
+        """
+        c = self.setup_calculation()
+        with SandboxFolder() as f:
+            inputs = c.get_inputs_dict()
+            c._prepare_for_submission(f, inputs)
+            with f.open("aiida.cell") as fcell:
+                cell = fcell.read()
+                self.assertIn("%BLOCK POSITIONS_PRODUCT_ABS", cell)
+                self.assertIn("%ENDBLOCK POSITIONS_PRODUCT_ABS", cell)
 
 
 class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):

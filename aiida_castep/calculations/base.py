@@ -752,6 +752,7 @@ class BaseCastepInputGenerator(object):
         Set the pseudo to use for all atomic kinds, picking pseudos from the
         family with name family_name.
 
+
         :note: The structure must already be set.
 
         :param family_name: the name of the group containing the pseudos
