@@ -379,8 +379,8 @@ class TestTSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
             c._prepare_for_submission(f, inputs)
             with f.open("aiida.cell") as fcell:
                 cell = fcell.read()
-                self.assertIn("%BLOCK POSITIONS_PRODUCT_ABS", cell)
-                self.assertIn("%ENDBLOCK POSITIONS_PRODUCT_ABS", cell)
+                self.assertIn("%BLOCK POSITIONS_ABS_PRODUCT", cell)
+                self.assertIn("%ENDBLOCK POSITIONS_ABS_PRODUCT", cell)
 
 
 class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
