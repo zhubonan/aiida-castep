@@ -93,10 +93,11 @@ class CastepTSCalculation(TaskSpecificCalculation):
         """
         cell, param, local_copy = super(CastepTSCalculation, self).\
                     _generate_CASTEPinputdata(*args, **kwargs)
-        structure = args[1]
+        p_structure = kwargs[self.get_linkname('product_structure')]
+
         pdt_position_list = ["%BLOCK POSITIONS_ABS_PRODUCT"]
-        for site in structure.sites:
-            kind = structure.get_kind(site.kind_name)
+        for site in p_structure.sites:
+            kind = p_structure.get_kind(site.kind_name)
             name = kind.symbol
             line = get_castep_ion_line(name, site.position)
             pdt_position_list.append(line)
