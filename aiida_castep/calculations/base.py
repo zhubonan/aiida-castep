@@ -26,7 +26,6 @@ KpointsData = DataFactory("array.kpoints")
 UpfData = DataFactory("upf")
 RemoteData = DataFactory("remote")
 
-
 class BaseCastepInputGenerator(object):
     """
     Baseclass for generating CASTEP inputs
@@ -578,20 +577,23 @@ class BaseCastepInputGenerator(object):
         # If we are doing geometryoptimisation retrived the geom file and -out.cell file
         calculation_mode = parameters.get_dict().get("PARAM", {}).get("task")
 
-        if calculation_mode.lower() in ["geometryoptimisation", "geometryoptimization"]:
-            settings_retrieve_list.append(self._SEED_NAME + ".geom")
+        # dictionary for task specific file retrieve
+        retrieve_dict = {
+            "phonon": ".phonon",
+            "magres": ".magres",
+            "transitionstatesearch": ".ts",
+            "molecular dynamics": ".md",
+            "geometryoptimisation": ".geom",
+            "geometryoptimization": ".geom",
+        }
+
+        task_extra = retrieve_dict.get(calculation_mode.lower(), None)
+        if task_extra:
+            settings_retrieve_list.append(self._SEED_NAME + task_extra)
+
         # Retrieve output cell file if requested
         if parameters.get_dict().get("PARAM", {}).get("write_cell_structure"):
             settings_retrieve_list.append(self._SEED_NAME + "-out.cell")
-        # For transition state search
-        if calculation_mode.lower() == "transitionstatesearch":
-            settings_retrieve_list.append(self._SEED_NAME + ".ts")
-        # For MD calculation retrieve the *.md file
-        if calculation_mode.lower() == "molecular dynamics":
-            settings_retrieve_list.append(self._SEED_NAME + ".md")
-        # For phonon calculation
-        if calculation_mode.lower() == "phonon":
-            settings_retrieve_list.append(self._SEED_NAME + ".phonon")
 
         calcinfo.retrieve_list += settings_retrieve_list
         calcinfo.retrieve_list += self._internal_retrieve_list
