@@ -42,11 +42,6 @@ class BaseCastepInputGenerator(object):
     # Additional files that should always be retrieved for the specific plugin
     _internal_retrieve_list = ["*.err"]
 
-    ## Default PW output parser provided by AiiDA
-    # to be defined in the subclass
-
-    _automatic_namelists = {}
-
     # in restarts, will not copy but use symlinks
     _default_symlink_usage = True
 
@@ -370,8 +365,12 @@ class BaseCastepInputGenerator(object):
 
         param_entry_list = []
         for key, value in input_params["PARAM"].iteritems():
-
-            entry = "{} : {}".format(key, value)
+            if isinstance(value, (list, tuple)):
+                lines = "\n".join(value)
+                entry = "\n%BLOCK {key}\n{content}\n%ENDBLOCK {key}\n".format(key=key,
+                    content=lines)
+            else:
+                entry = "{} : {}".format(key, value)
             param_entry_list.append(entry)
 
         param_header = self._generate_header_lines([parameters])
