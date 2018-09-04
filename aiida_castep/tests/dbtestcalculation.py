@@ -187,6 +187,14 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
             with self.assertRaises(InputValidationError):
                 c._prepare_for_submission(f, inputdict)
 
+            # Continuation keywords present - should raise exception
+            inputdict = c.get_inputs_dict()
+            input_params["PARAM"]["continuation"] = "default"
+            p2 = ParameterData(dict=input_params)
+            inputdict["parameters"] = p2
+            with self.assertRaises(InputValidationError):
+                c._prepare_for_submission(f, inputdict)
+
             c.use_code(self.code)
             inputdict = c.get_inputs_dict()
             c._prepare_for_submission(f, inputdict)

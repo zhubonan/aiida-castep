@@ -486,6 +486,17 @@ class BaseCastepInputGenerator(object):
                 raise InputValidationError("parent_calc_folder, if specified, "
                                            "must be of type RemoteData")
 
+        # If requested to reuse, check if the parent_calc_folder is defined
+        param_dict = parameters.get_dict()["PARAM"]
+        require_parent = False
+        for k in param_dict:
+            if str(k).lower() in ["reuse", "continuation"]:
+                require_parent = True
+                break
+        if parent_calc_folder is None and require_parent:
+                raise InputValidationError("No parent calculation folder passed"
+                " for restart calculation using reuse/continuation")
+
         # Check if a code is specified
         try:
             code = inputdict.pop(self.get_linkname('code'))
