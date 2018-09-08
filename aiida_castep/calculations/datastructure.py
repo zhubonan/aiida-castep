@@ -54,3 +54,11 @@ class CastepInputFile(OrderedDict):
 
     def get_string(self):
         return "\n".join(self.get_file_lines())
+
+
+class ParamFile(CastepInputFile):
+    pass
+
+
+class CellFile(CastepInputFile):
+    pass

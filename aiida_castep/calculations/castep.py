@@ -95,16 +95,14 @@ class CastepTSCalculation(TaskSpecificCalculation):
                     _generate_CASTEPinputdata(*args, **kwargs)
         p_structure = kwargs[self.get_linkname('product_structure')]
 
-        pdt_position_list = ["%BLOCK POSITIONS_ABS_PRODUCT"]
+        pdt_position_list = []
         for site in p_structure.sites:
             kind = p_structure.get_kind(site.kind_name)
             name = kind.symbol
             line = get_castep_ion_line(name, site.position)
             pdt_position_list.append(line)
 
-        pdt_position_list.append("%ENDBLOCK POSITIONS_ABS_PRODUCT")
-        # Append to the cell file's string
-        cell += "\n" + "\n".join(pdt_position_list)
+        cell["POSITIONS_ABS_PRODUCT"] = pdt_position_list
         return cell, param, local_copy
 
 
@@ -147,7 +145,7 @@ class CastepExtraKpnCalculation(TaskSpecificCalculation):
         except KeyError:
             if self.CHECK_EXTRA_KPN:
                 raise InputValidationError("{}_kpoints"
-                                           " node not found".format(self.kpn_name))
+                                " node not found".format(self.kpn_name))
             else:
                 return cell, param, local_copy
 
@@ -175,20 +173,18 @@ class CastepExtraKpnCalculation(TaskSpecificCalculation):
                 weights = np.ones(num_kpoints, dtype=float) / num_kpoints
 
         if has_mesh is True:
-            cell += ("\n{}_kpoints_mp_grid"
-                     " : {} {} {}\n".format(self.kpn_name, *mesh))
+            mesh_name = "{}_kpoints_mp_grid".format(self.kpn_name)
+            cell[mesh_name] = "{} {} {}".format(*mesh)
         else:
-            bs_kpts_lines = [("%BLOCK "
-                              "{}_KPOINTS_LIST".format(self.kpn_name.upper()))]
+            bs_kpts_lines = []
             for kpoint, weight in zip(bs_kpts_list, weights):
                 bs_kpts_lines.append("{:18.10f} {:18.10f} "
                                      "{:18.10f} {:18.10f}".format(kpoint[0],
                                                                   kpoint[1],
                                                                   kpoint[2],
                                                                   weight))
-            bs_kpts_lines.append("%ENDBLOCK "
-                                 "{}_KPOINTS_LIST".format(self.kpn_name.upper()))
-            cell += "\n" + "\n".join(bs_kpts_lines)
+            bname = "{}_KPOINTS_LIST".format(self.kpn_name.upper())
+            cell[bname] = bs_kpts_lines
         return cell, param, local_copy
 
     @classmethod

@@ -488,4 +488,4 @@ class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
             c._prepare_for_submission(f, inputs)
             with f.open("aiida.cell") as cell:
                 content = cell.read()
-        self.assertIn("bs_kpoints_mp_grid : 2 2 2", content)
+        self.assertIn("{:<20}: 2 2 2".format("bs_kpoints_mp_grid"), content)
