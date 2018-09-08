@@ -17,7 +17,8 @@ from aiida.common.datastructures import CodeInfo
 from aiida.common.exceptions import MultipleObjectsError
 from .utils import get_castep_ion_line
 from aiida_castep.data import OTFGData, UspData, get_pseudos_from_structure
-from .helper import CastepHelper
+from aiida_castep.calculations.helper import CastepHelper
+from aiida_castep.calculations.datastructure import CellFile, ParamFile
 import copy
 
 StructureData = DataFactory("structure")
@@ -208,17 +209,19 @@ class BaseCastepInputGenerator(object):
 
         # ========= Start to prepare input site data ======
 
+        cellfile = CellFile()
+        paramfile = ParamFile()
         # --------- CELL ----------
-        cell_vector_list = ["%BLOCK LATTICE_CART"]
+        cell_vector_list = []
         for vector in structure.cell:
             cell_vector_list.append( ("{0:18.10f} {1:18.10f} "
                                           "{2:18.10f}".format(*vector)))
 
-        cell_vector_list.append("%ENDBLOCK LATTICE_CART")
+        cellfile["LATTICE_CART"] = cell_vector_list
 
         # --------- ATOMIC POSITIONS---------
         # for kind in structure.kinds:
-        atomic_position_list = ["%BLOCK POSITIONS_ABS"]
+        atomic_position_list = []
         mixture_count = 0
         # deal with initial spins
         spin_list = settings_dict.pop("SPINS", None)
@@ -257,7 +260,7 @@ class BaseCastepInputGenerator(object):
             atomic_position_list.append(line)
 
         # End of the atomic position block
-        atomic_position_list.append("%ENDBLOCK POSITIONS_ABS")
+        cellfile["POSITIONS_ABS"] = atomic_position_list
 
         # Check the consistency of spin in parameters
         if spin_list:
@@ -301,24 +304,23 @@ class BaseCastepInputGenerator(object):
                     import numpy as np
                     weights = np.ones(num_kpoints, dtype=float) / num_kpoints
 
+            kpoints_line_list = []
             if has_mesh is True:
-                input_params["CELL"]["kpoints_mp_grid"] = "{} {} {}".format(*mesh)
-                kpoints_line_list = []
+                cellfile["kpoints_mp_grid"] = "{} {} {}".format(*mesh)
             else:
-                kpoints_line_list = ["%BLOCK KPOINTS_LIST"]
                 for kpoint, weight in zip(kpoints_list, weights):
                     kpoints_line_list.append("{:18.10f} {:18.10f} "
                          "{:18.10f} {:18.10f}".format(kpoint[0],
                                                       kpoint[1],
                                                       kpoint[2], weight))
-                kpoints_line_list.append("%ENDBLOCK KPOINTS_LIST")
+                cellfile["KPOINTS_LIST"] = kpoints_line_list
 
         # --------- PSUDOPOTENTIALS --------
         # Check if we are using UPF pseudos
         # Now only support simple elemental pseudopotentials
         if pseudos:
             symbols = set()  # All of the symbols
-            species_pot_list = ["%BLOCK SPECIES_POT"]
+            species_pot_list = []
             for kind in structure.kinds:
                 for s in kind.symbols:
                     symbols.add(s)
@@ -337,10 +339,7 @@ class BaseCastepInputGenerator(object):
                 if isinstance(ps, OTFGData):
                     species_pot_list.append("{:5} {}".format(s, ps.string))
 
-            species_pot_list.append("%ENDBLOCK SPECIES_POT")
-
-        else:
-            species_pot_list = []
+            cellfile["SPECIES_POT"] = species_pot_list
 
         # --------- PARAMETERS in cell file---------
         cell_entry_list = []
@@ -353,54 +352,22 @@ class BaseCastepInputGenerator(object):
 
             # Constructing block keywrods
             # We identify the key should be treated as a block it is not a string and has len() > 0
-            if isinstance(value, (list, tuple)):
-                lines = "\n".join(value)
-                entry = "\n%BLOCK {key}\n{content}\n%ENDBLOCK {key}\n".format(key=key,
-                    content=lines)
-            else:
-                entry = "{} : {}".format(key, value)
-            cell_entry_list.append(entry)
+            cellfile[key] = value
 
         ### Parameters for PARAM files ###
-
-        param_entry_list = []
-        for key, value in input_params["PARAM"].iteritems():
-            if isinstance(value, (list, tuple)):
-                lines = "\n".join(value)
-                entry = "\n%BLOCK {key}\n{content}\n%ENDBLOCK {key}\n".format(key=key,
-                    content=lines)
-            else:
-                entry = "{} : {}".format(key, value)
-            param_entry_list.append(entry)
-
+        paramfile.update(input_params["PARAM"])
         param_header = self._generate_header_lines([parameters])
-        param_file = "\n".join(param_header + param_entry_list)
+        paramfile.header = param_header
 
-        #### PUTTING THINGS TOGETHER ####
-        cellfile_list = []
-
-        # Cell vectors and positions in the cell file
-        cellfile_list.extend(cell_vector_list + ["\n"])
-        cellfile_list.extend(atomic_position_list + ["\n"])
-
-        # If not using mesh, add specified kpoints
-        cellfile_list.extend(kpoints_line_list + ["\n"])
-
-        # Pseudopotentials in cell file
-        cellfile_list.extend(species_pot_list + ["\n"])
-
-        # Keywords for cell ile
-        cellfile_list.extend(cell_entry_list)
-
-        # Final strings to be written to file
+        ### Added header to .cell file ###
         cell_file_header = self._generate_header_lines([parameters,
                                                         structure,
                                                         kpoints,
                                                         settings])
-        cellfile = "\n".join(cell_file_header + cellfile_list)
+        cellfile.header = cell_file_header
 
 
-        return cellfile, param_file, local_copy_list_to_append
+        return cellfile, paramfile, local_copy_list_to_append
 
     def _prepare_for_submission(self, tempfolder, inputdict):
 
@@ -486,6 +453,17 @@ class BaseCastepInputGenerator(object):
                 raise InputValidationError("parent_calc_folder, if specified, "
                                            "must be of type RemoteData")
 
+        # If requested to reuse, check if the parent_calc_folder is defined
+        param_dict = parameters.get_dict()["PARAM"]
+        require_parent = False
+        for k in param_dict:
+            if str(k).lower() in ["reuse", "continuation"]:
+                require_parent = True
+                break
+        if parent_calc_folder is None and require_parent:
+                raise InputValidationError("No parent calculation folder passed"
+                " for restart calculation using reuse/continuation")
+
         # Check if a code is specified
         try:
             code = inputdict.pop(self.get_linkname('code'))
@@ -505,7 +483,7 @@ class BaseCastepInputGenerator(object):
         ##############################
 
         # Generate input file
-        cell_input, param_input, pseudo_copy_list = self._generate_CASTEPinputdata(parameters,
+        cellfile, paramfile, pseudo_copy_list = self._generate_CASTEPinputdata(parameters,
                                       structure,
                                       pseudos,
                                       settings_dict,
@@ -520,10 +498,10 @@ class BaseCastepInputGenerator(object):
 
 
         with open(cell_input_filename, "w") as incell:
-            incell.write(cell_input)
+            incell.write(cellfile.get_string())
 
         with open(param_input_filename, "w") as inparam:
-            inparam.write(param_input)
+            inparam.write(cellfile.get_string())
 
         # IMPLEMENT OPERATIONS FOR RESTART
         symlink = settings_dict.pop('PARENT_FOLDER_SYMLINK', self._default_symlink_usage)
