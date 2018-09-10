@@ -499,12 +499,11 @@ class BaseCastepInputGenerator(object):
 
         param_input_filename = tempfolder.get_abs_path(self._SEED_NAME + ".param")
 
-
         with open(cell_input_filename, "w") as incell:
             incell.write(cellfile.get_string())
 
         with open(param_input_filename, "w") as inparam:
-            inparam.write(cellfile.get_string())
+            inparam.write(paramfile.get_string())
 
         # IMPLEMENT OPERATIONS FOR RESTART
         symlink = settings_dict.pop('PARENT_FOLDER_SYMLINK', self._default_symlink_usage)

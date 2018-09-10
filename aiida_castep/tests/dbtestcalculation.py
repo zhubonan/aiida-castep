@@ -202,14 +202,19 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
             # Check existenc of the file
             cell = f.get_abs_path(c._SEED_NAME + ".cell", check_existence=True)
             param = f.get_abs_path(c._SEED_NAME + ".param", check_existence=True)
-
             print("\n" + "#" * 5 + "CONTENT OF CELL FILE: " + "#" * 5)
+
+            # Check and print out the input files
             with open(cell) as p:
-                print(p.read())
+                cell_content = p.read()
+                print(cell_content)
+                self.assertIn("fix_all_cell", cell_content)
 
             print("\n" + "#" * 5 + "CONTENT OF PARAM FILE: " + "#" * 5)
             with open(param) as p:
-                print(p.read())
+                param_content = p.read()
+                print(param_content)
+                self.assertIn("task", param_content)
 
     @unittest.skip("Dry run test takes a long time.")
     def test_dryrun(self):
