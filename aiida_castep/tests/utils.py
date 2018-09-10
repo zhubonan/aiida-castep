@@ -18,6 +18,7 @@ def get_STO_structure():
     s.append_atom(position=(a / 2, a / 2, 0.), symbols=["O"])
     s.append_atom(position=(a / 2, 0., a / 2), symbols=["O"])
     s.append_atom(position=(0., a / 2, a / 2), symbols=["O"])
+    s.label = "STO"
     return s
 
 

@@ -4,11 +4,12 @@ Module for parsing .castep file
 
 import re
 import numpy as np
-from aiida_castep.parsers import CASTEPOutputParsingError
+from aiida_castep.parsers.utils import CASTEPOutputParsingError
 
 import logging
 logger = logging.getLogger("aiida")
 
+__version__ = "0.2.1"
 
 # TODO update CODATA for castep 16.1 and above
 
@@ -82,7 +83,7 @@ def parse_raw_ouput(outfile, input_dict,
     2 different keys to check in out_dict: *parser_warning* and *warnings*.
     """
 
-    parser_version = "0.2"
+    parser_version = __version__
     parser_info = {}
     parser_info["parser_warnings"] = []
     parser_info["parser_info"] = "AiiDA CASTEP basic Parser v{}".format(

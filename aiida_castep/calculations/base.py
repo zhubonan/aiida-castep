@@ -21,11 +21,14 @@ from aiida_castep.calculations.helper import CastepHelper
 from aiida_castep.calculations.datastructure import CellFile, ParamFile
 import copy
 
+__version__ = "0.2.1"
+
 StructureData = DataFactory("structure")
 ParameterData = DataFactory("parameter")
 KpointsData = DataFactory("array.kpoints")
 UpfData = DataFactory("upf")
 RemoteData = DataFactory("remote")
+
 
 class BaseCastepInputGenerator(object):
     """

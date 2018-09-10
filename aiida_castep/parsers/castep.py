@@ -4,12 +4,16 @@ Parsers for CASTEP
 from aiida.orm import DataFactory
 from aiida.parsers.parser import Parser  # , ParserParamManager
 from aiida_castep.parsers.raw_parser import parse_raw_ouput, units
-from aiida_castep.parsers import structure_from_input, add_last_if_exists
+from aiida_castep.parsers.raw_parser import __version__ as raw_parser_version
+from aiida_castep.parsers.utils import structure_from_input, add_last_if_exists
 
 ParameterData = DataFactory("parameter")
 BandsData = DataFactory("array.bands")
 
 ERR_FILE_WARNING_MSG = ".err files found in workdir"
+
+__version__ = "0.2.1"
+assert __version__ == raw_parser_version, "Inconsistent version numbers"
 
 class CastepParser(Parser):
     """
@@ -143,6 +147,9 @@ class CastepParser(Parser):
         else:
             output_structure = structure_from_input(
                 cell=cell, positions=positions, symbols=symbols)
+            calc_in = self._calc
+            # Use the output label as the input label
+            output_structure.label = calc_in.get_inputs_dict()[calc_in.get_linkname("structure")].label
             new_nodes_list.append(
                 (self.get_linkname_outstructure(), output_structure))
 

@@ -34,6 +34,17 @@ class TestCastepParser(AiidaTestCase, BaseCalcCase, BaseDataCase):
             retrieved[folder] = dict(retrieved=folderdata)
         return retrieved
 
+    def test_version_consistency(self):
+        """
+        Test that moudule versions are consistent
+        """
+
+        from aiida_castep.parsers.raw_parser import __version__ as prv
+        from aiida_castep.parsers.castep import __version__ as pcv
+        from aiida_castep.calculations.castep import __version__ as ccv
+        from aiida_castep.calculations.base import __version__ as cbv
+        self.assertTrue(prv == pcv == ccv == cbv)
+
     def test_parser_retrieved(self):
         self.setup_code_castep()
         calc = self.setup_calculation()
@@ -55,6 +66,7 @@ class TestCastepParser(AiidaTestCase, BaseCalcCase, BaseDataCase):
             self.assertIn("total_energy", out_param_dict)
             self.assertIn("unit_energy", out_param_dict)
             self.assertEqual(out_param_dict["unit_energy"], "eV")
+            self.assertEqual(calc.inp.structure.label, out_structure.label)
             # Check the length of sites are consistent
             self.assertEqual(len(out_structure.sites), len(out_traj.get_symbols()))
 

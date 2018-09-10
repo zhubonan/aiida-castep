@@ -7,10 +7,15 @@ from aiida.common.utils import classproperty
 from aiida.common.exceptions import InputValidationError
 from .utils import get_castep_ion_line
 from aiida_castep.calculations.base import BaseCastepInputGenerator
+from aiida_castep.calculations.base import __version__ as base_version
 
 JobCalculation = CalculationFactory("job", True)
 KpointsData = DataFactory("array.kpoints")
 StructureData = DataFactory("structure")
+
+# Define the version of the calculation
+__version__ = "0.2.1"
+assert __version__ == base_version
 
 
 class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
@@ -53,6 +58,7 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
         }
 
         return retdict
+
 
 class TaskSpecificCalculation(CastepCalculation):
     """
@@ -104,7 +110,6 @@ class CastepTSCalculation(TaskSpecificCalculation):
 
         cell["POSITIONS_ABS_PRODUCT"] = pdt_position_list
         return cell, param, local_copy
-
 
 
 class CastepExtraKpnCalculation(TaskSpecificCalculation):
