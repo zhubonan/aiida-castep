@@ -31,11 +31,8 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
     def _init_internal_params(self):
 
         super(CastepCalculation, self)._init_internal_params()
-
         self._default_parser = "castep.castep"
-
         self._use_kpoints = True
-
         self._SEED_NAME = "aiida"
         self._DEFAULT_INPUT_FILE = "aiida.cell"
         self._DEFAULT_OUTPUT_FILE = "aiida.castep"
@@ -68,17 +65,22 @@ class Pot1dCalculation(CastepCalculation):
     _internal_retrieve_list = CastepCalculation.\
                               _internal_retrieve_list + ["*.dat"]
 
+    def _init_internal_params(self):
+        super(Pot1dCalculation, self)._init_internal_params()
+        self._default_parser = "castep.pot1d"
+
     @classmethod
     def from_calculation(cls, calc, use_castep_bin=False, **kwargs):
 
-        cls.continue_from(calc, ignore_state=True,
-                          restart_type="continuation",
-                          use_output_structure=True,
-                          use_castep_bin=use_castep_bin,
-                          **kwargs)
+        out_calc = cls.continue_from(calc, ignore_state=True,
+                                     restart_type="continuation",
+                                     use_output_structure=True,
+                                     use_castep_bin=use_castep_bin,
+                                     **kwargs)
+        return out_calc
 
     def _generate_CASTEPinputdata(self, *args, **kwargs):
-        out = super(Pot1dCalculation, CastepCalculation).\
+        out = super(Pot1dCalculation, self).\
               _generate_CASTEPinputdata(*args, **kwargs)
         if out[1].get("continuation") is None:
             raise InputValidationError("pot1d requires "
