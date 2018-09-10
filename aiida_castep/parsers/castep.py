@@ -15,6 +15,7 @@ ERR_FILE_WARNING_MSG = ".err files found in workdir"
 __version__ = "0.2.1"
 assert __version__ == raw_parser_version, "Inconsistent version numbers"
 
+
 class CastepParser(Parser):
     """
     This is the class for Parsing results from a CASTEP calcultion
@@ -252,6 +253,48 @@ class CastepParser(Parser):
         Exists if we retrived the bands file
         """
         return 'output_bands'
+
+
+class Pot1dParser(Parser):
+    """
+    Parser for Pot1d
+    """
+
+    def parse_with_retrieved(self, retrieved):
+        # NOT READLLY IN USE
+
+        # Check that the retrieved folder is there
+        try:
+            out_folder = retrieved[self._calc._get_linkname_retrieved()]
+        except KeyError:
+            self.logger.error("No retrieved folder found")
+            return False, ()
+
+        # check what is inside the folder
+        list_of_files = out_folder.get_folder_list()
+
+        # at least the stdout should exist
+        oname = self._calc._OUTPUT_FILE_NAME
+        if oname not in list_of_files:
+            self.logger.error("Standard output not found")
+            successful = False
+            return successful, ()
+
+        # The calculation is failed if there is any err file.
+        for f in list_of_files:
+            if ".err" in f:
+                successful = False
+                self.logger.warning("Error files found in workdir.")
+                break
+
+        # Check for keyword
+        castep_file = out_folder.get_file_content(self._calc._OUTPUT_FILE_NAME)
+        if "Finished pot1d" in castep_file:
+            successful = True
+        else:
+            successful = False
+
+        return successful, []
 
 
 def bands_to_bandsdata(bands_res):

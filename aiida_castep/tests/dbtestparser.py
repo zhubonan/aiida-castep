@@ -90,3 +90,9 @@ class TestCastepParser(AiidaTestCase, BaseCalcCase, BaseDataCase):
             if name == "N2-md":
                 for k in md_keys:
                     self.assertIn(k, out_traj.get_arraynames())
+
+
+class TestPot1DParser(AiidaTestCase):
+
+    def test_load_plugin(self):
+        Pot1dParser = ParserFactory("castep.pot1d")

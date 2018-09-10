@@ -494,3 +494,9 @@ class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
             with f.open("aiida.cell") as cell:
                 content = cell.read()
         self.assertIn("{:<20}: 2 2 2".format("bs_kpoints_mp_grid"), content)
+
+
+class TestPot1dCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
+
+    def test_load_plugin(self):
+        Pot1D = CalculationFactory("castep.pot1d")

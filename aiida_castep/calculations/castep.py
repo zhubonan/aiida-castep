@@ -60,6 +60,32 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
         return retdict
 
 
+class Pot1dCalculation(CastepCalculation):
+    """
+    Class for pot1d Calculation
+    """
+
+    _internal_retrieve_list = CastepCalculation.\
+                              _internal_retrieve_list + ["*.dat"]
+
+    @classmethod
+    def from_calculation(cls, calc, use_castep_bin=False, **kwargs):
+
+        cls.continue_from(calc, ignore_state=True,
+                          restart_type="continuation",
+                          use_output_structure=True,
+                          use_castep_bin=use_castep_bin,
+                          **kwargs)
+
+    def _generate_CASTEPinputdata(self, *args, **kwargs):
+        out = super(Pot1dCalculation, CastepCalculation).\
+              _generate_CASTEPinputdata(*args, **kwargs)
+        if out[1].get("continuation") is None:
+            raise InputValidationError("pot1d requires "
+                                       "continuation being set in .param")
+        return out
+
+
 class TaskSpecificCalculation(CastepCalculation):
     """
     Class for Calculations that only allow certain tasks
