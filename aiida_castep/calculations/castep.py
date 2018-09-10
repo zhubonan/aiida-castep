@@ -87,6 +87,13 @@ class Pot1dCalculation(CastepCalculation):
                                        "continuation being set in .param")
         return out
 
+    def get_withmpi(self):
+        """
+        pot1d is not compile with mpi.
+        Hence the default is changed to False instead.
+        """
+        return self.get_attr('withmpi', False)
+
 
 class TaskSpecificCalculation(CastepCalculation):
     """
