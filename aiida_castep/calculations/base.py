@@ -43,8 +43,9 @@ class BaseCastepInputGenerator(object):
     _OUTPUT_FILE_NAME = "aiida.castep"
     _SEED_NAME = 'aiida'
 
-    # Additional files that should always be retrieved for the specific plugin
-    _internal_retrieve_list = ["*.err"]
+    # Additional files that should always be retrieved if they exist
+    _internal_retrieve_list = ["*.err", "*.den_fmt",
+                               "*-out.cell"]
 
     # in restarts, will not copy but use symlinks
     _default_symlink_usage = True
@@ -60,6 +61,15 @@ class BaseCastepInputGenerator(object):
 
     # whether we are automaticall validating the input paramters
     _auto_input_validation = True
+
+    retrieve_dict = {
+            "phonon": [".phonon"],
+            "magres": [".magres"],
+            "transitionstatesearch": [".ts"],
+            "molecular dynamics": [".md"],
+            "geometryoptimisation": [".geom"],
+            "geometryoptimization": [".geom"],
+        }
 
     @classproperty
     def _baseclass_use_methods(cls):
@@ -557,18 +567,9 @@ class BaseCastepInputGenerator(object):
         calculation_mode = parameters.get_dict().get("PARAM", {}).get("task")
 
         # dictionary for task specific file retrieve
-        retrieve_dict = {
-            "phonon": ".phonon",
-            "magres": ".magres",
-            "transitionstatesearch": ".ts",
-            "molecular dynamics": ".md",
-            "geometryoptimisation": ".geom",
-            "geometryoptimization": ".geom",
-        }
-
-        task_extra = retrieve_dict.get(calculation_mode.lower(), None)
-        if task_extra:
-            settings_retrieve_list.append(self._SEED_NAME + task_extra)
+        task_extra = self.retrieve_dict.get(calculation_mode.lower(), [])
+        for suffix in task_extra:
+            settings_retrieve_list.append(self._SEED_NAME + suffix)
 
         # Retrieve output cell file if requested
         if parameters.get_dict().get("PARAM", {}).get("write_cell_structure"):
