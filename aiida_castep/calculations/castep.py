@@ -1,6 +1,7 @@
 """
 Calculations of CASTEP
 """
+from __future__ import print_function
 from aiida.orm import CalculationFactory
 from aiida.orm import DataFactory
 from aiida.common.utils import classproperty
@@ -55,6 +56,74 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
         }
 
         return retdict
+
+    def submit_test(self, dryrun=False, verbose=True,
+                    castep_exe="castep.serial", **kwargs):
+        """
+        Test submition. Optionally do a local dryrun.
+        Return and dictionary as the third item
+        * num_kpoints: number of kpoints used.
+        * memory_MB: memory usage estimated MB
+        * disk_MB: disk space uage estimated in MB
+        """
+        from fnmatch import fnmatch
+        outcome = super(CastepCalculation, self).submit_test(**kwargs)
+        if not dryrun:
+            return outcome
+
+        def _print(x):
+            if verbose:
+                print(x)
+
+        # Do a dryrun
+        from subprocess import call, check_output
+        try:
+            output = check_output([castep_exe, "-v"]).decode()
+        except OSError:
+            _print("CASTEP excutable '{}' is not found".format(castep_exe))
+            return outcome
+
+        # Now start dryrun
+        _print("Running with {}".format(
+            check_output(["which", castep_exe]).decode()))
+        _print(output)
+
+        folder = outcome[0]
+        _print("Starting dryrun...")
+        call([castep_exe, "--dryrun", self._SEED_NAME],
+             cwd=folder.abspath)
+
+        # Check if any *err files
+        contents = folder.get_content_list()
+        for n in contents:
+            if fnmatch(n, "*.err"):
+                with folder.open(n) as fh:
+                    _print("Error found in {}:\n".format(n))
+                    _print(fh.read())
+                raise InputValidationError("Error found during dryrun")
+
+        # Gather information from the dryrun file
+        import re
+        dryrun_out = {}
+        with folder.open(self._DEFAULT_OUTPUT_FILE) as fh:
+            for line in fh:
+                m = re.match("\s*k-Points For SCF Sampling:\s+(\d)+\s*", line)
+                if m:
+                    dryrun_out["num_kpoints"] = int(m.group(1))
+                    _print("Number of k-points: {}".format(m.group(1)))
+                    m = None
+                    continue
+                m = re.match("\| Approx\. total storage required"
+                " per process\s+([0-9.]+)\sMB\s+([0-9.]+)", line)
+                if m:
+                    dryrun_out["memeroy_MB"] = (float(m.group(1)))
+                    dryrun_out["disk_MB"] = (float(m.group(2)))
+                    _print("RAM: {} MB, DISK: {} MB".format(m.group(1),
+                                                            m.group(2)))
+                    m = None
+                    continue
+
+        return outcome, dryrun_out
 
 
 class Pot1dCalculation(CastepCalculation):
