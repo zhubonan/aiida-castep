@@ -139,13 +139,18 @@ class Pot1dCalculation(CastepCalculation):
         self._default_parser = "castep.pot1d"
 
     @classmethod
-    def from_calculation(cls, calc, use_castep_bin=False, **kwargs):
+    def from_calculation(cls, calc, code, use_castep_bin=False, **kwargs):
+        """
+        Create pot1d calculation using existing calculation.
+        ``code`` must be specified as it is different from the original CASTEP code.
+        """
 
         out_calc = cls.continue_from(calc, ignore_state=True,
                                      restart_type="continuation",
                                      use_output_structure=True,
                                      use_castep_bin=use_castep_bin,
                                      **kwargs)
+        out_calc.use_code(code)
         return out_calc
 
     def _generate_CASTEPinputdata(self, *args, **kwargs):
