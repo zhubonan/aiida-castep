@@ -4,9 +4,8 @@ excutable.
 """
 from __future__ import print_function
 import subprocess as sbp
-import json
+import re
 import sys
-
 
 
 def dot_proc(iterable):
@@ -15,13 +14,13 @@ def dot_proc(iterable):
     m = len(iterable) - 1
     print("=" * (m//10))
     for n, i in enumerate(iterable):
-
-        if n % 10 ==0:
+        if n % 10 == 0:
             print(".", end="")
             sys.stdout.flush()
         if n == m:
             print("\n")
         yield i
+
 
 def progress(func, *args, **kwargs):
     try:
@@ -31,9 +30,10 @@ def progress(func, *args, **kwargs):
     else:
         return tqdm(func, *args, **kwargs)
 
-def get_castep_commands(castep_command="castep.serial"):
 
-    outlines = sbp.check_output([castep_command, "-h", "all"])
+def get_castep_commands(castep_command="castep.serial", key="all"):
+
+    outlines = sbp.check_output([castep_command, "-h", key])
     lines = outlines.split("\n")
 
     cell = {}
@@ -61,7 +61,7 @@ def get_castep_commands(castep_command="castep.serial"):
 
     return cell, param
 
-import re
+
 allowed_value_re = re.compile("Allow values: ([^.\n]+)[.\n]")
 default_value_re = re.compile("Default value: ([^.\n]+)[.\n]")
 type_re = re.compile("Type: (\w+)")
@@ -99,57 +99,3 @@ def parse_help_string(key, excutable="castep.serial"):
         key_type = "PARAM"
 
     return help_lines, key_type, key_level, value_type
-
-
-def construct_full_dict():
-    """
-    Construct a dictionary with all keys and relavent help strings
-
-    keywords and sub-keywords are in lower case except the key_tpye whcih is
-    either CELL or PARAM
-    """
-
-    castep_info = None
-    for exe_name in ["castep.mpi", "castep.serial", "castep"]:
-        try:
-            castep_info = sbp.check_output([exe_name, "--version"])
-        except OSError:
-            pass
-        else:
-            break
-
-    if castep_info is None:
-        raise RuntimeError("Cannot find castep binary")
-
-    version_num = None
-    for line in castep_info.split("\n"):
-        if "CASTEP version:" in line:
-            version_num = line.split(":")[-1].strip()
-
-    castep_exe_name = exe_name
-
-    print("######## Version info of CASTEP detected ########")
-    print(castep_info)
-
-    # Dictonary with short help lines
-    cell, param = get_castep_commands(castep_exe_name)
-
-    # The full dictionary
-    full_dict = {}
-    all = cell
-    all.update(param)  # Dictionary of all the keys
-
-    for key in progress(all):
-        lines, k_type, k_level, v_type = parse_help_string(key)
-        full_dict[key.lower()] = dict(help_short = all[key],
-                                      help_full = "\n".join(lines),
-                                      key_type= k_type,
-                                      key_level= k_level,
-                                      value_type = v_type)
-    full_dict["_CASTEP_VERSION"] =  version_num
-
-    return full_dict
-
-
-if __name__ == "__main__":
-    res  = construct_full_dict()

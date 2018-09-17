@@ -81,25 +81,24 @@ def generate(castep_excutable, save_as):
     if not respond.lower() == "y":
         print("Aborted")
         return
-
     # Dictonary with short help lines
-    print("Getting parameter lists...")
-    cell, param = get_castep_commands(castep_excutable)
+    all_keys = {}
+    for key in ["basic", "inter", "expert"]:
+        c, p = get_castep_commands(castep_excutable, key)
+        all_keys.update(c)
+        all_keys.update(p)
 
     # The full dictionary
     full_dict = {}
-    all = cell
-    all.update(param)  # Dictionary of all the keys
-    print("Gathering help information...")
-    for key in progress(all):
-        lines, k_type, k_level, v_type = parse_help_string(key, castep_excutable)
-        full_dict[key.lower()] = dict(help_short=all[key],
+
+    for key in progress(all_keys):
+        lines, k_type, k_level, v_type = parse_help_string(key)
+        full_dict[key.lower()] = dict(help_short=all_keys[key],
                                       help_full="\n".join(lines),
                                       key_type=k_type,
                                       key_level=k_level,
                                       value_type=v_type)
     full_dict["_CASTEP_VERSION"] = version_num
-
 
     import json
     with open(save_as, "w") as json_out:

@@ -9,7 +9,6 @@ Check for errorer in input dictionary
 
 import os
 import json
-from .generate import construct_full_dict
 
 import logging
 logger = logging.getLogger(__name__)
