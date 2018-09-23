@@ -16,6 +16,22 @@ logger = logging.getLogger(__name__)
 path = os.path.abspath(__file__)
 module_path = os.path.dirname(path)
 
+incompatible_keys = [
+    ('backup_interval', 'num_backup_iter'),
+    ('opt_strategy', 'opt_strategy_bias'),
+    ('basis_precision', 'cut_off_energy'),
+    ('fine_grid_scale', 'fine_gmax', 'find_cut_off_energy'),
+    ('nelectrons', 'charge'),
+    ('nelectrons', 'nup'),
+    ('nelectrons', 'ndown'),
+    ('charge', 'ndown'),
+    ('charge', 'nup'),
+    ('spin', 'nup'),
+    ('spin', 'ndown'),
+    ('nextra_bands', 'perc_extra_bands'),
+    ('metals_method', 'elec_method'),
+]
+
 
 class HelperCheckError(RuntimeError):
     pass
@@ -236,7 +252,14 @@ class CastepHelper(object):
                         value = input_dict["PARAM"].pop(key)
                         input_dict["CELL"].update({key: value})
             else:
-                raise HelperCheckError("keywords: {} are in the wrong file".format(", ".join([k[0] for k in wrong])))
+                raise HelperCheckError("keywords: {} are in "
+                                       "the wrong file".format(", ".join([k[0] for k in wrong])))
+
+        # Check incompatible keys
+        incomp = check_incompatible(input_dict["PARAM"], incompatible_keys)
+        if incomp:
+            raise HelperCheckError("Incompatible keys found: {}"
+                                   " - only one is allowed.".format(incomp))
         return input_dict
 
     def get_suggestion(self, string):
@@ -244,8 +267,6 @@ class CastepHelper(object):
         Return string for suggestion of the string
         """
         return _get_suggestion(string, self.help_dict.keys())
-
-
 
 
 def _get_suggestion(provided_string, allowed_strings):
@@ -258,7 +279,7 @@ def _get_suggestion(provided_string, allowed_strings):
 
     :param allowed_strings: a list of valid strings
 
-    :return: A string to print on output, to suggest to the user 
+    :return: A string to print on output, to suggest to the user
     a possible valid value.
     """
     import difflib
@@ -274,7 +295,6 @@ def _get_suggestion(provided_string, allowed_strings):
         return "(No similar keywords found...)"
 
 
-
 def load_json(path):
     """
     Load a json via file path
@@ -282,3 +302,17 @@ def load_json(path):
     with open(path) as f:
         res = json.load(f)
     return res
+
+
+def check_incompatible(dict_in, inc_list):
+    """
+    Chekc any conflicting keys in the dictionary
+    """
+    for incomp in inc_list:
+        c = 0
+        for k in dict_in:
+            if k in incomp:
+                c += 1
+        if c > 1:
+            return incomp
+    return

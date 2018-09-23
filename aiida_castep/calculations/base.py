@@ -69,6 +69,7 @@ class BaseCastepInputGenerator(object):
             "molecular dynamics": [".md"],
             "geometryoptimisation": [".geom"],
             "geometryoptimization": [".geom"],
+            "spectral": [".ome_bin"],
         }
 
     @classproperty
@@ -564,7 +565,7 @@ class BaseCastepInputGenerator(object):
         calcinfo.retrieve_list.extend(settings_retrieve_list)
 
         # If we are doing geometryoptimisation retrived the geom file and -out.cell file
-        calculation_mode = parameters.get_dict().get("PARAM", {}).get("task")
+        calculation_mode = parameters.get_dict().get("PARAM", {}).get("task", "")
 
         # dictionary for task specific file retrieve
         task_extra = self.retrieve_dict.get(calculation_mode.lower(), [])

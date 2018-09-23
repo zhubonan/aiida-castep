@@ -107,7 +107,7 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
         dryrun_out = {}
         with folder.open(self._DEFAULT_OUTPUT_FILE) as fh:
             for line in fh:
-                m = re.match("\s*k-Points For SCF Sampling:\s+(\d)+\s*", line)
+                m = re.match("\s*k-Points For SCF Sampling:\s+(\d+)\s*", line)
                 if m:
                     dryrun_out["num_kpoints"] = int(m.group(1))
                     _print("Number of k-points: {}".format(m.group(1)))

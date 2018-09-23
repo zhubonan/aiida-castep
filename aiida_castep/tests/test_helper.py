@@ -84,6 +84,18 @@ class TestHelper(unittest.TestCase):
         outdict = self.helper.check_dict(comb, auto_fix=True)
         self.assertIn("spin_polarised", outdict["PARAM"])
 
+        # Check incompatible keys can be spotted
+        outdict["PARAM"].update(elec_method="dm")
+        self.helper.check_dict(outdict, auto_fix=False)
+
+        outdict["PARAM"].pop("elec_method")
+        outdict["PARAM"].update(metals_method="dm")
+        self.helper.check_dict(outdict, auto_fix=False)
+
+        # Should raise error if both keys present
+        outdict["PARAM"].update(elec_method="dm")
+        with self.assertRaises(HelperCheckError):
+            outdict = self.helper.check_dict(outdict, auto_fix=False)
 
 if __name__ == "__main__":
     unittest.main()
