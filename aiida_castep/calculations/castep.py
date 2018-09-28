@@ -301,6 +301,21 @@ class CastepExtraKpnCalculation(TaskSpecificCalculation):
             cell[bname] = bs_kpts_lines
         return cell, param, local_copy
 
+    def create_restart(self, *args, **kwargs):
+        """
+        Create a restart of the calculation
+        """
+        out_calc = super(CastepExtraKpnCalculation, self).create_restart(*args, **kwargs)
+
+        # Attach the extra kpoints node if it is there
+        inp_name = "{}_kpoints".format(self.kpn_name)  # Name of the input
+        linkname = self.get_linkname(inp_name)  # Name of the link
+
+        extra_kpn_node = self.get_inputs_dict().get(linkname)
+        if extra_kpn_node:
+            getattr(out_calc, "use_" + inp_name)(extra_kpn_node)
+        return out_calc
+
     @classmethod
     def continue_from(cls, *args, **kwargs):
         """

@@ -471,6 +471,27 @@ class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
                 inputs.pop("bs_kpoints")
                 c._prepare_for_submission(f, inputs)
 
+    def test_restart(self):
+        """
+        Test creating an restart of the calculation.
+        The restart should retain the extra kpoints inputs.
+        """
+        c = self.setup_calculation()
+        new = c.create_restart(ignore_state=True)
+        self.assertEqual(type(new), type(c))
+        inpname = "{}_kpoints".format(c.kpn_name)
+        self.assertIn(new.get_linkname(inpname),
+                      new.get_inputs_dict())
+
+        # Extra kpn is not mandatory
+        extra_kpn = c.get_inputs_dict()["bs_kpoints"]
+        c._remove_link_from("bs_kpoints")
+        self.assertNotIn(extra_kpn, c.get_inputs())
+        # This should still succeed
+        new = c.create_restart(ignore_state=True)
+        self.assertNotIn(extra_kpn,
+                         new.get_inputs())
+
     def test_bs_kpoints(self):
 
         c = self.setup_calculation()
