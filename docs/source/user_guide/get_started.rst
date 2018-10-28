@@ -18,8 +18,11 @@ Installation
 ------------
 
 First, clone the repository::
+
  git clone git@gitlab.com:bz1/aiida-castep.git
+
 Then use pip to install the plugin::
+
  pip install -e <path_to_this_plugin>
 
 This way will the entrypoints will be properly registered.
@@ -27,6 +30,7 @@ The optional ``-e`` flag makes the installation editable.
 If ``aiida_core`` is not installed, it will be installed as a dependency.
 
 Alternatively, this plugin can be installed from the PyPI directly::
+
  pip install aiida-castep
 
 To allow AiiDA to discover the plugin after installation, run::

@@ -10,7 +10,15 @@ The primiary drive of this is to allow unconverged but cleanly finished calculat
 
 0.2.1
 ======
-Added `__version__` to `calculations.castep` and `parsers.castep`.
-Version numbers should be consistent across parsers and calculations for caching to work.
-Also fixed the package `aiida_castep.__version__` to 0.2.1.
-Changes in handling the output structure. Now assigning label of the input structure to the output structure.
+* Added `__version__` to `calculations.castep` and `parsers.castep`.
+* Version numbers should be consistent across parsers and calculations for caching to work.
+* Tixed the package `aiida_castep.__version__` to 0.2.1.
+* Changes in handling the output structure. Now assigning label of the input structure to the output structure.
+
+0.3.0
+=====
+* Added `Pot1dCalculation`.  
+* Added ability to do a local dryrun test in `submit_test`.  
+* Fixed a problem when generating help info in CASTEP 18.1 where only a partial list is printed by CASTEP using the `-all` flag.  
+* Various bug fixes.  
+* Released to PyPI.  
