@@ -18,6 +18,7 @@ Highlights of available features:
 * Parsing energy, force, stress from output .castep file and .geom file
 * Checking errors in .param and .cell files before submitting
 * Extra KpointData input node for BS, SEPCTRAL and PHONON task
+* Preparing/parsing transition state search calculations
 * `create_restart` method for easy creation of continuation/restart calculations. Input can be altered using `param_update` and `param_delete` keyword arguments. Automatic copying/linking of remote check files by AiiDA.
 * `get_castep_inputs` method to get a summary of inputs of a calculations.
 * `compare_with` method to compare two calculations, based on outputs from `get_castep_inputs`
@@ -32,7 +33,8 @@ Documentation is hosted at Read the Docs:
 TODOS
 -----
 
-* Methods for importing existing calculations. 
+* Methods for importing existing calculations 
+* Support for submitting file based CASTEP calculations.
 * At the moment there is no enforcement on the type in `ParameterData` input node. For example, setting *smearing_width* to 0.1 and "0.1" is equivalent, but they will store differently in the database.
 * WorkChain development for automated restart of calculations. (Waiting for AiiDA 1.0.0)
 

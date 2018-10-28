@@ -18,6 +18,7 @@ The primiary drive of this is to allow unconverged but cleanly finished calculat
 0.3.0
 =====
 * Added `Pot1dCalculation`.  
+* Added `CastepTSCalculation`
 * Added ability to do a local dryrun test in `submit_test`.  
 * Fixed a problem when generating help info in CASTEP 18.1 where only a partial list is printed by CASTEP using the `-all` flag.  
 * Various bug fixes.  
