@@ -37,6 +37,6 @@ def add_last_if_exists(dict_of_sequence, key, dict_to_be_added):
     except (KeyError, IndexError):
         return
     else:
-        # Check if last exist - in case of defaultdict being passed
+        # Check if last exist - in case of DefaultDict being passed
         if last:
             dict_to_be_added[key] = last

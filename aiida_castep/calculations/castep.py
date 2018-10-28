@@ -60,11 +60,11 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
     def submit_test(self, dryrun=False, verbose=True,
                     castep_exe="castep.serial", **kwargs):
         """
-        Test submition. Optionally do a local dryrun.
+        Test submission. Optionally do a local dryrun.
         Return and dictionary as the third item
         * num_kpoints: number of kpoints used.
         * memory_MB: memory usage estimated MB
-        * disk_MB: disk space uage estimated in MB
+        * disk_MB: disk space usage estimated in MB
         """
         from fnmatch import fnmatch
         outcome = super(CastepCalculation, self).submit_test(**kwargs)
@@ -80,7 +80,7 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
         try:
             output = check_output([castep_exe, "-v"]).decode()
         except OSError:
-            _print("CASTEP excutable '{}' is not found".format(castep_exe))
+            _print("CASTEP executable '{}' is not found".format(castep_exe))
             return outcome
 
         # Now start dryrun
@@ -116,7 +116,7 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
                 m = re.match("\| Approx\. total storage required"
                 " per process\s+([0-9.]+)\sMB\s+([0-9.]+)", line)
                 if m:
-                    dryrun_out["memeroy_MB"] = (float(m.group(1)))
+                    dryrun_out["memory_MB"] = (float(m.group(1)))
                     dryrun_out["disk_MB"] = (float(m.group(2)))
                     _print("RAM: {} MB, DISK: {} MB".format(m.group(1),
                                                             m.group(2)))
@@ -319,15 +319,15 @@ class CastepExtraKpnCalculation(TaskSpecificCalculation):
     @classmethod
     def continue_from(cls, *args, **kwargs):
         """
-        Create a new calcualtion as a continution from a given calculation.
+        Create a new calculation as a continuation from a given calculation.
         This is effectively an "restart" for CASTEP and a lot of the parameters
         can be tweaked. For example, conducting bandstructure calculation from
-        finished geometry optimisations.
+        finished geometry optimisation's.
         :param bool ignore_state: Ignore the state of parent calculation
         :param str restart_type: "continuation" or "restart".
         If set to continuation the child calculation has keyword
         'continuation' set.
-        :param bool reuse: Wether we want to reuse the previous calculation.
+        :param bool reuse: Whether we want to reuse the previous calculation.
         only applies for "restart" run
         :param bool parent_folder_symlink: if True, symlink are used instead
         of hard copies of the files. Default given be

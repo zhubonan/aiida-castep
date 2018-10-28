@@ -10,7 +10,7 @@ import numpy as np
 
 def atoms_to_castep(atoms, index):
     """Convert ase atoms' index to castep like
-    return (Specie, Ion) Depricatede, use ase_to_castep_index"""
+    return (Specie, Ion) Deprecated, use ase_to_castep_index"""
     atom = atoms[index]
     symbol = atom.symbol
     # Start counter
@@ -24,7 +24,7 @@ def atoms_to_castep(atoms, index):
 
 
 def ase_to_castep_index(atoms, indices):
-    """Convert a list of indices to castep syle
+    """Convert a list of indices to castep style
     return list of (element, i in the same element)"""
     if isinstance(indices, int):
         indices = [indices]
@@ -45,7 +45,7 @@ def ase_to_castep_index(atoms, indices):
 def generate_ionic_fix_cons(atoms, indices, mask=None):
     """
     create ionic constraint section via indices and ase Atoms
-    mask: a list of 3 integers, must be 0 (no fix) or 1 (fix this cartesian)
+    mask: a list of 3 integers, must be 0 (no fix) or 1 (fix this Cartesian)
     """
     castep_indices = ase_to_castep_index(atoms, indices)
     count = 1
@@ -72,7 +72,7 @@ def sort_atoms_castep(atoms, copy=True, order=(0, 1, 2)):
     """
     Sort ``ase.Atoms`` instance  to castep style.
     A sorted ``Atoms`` will have the same index before and after calculation.
-    This is useful when chaining optimizations requires specifying per atoms
+    This is useful when chaining optimisation requires specifying per atoms
     tags such as *SPIN* and *ionic_constraints*.
     :param copy: If True then return a copy of the atoms.
     :param order: orders of coordinates. (0, 1, 2) means the sorted atoms
@@ -107,7 +107,7 @@ def is_castep_sorted(atoms):
 
 def reuse_kpoints_grid(grid, lowest_pk=False):
     """
-    Retrive previously stored kpoints mesh data node.
+    Retrieve previously stored kpoints mesh data node.
     Will return the one with highest pk
     :param grid: Grid to be retrieved
     :param bool lowest_pk: If set to True will return the node with lowest pk
@@ -132,10 +132,10 @@ def traj_to_atoms(traj, combine_ancesters=False,
                   eng_key="enthalpy"):
     """
     Generate a list of ASE Atoms given an AiiDA TrajectoryData object
-    :param bool combine_ancesters: If ture will try to combine trajectory
-    from ancester calculations
+    :param bool combine_ancesters: If true will try to combine trajectory
+    from ancestor calculations
 
-    :returns: A list of atoms for the trajectoryG.
+    :returns: A list of atoms for the trajectory.
     """
     from ase import Atoms
     from ase.calculators.singlepoint import SinglePointCalculator

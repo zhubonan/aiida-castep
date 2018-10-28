@@ -208,17 +208,17 @@ def parse_castep_text_output(out_lines, input_dict):
 
     'n_warning_lines'- number of the lines to include for a general warning.
 
-    :return: A list of parsed_data, trajectory_data and critical_messsages:
+    :return: A list of parsed_data, trajectory_data and critical_messages:
 
-     * parsed_data: dictionary with key values, reffering to the last
-       occuring quanties
+     * parsed_data: dictionary with key values, referring to the last
+       occurring quantities
 
      * trajectory_data: key, values of the intermediate scf steps,
        such as during geometryoptimization
 
      * critical_messages: a list with critical messages.
 
-    If any is found in parsed_data["warnings"] the calucaltion should be considered as failed.
+    If any is found in parsed_data["warnings"] the calculation should be considered as failed.
     """
     from collections import defaultdict
 
@@ -236,7 +236,7 @@ def parse_castep_text_output(out_lines, input_dict):
     # Not all is needed. But we parse as much as we can here
     trajectory_data = defaultdict(list)
 
-    # In the formatof {<keywords in line>:<message to pass>}
+    # In the format {<keywords in line>:<message to pass>}
     critical_warnings = {
         "SCF cycles performed but system has not reached the groundstate": SCF_FAILURE_MESSAGE,
         "NOSTART": "Can not find start of the calculation.",
@@ -325,7 +325,7 @@ def parse_castep_text_output(out_lines, input_dict):
 
     def append_value_and_unit(line, name):
         """
-        Generat extract data from = <value> <unit> line
+        Extract data from = <value> <unit> line
         """
         elem = line.strip().split()
         value = float(elem[-2])

@@ -107,12 +107,12 @@ class OTFGData(Data):
     @classmethod
     def get_or_create(cls, otfg_entry, use_first=False, store_otfg=True):
         """
-        Create or retrive OTFG from database
+        Create or retrieve OTFG from database
         :param otfg_entry: CASTEP styled OTFG entry.
         Can either be the name of library (e.g C9) or the full specification with element like:
         "O 2|1.1|15|18|20|20:21(qc=7)"
 
-        The created OTFGData node will by default labeled by the fully entry.
+        The created OTFGData node will by default labelled by the fully entry.
         """
 
         in_db = cls.from_entry(otfg_entry)
@@ -157,7 +157,7 @@ class OTFGData(Data):
 
     @property
     def element(self):
-        """Element of the OTFG. May not be avaliable"""
+        """Element of the OTFG. May not be available"""
         return self.get_attr('element', None)
 
     @property
@@ -215,7 +215,7 @@ class OTFGData(Data):
                all families are returned.
         :param user: if None (default), return the groups for all users.
                If defined, it should be either a DbUser instance, or a string
-               for the username (that is, the user email).
+               for the user name (that is, the user email).
         """
 
         from aiida.orm import Group

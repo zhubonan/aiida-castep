@@ -18,7 +18,7 @@ assert __version__ == raw_parser_version, "Inconsistent version numbers"
 
 class CastepParser(Parser):
     """
-    This is the class for Parsing results from a CASTEP calcultion
+    This is the class for Parsing results from a CASTEP calculation
     Supported calculations types:
     signlepoint
     geom
@@ -28,14 +28,14 @@ class CastepParser(Parser):
 
     def __init__(self, calc):
         """
-        Initialize the instance of CastepParser
+        Initialise the instance of CastepParser
         """
 
         super(CastepParser, self).__init__(calc)
 
     def parse_with_retrieved(self, retrieved):
         """
-        Reverives in input a dictionary of retrieved nodes.retrieved.
+        Receives a dictionary of retrieved nodes.retrieved.
         Top level logic of operation
         """
 
@@ -250,7 +250,7 @@ class CastepParser(Parser):
     def get_linkname_outbands(cls):
         """
         Returns the name of the link to the output band data.
-        Exists if we retrived the bands file
+        Exists if we retrieved the bands file
         """
         return 'output_bands'
 
@@ -325,7 +325,7 @@ def bands_to_bandsdata(bands_res):
     bands.set_cell(bands_res[0]['cell'], pbc=(True, True, True))
 
     # Store information from *.bands in the attributes
-    # This is needes as we need to know the number of electrons
+    # This is needs as we need to know the number of electrons
     # and the fermi energy
     for key, value in bands_res[0].items():
         bands._set_attr(key, value)

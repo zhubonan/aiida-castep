@@ -1,6 +1,7 @@
 """
 Module for storing usp files into the database
 We take many things from upf.py here as usp is not too much different...
+TODO: Add function for usp file validation and parsing
 """
 
 import re
@@ -179,12 +180,11 @@ class UspData(SinglefileData):
 
         Note that the hash has to be stored in a md5 attribute, otherwise
         the pseudo will not be found.
-        We use a special md5 attribute to avoid searching through irrelavent data types.
+        We use a special md5 attribute to avoid searching through irrelevant data types.
         """
         from aiida.orm.querybuilder import QueryBuilder
         qb = QueryBuilder()
         qb.append(cls, filters={'attributes.md5': {'==': md5}})
-        # This should be refectored for better readibility
         return [_ for [_] in qb.all()]
 
     @classproperty
@@ -293,7 +293,7 @@ class UspData(SinglefileData):
         try:
             attr_element = self.get_attr('element')
         except AttributeError:
-            raise ValidationError("attribute 'elememnt' not set.")
+            raise ValidationError("attribute 'element' not set.")
 
         try:
             attr_md5 = self.get_attr('md5')
@@ -301,7 +301,7 @@ class UspData(SinglefileData):
             raise ValidationError("attribute 'md5' not set." )
 
         if md5 != attr_md5:
-            raise ValidationError("Mis-match between store md5 and actual md5 value")
+            raise ValidationError("Mismatch between store md5 and actual md5 value")
 
         # Check matching of data and actual file
         if attr_element != element:

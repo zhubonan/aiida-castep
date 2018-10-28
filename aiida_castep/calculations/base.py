@@ -59,7 +59,7 @@ class BaseCastepInputGenerator(object):
     # Default verbosity; change in subclasses
     _default_verbosity = 1
 
-    # whether we are automaticall validating the input paramters
+    # whether we are automatically validating the input parameters
     _auto_input_validation = True
 
     retrieve_dict = {
@@ -94,8 +94,8 @@ class BaseCastepInputGenerator(object):
                 'valid_types': ParameterData,
                 'additional_parameter': None,
                 'linkname': 'parameters',
-                'docstring': ("Use a node that specifies the input parameters "
-                              "for the namelists"),
+                'docstring': ("Use a node that specifies the input parameters.",
+                              "Usually needs to contain PARAM and CELL keys.")
             },
             "parent_folder": {
                 'valid_types': RemoteData,
@@ -180,7 +180,7 @@ class BaseCastepInputGenerator(object):
 
         :param parameters, ParameterData: Input goes to the .cell or .param file
         :param settings_dict: A dictionary of the settings used for generation
-        :param pseudos: A dictionary of pseduo potential Data for each kind
+        :param pseudos: A dictionary of pseudo potential Data for each kind
         :param structure: A StructureData instance
         :param kpoints: A KpointsData node, optional
         """
@@ -197,8 +197,7 @@ class BaseCastepInputGenerator(object):
         input_params = {k: _lowercase_dict(v, dict_name=k)
                         for k, v in input_params.iteritems()}
 
-        # Check if there are keywrods that need to be blocked
-        # TODO implementation. See QE's input generatetor
+        # Check if there are keywords that need to be blocked
 
         # Set verbosity to 1.
         # Parser may not work if verbosity is not 1
@@ -287,7 +286,7 @@ class BaseCastepInputGenerator(object):
                         "Inconsistent spin in cell and param files."
                         "Total spin: {} in cell file but {} in param file".format(total_spin, ))
             else:
-                # If no spin specified, do it atomatically
+                # If no spin specified, do it automatically
                 # Note that we don't check if spin polarized calculation is
                 # requested in the first place
                 input_params["PARAM"]["spin"] = total_spin
@@ -329,7 +328,7 @@ class BaseCastepInputGenerator(object):
                                                       kpoint[2], weight))
                 cellfile["KPOINTS_LIST"] = kpoints_line_list
 
-        # --------- PSUDOPOTENTIALS --------
+        # --------- PSEUDOPOTENTIALS --------
         # Check if we are using UPF pseudos
         # Now only support simple elemental pseudopotentials
         if pseudos:
@@ -341,7 +340,7 @@ class BaseCastepInputGenerator(object):
 
             # Make symbols unique
             for s in symbols:
-                ps = pseudos[s]  # Get the pseupotential object
+                ps = pseudos[s]  # Get the pseudopotential object
 
                 # If we are dealing with a UpfData object
                 if isinstance(ps, (UpfData, UspData)):
@@ -386,7 +385,7 @@ class BaseCastepInputGenerator(object):
     def _prepare_for_submission(self, tempfolder, inputdict):
 
         """
-        Routinue to be called when create the input files and other stuff
+        Routine to be called when create the input files and other stuff
 
         :param tempfolder: a aiida.common.folders.Folder subclass where
                            the plugin should put all its files.
@@ -452,7 +451,7 @@ class BaseCastepInputGenerator(object):
                 the_pseudo = inputdict.pop(link)
                 if not isinstance(the_pseudo, (UpfData, UspData, OTFGData)):
                     raise InputValidationError("Pseudo for kind(s) {} is not of "
-                                               "supoorted ".format(",".join(kinds)))
+                                               "supported ".format(",".join(kinds)))
                 for kind in kinds:
                     if kind in pseudos:
                         raise InputValidationError("Pseudo for kind {} passed "
@@ -491,7 +490,7 @@ class BaseCastepInputGenerator(object):
             for key in inputdict:
                 if key not in self._use_methods:
                     raise InputValidationError("The following input data nodes are "
-                                               "unrecognized: {}".format(inputdict.keys()))
+                                               "unrecognised: {}".format(inputdict.keys()))
         ##############################
         # END OF INITIAL INPUT CHECK #
         ##############################
@@ -564,7 +563,7 @@ class BaseCastepInputGenerator(object):
         settings_retrieve_list = settings_dict.pop("ADDITIONAL_RETRIEVE_LIST", [])
         calcinfo.retrieve_list.extend(settings_retrieve_list)
 
-        # If we are doing geometryoptimisation retrived the geom file and -out.cell file
+        # If we are doing geometryoptimisation retrieved the geom file and -out.cell file
         calculation_mode = parameters.get_dict().get("PARAM", {}).get("task", "")
 
         # dictionary for task specific file retrieve
@@ -835,7 +834,7 @@ class BaseCastepInputGenerator(object):
         Compare with another calculation
         Look for difference in get_castep_inputs functions
         :params node: pk or uuid or node
-        :params reverse: reverse the comparision, by default this node
+        :params reverse: reverse the comparison, by default this node
         is the "new" and the one compared with is "old".
         """
         if isinstance(the_other_calc, (int, basestring)):
@@ -884,7 +883,7 @@ def _lowercase_dict(d, dict_name):
 
 def _uppercase_dict(d, dict_name):
     """
-    Make sure the dictionary's keys are in uppder case
+    Make sure the dictionary's keys are in upper case
     :param dict_name: A string of the name for the dictionary. Only used in
     warning message.
     """
@@ -954,6 +953,10 @@ def _create_restart(cin, ignore_state=False, restart_type="restart",
     if restart_type == "continuation":
         # If we do a conitniuation we actually have to re-use the file from previous run
         reuse = True
+    elif restart_type == "restart":
+        pass
+    else:
+        raise RuntimeError("Unkown type of restart {}".format(restart_type))
 
     if use_symlink is None:
         use_symlink = cin._default_symlink_usage
@@ -1054,7 +1057,7 @@ def _create_restart(cin, ignore_state=False, restart_type="restart",
                 in_param_dict["PARAM"].update(dict_update["PARAM"])
                 in_param_dict["CELL"].update(dict_update["CELL"])
 
-    # Reomve key words
+    # Remove keywords
     if param_delete:
         for key in param_delete:
             tmp1 = in_param_dict["PARAM"].pop(key, None)
