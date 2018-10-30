@@ -18,5 +18,6 @@ if __name__ == '__main__':
         packages=find_packages(),
         long_description=long_desc,
         long_description_content_type='text/markdown',
+        package_data={'': ['setup.json']},
         **kwargs
     )
