@@ -237,3 +237,33 @@ def read_popn(fn):
     table = pd.read_table(fn, sep="\s\s+", header=2,
                           comment="=", engine="python")
     return table
+
+
+def export_calculation(n, output_dir, prefix=None):
+    """
+    Export one calculation a a directory
+    """
+    import os
+    import shutil
+    from glob import glob
+    paths = glob(os.path.join(n.out.retrieved.get_abs_path(), "path/*"))
+
+    #inputs
+    input_path = os.path.join(n.get_abs_path(), "raw_input/*")
+    paths.extend(glob(input_path))
+
+    # Create the directory if necessary
+    if not os.path.isdir(output_dir):
+        os.mkdir(output_dir)
+
+    # Copy the files
+    for p in paths:
+        fname = os.path.split(p)[1]
+        if prefix and not fname.startswith("_"):
+            fname = fname.replace("aiida", prefix)
+        out_path = os.path.join(output_dir, fname)
+        shutil.copy(p, out_path)
+        print("Copied: {}".format(out_path))
+
+
+
