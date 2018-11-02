@@ -8,8 +8,10 @@ from aiida.common.utils import classproperty
 OTFGGROUP_TYPE = "data.castep.otfg.family"
 
 
-def upload_otfg_family(entries, group_name, group_description, stop_if_existing=True):
-
+def upload_otfg_family(entries,
+                       group_name,
+                       group_description,
+                       stop_if_existing=True):
     """
     Set a family for the OTFG pseudo potential strings
     """
@@ -24,14 +26,16 @@ def upload_otfg_family(entries, group_name, group_description, stop_if_existing=
         group = Group.get(name=group_name, type_string=OTFGGROUP_TYPE)
         group_created = False
     except NotExistent:
-        group = Group(name=group_name, type_string=OTFGGROUP_TYPE,
+        group = Group(
+            name=group_name,
+            type_string=OTFGGROUP_TYPE,
             user=get_automatic_user())
         group_created = True
 
     group.description = group_description
 
     otfg_and_created = []
-    nentries=len(entries)
+    nentries = len(entries)
 
     for s in entries:
         # Add it if it is just one existing data
@@ -40,17 +44,29 @@ def upload_otfg_family(entries, group_name, group_description, stop_if_existing=
 
         element, setting = split_otfg_entry(s)
         qb = QueryBuilder()
-        qb.append(OTFGData, filters={'attributes.otfg_string' : {"==": setting}, 'attributes.element' : {"==": element}})
+        qb.append(
+            OTFGData,
+            filters={
+                'attributes.otfg_string': {
+                    "==": setting
+                },
+                'attributes.element': {
+                    "==": element
+                }
+            })
         existing_otfg = qb.first()
 
         if existing_otfg is None:
             # Can just use constructor instead?
-            otfg, created = OTFGData.get_or_create(s, use_first=True, store_otfg=False)
+            otfg, created = OTFGData.get_or_create(
+                s, use_first=True, store_otfg=False)
             otfg_and_created.append((otfg, created))
 
         else:
             if stop_if_existing:
-                raise ValueError("A OTFG group cannot be added when stop_if_existing is True")
+                raise ValueError(
+                    "A OTFG group cannot be added when stop_if_existing is True"
+                )
             existing_otfg = existing_otfg[0]
             otfg_and_created.append((existing_otfg, False))
 
@@ -70,16 +86,17 @@ def upload_otfg_family(entries, group_name, group_description, stop_if_existing=
 
     # Check the uniqueness of the complete group
     if not len(elements_names) == len(set(elements_names)):
-        duplicates = set([x for x in elements_names if elements_names.count(x) > 1])
+        duplicates = set(
+            [x for x in elements_names if elements_names.count(x) > 1])
         dup_string = ", ".join(duplicates)
-        raise UniquenessError("More than one OTFG found for the elements: " + dup_string + ".")
+        raise UniquenessError("More than one OTFG found for the elements: " +
+                              dup_string + ".")
 
     # If we survive here uniqueness is fine
 
     # Save the group
     if group_created:
         group.store()
-
 
     # Save the OTFG in the database if necessary and add them to the group
 
@@ -137,7 +154,9 @@ class OTFGData(Data):
                     return (in_db[0], False)
                 else:
                     pks = ", ".join([str(i.pk) for i in in_db])
-                    raise ValueError("More than one duplicated OTFG data has been found. pks={}".format(pks))
+                    raise ValueError(
+                        "More than one duplicated OTFG data has been found. pks={}"
+                        .format(pks))
             else:
                 return (in_db[0], False)
 
@@ -167,8 +186,8 @@ class OTFGData(Data):
     @property
     def entry(self):
         """Plain format of the OTFG"""
-        string =  self.string
-        element =  self.element
+        string = self.string
+        element = self.element
         if element is None or element == "LIBRARY":
             return string
 
@@ -185,10 +204,18 @@ class OTFGData(Data):
 
         element, string = split_otfg_entry(entry)
         qb = QueryBuilder()
-        qb.append(cls, filters={'attributes.otfg_string': {'==': string},
-            'attributes.element': {'==': element}})
+        qb.append(
+            cls,
+            filters={
+                'attributes.otfg_string': {
+                    '==': string
+                },
+                'attributes.element': {
+                    '==': element
+                }
+            })
 
-        return [ i[0] for i in qb.all()]
+        return [i[0] for i in qb.all()]
 
     def _validate(self):
         """Validate the format of OTFG configuration"""
@@ -205,11 +232,11 @@ class OTFGData(Data):
         """
         from aiida.orm import Group
 
-        return Group.get(name=group_name, type_string=cls.otfg_family_type_string)
+        return Group.get(
+            name=group_name, type_string=cls.otfg_family_type_string)
 
     @classmethod
     def get_otfg_groups(cls, filter_elements=None, user=None):
-
         """
         Return all names of groups of type otfg, possibly with some filters.
 
@@ -238,7 +265,8 @@ class OTFGData(Data):
             actual_filter_elements.add("LBIRARY")
 
             group_query_params['node_attributes'] = {
-                'element': actual_filter_elements}
+                'element': actual_filter_elements
+            }
 
         all_usp_groups = Group.query(**group_query_params)
 
