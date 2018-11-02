@@ -34,6 +34,10 @@ def upload_otfg_family(entries, group_name, group_description, stop_if_existing=
     nentries=len(entries)
 
     for s in entries:
+        # Add it if it is just one existing data
+        if isinstance(s, OTFGData):
+            element, setting = s.element, s.string
+
         element, setting = split_otfg_entry(s)
         qb = QueryBuilder()
         qb.append(OTFGData, filters={'attributes.otfg_string' : {"==": setting}, 'attributes.element' : {"==": element}})
@@ -82,10 +86,10 @@ def upload_otfg_family(entries, group_name, group_description, stop_if_existing=
     for otfg, created in otfg_and_created:
         if created:
             otfg.store()
-            aiidalogger.debug("New node {} created for file {}".format(
+            aiidalogger.debug("New node {} created for OTFG string {}".format(
                 otfg.uuid, otfg.string))
         else:
-            aiidalogger.debug("Reusing node {} for file {}".format(
+            aiidalogger.debug("Reusing node {} for OTFG string {}".format(
                 otfg.uuid, otfg.string))
 
     group.add_nodes(otfg for otfg, _ in otfg_and_created)
