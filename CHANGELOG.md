@@ -23,3 +23,7 @@ The primiary drive of this is to allow unconverged but cleanly finished calculat
 * Fixed a problem when generating help info in CASTEP 18.1 where only a partial list is printed by CASTEP using the `-all` flag.
 * Various bug fixes.
 * Released to PyPI.
+
+0.3.1
+=====
+* Fixed a bug where offset of kpoints grid is ignored

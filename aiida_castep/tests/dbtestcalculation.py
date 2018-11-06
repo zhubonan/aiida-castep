@@ -155,8 +155,7 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
         p = ParameterData(dict=input_params).store()
 
         k = KpointsData()
-        k.set_kpoints_mesh([4, 4, 4])
-        k.store()
+        k.set_kpoints_mesh([4, 4, 4], offset=(0.5, 0.5, 0.5))
 
         settings_dict = {"SPINS": [0, 0]}
         c.use_settings(ParameterData(dict=settings_dict))
@@ -209,12 +208,26 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
                 cell_content = p.read()
                 print(cell_content)
                 self.assertIn("fix_all_cell", cell_content)
+                self.assertIn("kpoints_mp_offset", cell_content)
+                self.assertIn("kpoints_mp_grid", cell_content)
 
             print("\n" + "#" * 5 + "CONTENT OF PARAM FILE: " + "#" * 5)
             with open(param) as p:
                 param_content = p.read()
                 print(param_content)
                 self.assertIn("task", param_content)
+
+            
+            k.set_kpoints_mesh((2, 2, 2), (0, 0, 0))
+            c.use_kpoints(k)
+            inputdict = c.get_inputs_dict()
+            c._prepare_for_submission(f, inputdict)
+            with open(cell) as p:
+                cell_content = p.read()
+                print(cell_content)
+                self.assertNotIn("kpoints_mp_offset", cell_content)
+
+
 
     @unittest.skip("Dry run test takes a long time.")
     def test_dryrun(self):
@@ -507,7 +520,7 @@ class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
         c = self.setup_calculation()
         inputs = c.get_inputs_dict()
         mp = KpointsData()
-        mp.set_kpoints_mesh([2, 2, 2])
+        mp.set_kpoints_mesh([2, 2, 2], (0.1, 0.1, 0.1))
         inputs['bs_kpoints'] = mp
 
         with SandboxFolder() as f:
@@ -515,6 +528,7 @@ class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
             with f.open("aiida.cell") as cell:
                 content = cell.read()
         self.assertIn("{:<20}: 2 2 2".format("bs_kpoints_mp_grid"), content)
+        self.assertIn("{:<20}: 0.1 0.1 0.1".format("bs_kpoints_mp_offset"), content)
 
 
 class TestPot1dCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):

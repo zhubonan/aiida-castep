@@ -2,13 +2,14 @@
 Calculations of CASTEP
 """
 from __future__ import print_function
-from aiida.orm import CalculationFactory
-from aiida.orm import DataFactory
-from aiida.common.utils import classproperty
+
 from aiida.common.exceptions import InputValidationError
-from .utils import get_castep_ion_line
+from aiida.common.utils import classproperty
+from aiida.orm import CalculationFactory, DataFactory
 from aiida_castep.calculations.base import BaseCastepInputGenerator
 from aiida_castep.calculations.base import __version__ as base_version
+
+from .utils import get_castep_ion_line
 
 JobCalculation = CalculationFactory("job", True)
 KpointsData = DataFactory("array.kpoints")
@@ -26,8 +27,11 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
     """
 
     _default_symlink_usage = True
-    _acceptable_tasks = ["singlepoint", "geometryoptimization",
-                         "geometryoptimisation",]
+    _acceptable_tasks = [
+        "singlepoint",
+        "geometryoptimization",
+        "geometryoptimisation",
+    ]
 
     def _init_internal_params(self):
 
@@ -57,8 +61,11 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
 
         return retdict
 
-    def submit_test(self, dryrun=False, verbose=True,
-                    castep_exe="castep.serial", **kwargs):
+    def submit_test(self,
+                    dryrun=False,
+                    verbose=True,
+                    castep_exe="castep.serial",
+                    **kwargs):
         """
         Test submission. Optionally do a local dryrun.
         Return and dictionary as the third item
@@ -71,9 +78,9 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
         if not dryrun:
             return outcome
 
-        def _print(x):
+        def _print(inp):
             if verbose:
-                print(x)
+                print(inp)
 
         # Do a dryrun
         from subprocess import call, check_output
@@ -90,8 +97,7 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
 
         folder = outcome[0]
         _print("Starting dryrun...")
-        call([castep_exe, "--dryrun", self._SEED_NAME],
-             cwd=folder.abspath)
+        call([castep_exe, "--dryrun", self._SEED_NAME], cwd=folder.abspath)
 
         # Check if any *err files
         contents = folder.get_content_list()
@@ -107,20 +113,21 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
         dryrun_out = {}
         with folder.open(self._DEFAULT_OUTPUT_FILE) as fh:
             for line in fh:
-                m = re.match("\s*k-Points For SCF Sampling:\s+(\d+)\s*", line)
-                if m:
-                    dryrun_out["num_kpoints"] = int(m.group(1))
-                    _print("Number of k-points: {}".format(m.group(1)))
-                    m = None
+                mth = re.match(r"\s*k-Points For SCF Sampling:\s+(\d+)\s*", line)
+                if mth:
+                    dryrun_out["num_kpoints"] = int(mth.group(1))
+                    _print("Number of k-points: {}".format(mth.group(1)))
+                    mth = None
                     continue
-                m = re.match("\| Approx\. total storage required"
-                " per process\s+([0-9.]+)\sMB\s+([0-9.]+)", line)
-                if m:
-                    dryrun_out["memory_MB"] = (float(m.group(1)))
-                    dryrun_out["disk_MB"] = (float(m.group(2)))
-                    _print("RAM: {} MB, DISK: {} MB".format(m.group(1),
-                                                            m.group(2)))
-                    m = None
+                mth = re.match(
+                    r"\| Approx\. total storage required"
+                    r" per process\s+([0-9.]+)\sMB\s+([0-9.]+)", line)
+                if mth:
+                    dryrun_out["memory_MB"] = (float(mth.group(1)))
+                    dryrun_out["disk_MB"] = (float(mth.group(2)))
+                    _print("RAM: {} MB, DISK: {} MB".format(
+                        mth.group(1), mth.group(2)))
+                    mth = None
                     continue
 
         return outcome, dryrun_out
@@ -145,11 +152,13 @@ class Pot1dCalculation(CastepCalculation):
         ``code`` must be specified as it is different from the original CASTEP code.
         """
 
-        out_calc = cls.continue_from(calc, ignore_state=True,
-                                     restart_type="continuation",
-                                     use_output_structure=True,
-                                     use_castep_bin=use_castep_bin,
-                                     **kwargs)
+        out_calc = cls.continue_from(
+            calc,
+            ignore_state=True,
+            restart_type="continuation",
+            use_output_structure=True,
+            use_castep_bin=use_castep_bin,
+            **kwargs)
         out_calc.use_code(code)
         return out_calc
 
@@ -175,13 +184,17 @@ class TaskSpecificCalculation(CastepCalculation):
     """
 
     _acceptable_tasks = []
+
     def _generate_CASTEPinputdata(self, *args, **kwargs):
         param = args[0].get_dict()
 
-        if param['PARAM']['task'].lower() not in map(str.lower, self._acceptable_tasks):
+        if param['PARAM']['task'].lower() not in map(str.lower,
+                                                     self._acceptable_tasks):
             raise InputValidationError("Wrong TASK value {}"
-                                       " set in PARAM".format(param['PARAM']['task'].lower()))
-        return super(TaskSpecificCalculation, self)._generate_CASTEPinputdata(*args, **kwargs)
+                                       " set in PARAM".format(
+                                           param['PARAM']['task'].lower()))
+        return super(TaskSpecificCalculation, self)._generate_CASTEPinputdata(
+            *args, **kwargs)
 
 
 class CastepTSCalculation(TaskSpecificCalculation):
@@ -195,10 +208,14 @@ class CastepTSCalculation(TaskSpecificCalculation):
 
         retdict = super(CastepTSCalculation, cls)._use_methods
         retdict['product_structure'] = {
-            'valid_types': StructureData,
-            'additional_parameter': None,
-            'linkname': 'product_structure',
-            'docstring': "Use the node defining the structure as the product structure in transition state search."
+            'valid_types':
+            StructureData,
+            'additional_parameter':
+            None,
+            'linkname':
+            'product_structure',
+            'docstring':
+            "Use the node defining the structure as the product structure in transition state search."
         }
         return retdict
 
@@ -238,28 +255,34 @@ class CastepExtraKpnCalculation(TaskSpecificCalculation):
         retdict = CastepCalculation._use_methods
 
         retdict['{}_kpoints'.format(cls.KPN_NAME.lower())] = {
-
-            'valid_types': KpointsData,
-            'additional_parameter': None,
-            'linkname': '{}_kpoints'.format(cls.kpn_name),
-            'docstring': "Use the node defining the kpoint sampling for band {}  calculation".format(cls.TASK.lower())
+            'valid_types':
+            KpointsData,
+            'additional_parameter':
+            None,
+            'linkname':
+            '{}_kpoints'.format(cls.kpn_name),
+            'docstring':
+            "Use the node defining the kpoint sampling for band {}  calculation"
+            .format(cls.TASK.lower())
         }
         return retdict
 
     def _generate_CASTEPinputdata(self, *args, **kwargs):
         """Add BS kpoints information to the calculation"""
 
-        cell, param, local_copy = super(
-            CastepExtraKpnCalculation, self)._generate_CASTEPinputdata(*args, **kwargs)
+        cell, param, local_copy = super(CastepExtraKpnCalculation,
+                                        self)._generate_CASTEPinputdata(
+                                            *args, **kwargs)
 
         # Check the existence of extra kpoints
         try:
-            extra_kpns = kwargs[self.get_linkname(
-                '{}_kpoints'.format(self.kpn_name))]
+            extra_kpns = kwargs[self.get_linkname('{}_kpoints'.format(
+                self.kpn_name))]
         except KeyError:
             if self.CHECK_EXTRA_KPN:
                 raise InputValidationError("{}_kpoints"
-                                " node not found".format(self.kpn_name))
+                                           " node not found".format(
+                                               self.kpn_name))
             else:
                 return cell, param, local_copy
 
@@ -277,7 +300,8 @@ class CastepExtraKpnCalculation(TaskSpecificCalculation):
                         "At least one k points must be provided")
             except AttributeError:
                 raise InputValidationError(
-                    "No valid {}_kpoints have been found".format(self.kpn_name))
+                    "No valid {}_kpoints have been found".format(
+                        self.kpn_name))
 
             try:
                 _, weights = extra_kpns.get_kpoints(also_weights=True)
@@ -289,15 +313,16 @@ class CastepExtraKpnCalculation(TaskSpecificCalculation):
         if has_mesh is True:
             mesh_name = "{}_kpoints_mp_grid".format(self.kpn_name)
             cell[mesh_name] = "{} {} {}".format(*mesh)
+            if offset != [0., 0., 0.]:
+                cell[mesh_name.replace("grid", "offset")] = "{} {} {}".format(*offset)
         else:
             bs_kpts_lines = []
             for kpoint, weight in zip(bs_kpts_list, weights):
                 bs_kpts_lines.append("{:18.10f} {:18.10f} "
-                                     "{:18.10f} {:18.10f}".format(kpoint[0],
-                                                                  kpoint[1],
-                                                                  kpoint[2],
-                                                                  weight))
-            bname = "{}_KPOINTS_LIST".format(self.kpn_name.upper())
+                                     "{:18.10f} {:18.10f}".format(
+                                         kpoint[0], kpoint[1], kpoint[2],
+                                         weight))
+            bname = "{}_kpoints_list".format(self.kpn_name).upper()
             cell[bname] = bs_kpts_lines
         return cell, param, local_copy
 
@@ -305,7 +330,8 @@ class CastepExtraKpnCalculation(TaskSpecificCalculation):
         """
         Create a restart of the calculation
         """
-        out_calc = super(CastepExtraKpnCalculation, self).create_restart(*args, **kwargs)
+        out_calc = super(CastepExtraKpnCalculation, self).create_restart(
+            *args, **kwargs)
 
         # Attach the extra kpoints node if it is there
         inp_name = "{}_kpoints".format(self.kpn_name)  # Name of the input
@@ -338,22 +364,22 @@ class CastepExtraKpnCalculation(TaskSpecificCalculation):
 
         See also: create_restart
         """
-        cout = super(CastepExtraKpnCalculation,
-                     cls).continue_from(*args, **kwargs)
+        cout = super(CastepExtraKpnCalculation, cls).continue_from(
+            *args, **kwargs)
 
         # Check the task keyword
         param = cout.get_inputs_dict()[cout.get_linkname('parameters')]
-        pd = param.get_dict()
+        param_dict = param.get_dict()
 
-        task = pd['PARAM'].get('task')
+        task = param_dict['PARAM'].get('task')
         if task and task == cls.TASK.lower():
             pass
         else:
             # Replace task
-            pd['PARAM']['task'] = cls.TASK.lower()
+            param_dict['PARAM']['task'] = cls.TASK.lower()
             from aiida.orm import DataFactory
             ParameterData = DataFactory('parameter')
-            new_param = ParameterData(dict=pd)
+            new_param = ParameterData(dict=param_dict)
             cout._remove_link_from(cout.get_linkname('parameters'))
             cout.use_parameters(new_param)
 

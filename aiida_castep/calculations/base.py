@@ -3,23 +3,21 @@ A module of base class for CASTEP calculations
 """
 from __future__ import print_function
 
+import copy
 import os
 import time
 from textwrap import TextWrapper
+
 from aiida.backends.utils import get_current_profile
-
-from aiida.common.exceptions import InputValidationError
-from aiida.common.datastructures import CalcInfo
+from aiida.common.datastructures import CalcInfo, CodeInfo
+from aiida.common.exceptions import InputValidationError, MultipleObjectsError
 from aiida.common.utils import classproperty
-
 from aiida.orm import DataFactory
-from aiida.common.datastructures import CodeInfo
-from aiida.common.exceptions import MultipleObjectsError
-from .utils import get_castep_ion_line
-from aiida_castep.data import OTFGData, UspData, get_pseudos_from_structure
-from aiida_castep.calculations.helper import CastepHelper
 from aiida_castep.calculations.datastructure import CellFile, ParamFile
-import copy
+from aiida_castep.calculations.helper import CastepHelper
+from aiida_castep.data import OTFGData, UspData, get_pseudos_from_structure
+
+from .utils import get_castep_ion_line
 
 __version__ = "0.2.1"
 
@@ -44,8 +42,7 @@ class BaseCastepInputGenerator(object):
     _SEED_NAME = 'aiida'
 
     # Additional files that should always be retrieved if they exist
-    _internal_retrieve_list = ["*.err", "*.den_fmt",
-                               "*-out.cell"]
+    _internal_retrieve_list = ["*.err", "*.den_fmt", "*-out.cell"]
 
     # in restarts, will not copy but use symlinks
     _default_symlink_usage = True
@@ -63,14 +60,14 @@ class BaseCastepInputGenerator(object):
     _auto_input_validation = True
 
     retrieve_dict = {
-            "phonon": [".phonon"],
-            "magres": [".magres"],
-            "transitionstatesearch": [".ts"],
-            "molecular dynamics": [".md"],
-            "geometryoptimisation": [".geom"],
-            "geometryoptimization": [".geom"],
-            "spectral": [".ome_bin"],
-        }
+        "phonon": [".phonon"],
+        "magres": [".magres"],
+        "transitionstatesearch": [".ts"],
+        "molecular dynamics": [".md"],
+        "geometryoptimisation": [".geom"],
+        "geometryoptimization": [".geom"],
+        "spectral": [".ome_bin"],
+    }
 
     @classproperty
     def _baseclass_use_methods(cls):
@@ -91,33 +88,41 @@ class BaseCastepInputGenerator(object):
                 'docstring': "Use an additional node for special settings",
             },
             "parameters": {
-                'valid_types': ParameterData,
-                'additional_parameter': None,
-                'linkname': 'parameters',
-                'docstring': ("Use a node that specifies the input parameters.",
-                              "Usually needs to contain PARAM and CELL keys.")
+                'valid_types':
+                ParameterData,
+                'additional_parameter':
+                None,
+                'linkname':
+                'parameters',
+                'docstring':
+                ("Use a node that specifies the input parameters.",
+                 "Usually needs to contain PARAM and CELL keys.")
             },
             "parent_folder": {
-                'valid_types': RemoteData,
-                'additional_parameter': None,
-                'linkname': 'parent_calc_folder',
+                'valid_types':
+                RemoteData,
+                'additional_parameter':
+                None,
+                'linkname':
+                'parent_calc_folder',
                 'docstring': ("Use a remote folder as parent folder (for "
                               "restarts and similar"),
             },
-
             "pseudo": {
                 'valid_types': (UpfData, OTFGData, UspData),
-                'additional_parameter': "kind",
-                'linkname': cls._get_linkname_pseudo,
-                'docstring': (
-                    "Use a node for the  pseudopotential of one of "
-                    "the elements in the structure. You have to pass "
-                    "an additional parameter ('kind') specifying the "
-                    "name of the structure kind (i.e., the name of "
-                    "the species) for which you want to use this "
-                    "pseudo. You can pass either a string, or a "
-                    "list of strings if more than one kind uses the "
-                    "same pseudo"),
+                'additional_parameter':
+                "kind",
+                'linkname':
+                cls._get_linkname_pseudo,
+                'docstring':
+                ("Use a node for the  pseudopotential of one of "
+                 "the elements in the structure. You have to pass "
+                 "an additional parameter ('kind') specifying the "
+                 "name of the structure kind (i.e., the name of "
+                 "the species) for which you want to use this "
+                 "pseudo. You can pass either a string, or a "
+                 "list of strings if more than one kind uses the "
+                 "same pseudo"),
             },
         }
 
@@ -128,17 +133,19 @@ class BaseCastepInputGenerator(object):
 
         wrapper = TextWrapper(initial_indent="# ", subsequent_indent="# ")
         time_str = time.strftime("%H:%M:%S %d/%m/%Y %Z")
-        lines = ["##### Generated by aiida_castep {} #####".format(time_str),
-                 "#         author: Bonan Zhu (bz240@cam.ac.uk)",
-                 "# "
-                 "# AiiDA User: {}".format(self.get_user().get_full_name()),
-                 "# AiiDA profile: {}".format(get_current_profile()),
-                 "# Information of the calculation node",
-                 "# type: {}".format(self._query_type_string[:-1]),
-                 "# pk: {}".format(self.pk),
-                 "# uuid: {}".format(self.uuid),
-                 "# label: {}".format(self.label),
-                 "# description:",]
+        lines = [
+            "##### Generated by aiida_castep {} #####".format(time_str),
+            "#         author: Bonan Zhu (bz240@cam.ac.uk)",
+            "# "
+            "# AiiDA User: {}".format(self.get_user().get_full_name()),
+            "# AiiDA profile: {}".format(get_current_profile()),
+            "# Information of the calculation node",
+            "# type: {}".format(self._query_type_string[:-1]),
+            "# pk: {}".format(self.pk),
+            "# uuid: {}".format(self.uuid),
+            "# label: {}".format(self.label),
+            "# description:",
+        ]
 
         # Fix for SQLA backend - default of node.description is None
         if self.description:
@@ -150,12 +157,11 @@ class BaseCastepInputGenerator(object):
             lines.append("## Information of input nodes used:")
         for node in other_nodes:
             if node:
-                node_lines = [ "# ",
-                 "# type: {}".format(node._query_type_string[:-1]),
-                 "# pk: {}".format(node.pk),
-                 "# uuid: {}".format(node.uuid),
-                 "# label: {}".format(node.label),
-                 "# description:"]
+                node_lines = [
+                    "# ", "# type: {}".format(node._query_type_string[:-1]),
+                    "# pk: {}".format(node.pk), "# uuid: {}".format(node.uuid),
+                    "# label: {}".format(node.label), "# description:"
+                ]
                 _desc = node.description
                 if _desc:
                     node_lines.extend(wrapper.wrap(_desc))
@@ -166,7 +172,8 @@ class BaseCastepInputGenerator(object):
 
         return lines
 
-    def _generate_CASTEPinputdata(self, parameters,
+    def _generate_CASTEPinputdata(self,
+                                  parameters,
                                   structure,
                                   pseudos,
                                   settings_dict,
@@ -192,23 +199,26 @@ class BaseCastepInputGenerator(object):
         # The following lines enforces the case of names
         # EACH entry is written as in lower case
 
-        input_params = _uppercase_dict(parameters.get_dict(),
-                                       dict_name="parameters")
-        input_params = {k: _lowercase_dict(v, dict_name=k)
-                        for k, v in input_params.iteritems()}
+        input_params = _uppercase_dict(
+            parameters.get_dict(), dict_name="parameters")
+        input_params = {
+            k: _lowercase_dict(v, dict_name=k)
+            for k, v in input_params.iteritems()
+        }
 
         # Check if there are keywords that need to be blocked
 
         # Set verbosity to 1.
         # Parser may not work if verbosity is not 1
-        input_params["PARAM"]["iprint"] = input_params["PARAM"].get("iprint",
-            self._default_verbosity)
+        input_params["PARAM"]["iprint"] = input_params["PARAM"].get(
+            "iprint", self._default_verbosity)
 
         # Set run_time using define value for this calcualtion
         run_time = self.get_max_wallclock_seconds()
         if run_time:
             n_seconds = run_time * 0.95
-            n_seconds = (n_seconds // 60) * 60  # Round down to the nearest minutes
+            n_seconds = (
+                n_seconds // 60) * 60  # Round down to the nearest minutes
             # Do not do any thing if calculated time is less than 1 hour
             if n_seconds < 3600:
                 pass
@@ -227,8 +237,8 @@ class BaseCastepInputGenerator(object):
         # --------- CELL ----------
         cell_vector_list = []
         for vector in structure.cell:
-            cell_vector_list.append( ("{0:18.10f} {1:18.10f} "
-                                          "{2:18.10f}".format(*vector)))
+            cell_vector_list.append(("{0:18.10f} {1:18.10f} "
+                                     "{2:18.10f}".format(*vector)))
 
         cellfile["LATTICE_CART"] = cell_vector_list
 
@@ -264,10 +274,13 @@ class BaseCastepInputGenerator(object):
             else:
                 label = None
             # Get the line of positions_abs block
-            line = get_castep_ion_line(name, pos,
-                                       label=label, spin=spin,
-                                       occupation=kind.weights,
-                                       mix_num=mixture_count)
+            line = get_castep_ion_line(
+                name,
+                pos,
+                label=label,
+                spin=spin,
+                occupation=kind.weights,
+                mix_num=mixture_count)
 
             # Append the line to the list
             atomic_position_list.append(line)
@@ -284,13 +297,13 @@ class BaseCastepInputGenerator(object):
                 if param_spin != total_spin:
                     raise InputValidationError(
                         "Inconsistent spin in cell and param files."
-                        "Total spin: {} in cell file but {} in param file".format(total_spin, ))
+                        "Total spin: {} in cell file but {} in param file".
+                        format(total_spin, param_spin))
             else:
                 # If no spin specified, do it automatically
                 # Note that we don't check if spin polarized calculation is
                 # requested in the first place
                 input_params["PARAM"]["spin"] = total_spin
-
 
         # --------- KPOINTS ---------
         if self._use_kpoints:
@@ -320,12 +333,14 @@ class BaseCastepInputGenerator(object):
             kpoints_line_list = []
             if has_mesh is True:
                 cellfile["kpoints_mp_grid"] = "{} {} {}".format(*mesh)
+                if offset != [0., 0., 0.]:
+                    cellfile["kpoints_mp_offset"] = "{} {} {}".format(*offset)
             else:
                 for kpoint, weight in zip(kpoints_list, weights):
                     kpoints_line_list.append("{:18.10f} {:18.10f} "
-                         "{:18.10f} {:18.10f}".format(kpoint[0],
-                                                      kpoint[1],
-                                                      kpoint[2], weight))
+                                             "{:18.10f} {:18.10f}".format(
+                                                 kpoint[0], kpoint[1],
+                                                 kpoint[2], weight))
                 cellfile["KPOINTS_LIST"] = kpoints_line_list
 
         # --------- PSEUDOPOTENTIALS --------
@@ -346,7 +361,8 @@ class BaseCastepInputGenerator(object):
                 if isinstance(ps, (UpfData, UspData)):
                     species_pot_list.append("{:5} {}".format(s, ps.filename))
                     # Add to the copy list
-                    local_copy_list_to_append.append((ps.get_file_abs_path(), ps.filename))
+                    local_copy_list_to_append.append((ps.get_file_abs_path(),
+                                                      ps.filename))
 
                 # If we are using OTFG, just add the string property of it
                 if isinstance(ps, OTFGData):
@@ -360,8 +376,10 @@ class BaseCastepInputGenerator(object):
 
             if "species_pot" in key:
                 if pseudos:
-                    raise MultipleObjectsError("Both species_pot and pseudos are provided")
-                self.logger.warning("Pseudopotentials directly defined in CELL dictionary")
+                    raise MultipleObjectsError(
+                        "Both species_pot and pseudos are provided")
+                self.logger.warning(
+                    "Pseudopotentials directly defined in CELL dictionary")
 
             # Constructing block keywrods
             # We identify the key should be treated as a block it is not a string and has len() > 0
@@ -373,17 +391,13 @@ class BaseCastepInputGenerator(object):
         paramfile.header = param_header
 
         ### Added header to .cell file ###
-        cell_file_header = self._generate_header_lines([parameters,
-                                                        structure,
-                                                        kpoints,
-                                                        settings])
+        cell_file_header = self._generate_header_lines(
+            [parameters, structure, kpoints, settings])
         cellfile.header = cell_file_header
-
 
         return cellfile, paramfile, local_copy_list_to_append
 
     def _prepare_for_submission(self, tempfolder, inputdict):
-
         """
         Routine to be called when create the input files and other stuff
 
@@ -406,27 +420,32 @@ class BaseCastepInputGenerator(object):
                 self.check_castep_input(parameters.get_dict(), auto_fix=False)
 
         except KeyError:
-            raise InputValidationError("No parameters specified for this calculation")
+            raise InputValidationError(
+                "No parameters specified for this calculation")
         if not isinstance(parameters, ParameterData):
-            raise InputValidationError("parameters is not of type ParameterData")
+            raise InputValidationError(
+                "parameters is not of type ParameterData")
 
         try:
             structure = inputdict.pop(self.get_linkname('structure'))
         except KeyError:
-            raise InputValidationError("No structure specified for this calculation")
+            raise InputValidationError(
+                "No structure specified for this calculation")
         if not isinstance(structure, StructureData):
-            raise InputValidationError("structure is not of type StructureData")
+            raise InputValidationError(
+                "structure is not of type StructureData")
 
         if self._use_kpoints:
             try:
                 kpoints = inputdict.pop(self.get_linkname('kpoints'))
             except KeyError:
-                raise InputValidationError("No kpoints specified for this calculation")
+                raise InputValidationError(
+                    "No kpoints specified for this calculation")
             if not isinstance(kpoints, KpointsData):
-                raise InputValidationError("kpoints is not of type KpointsData")
+                raise InputValidationError(
+                    "kpoints is not of type KpointsData")
         else:
             kpoints = None
-
 
         # Settings can be undefined, and defaults to an empty dictionary
         settings = inputdict.pop(self.get_linkname('settings'), None)
@@ -434,11 +453,12 @@ class BaseCastepInputGenerator(object):
             settings_dict = {}
         else:
             if not isinstance(settings, ParameterData):
-                raise InputValidationError("settings, if specified, must be of "
-                                           "type ParameterData")
+                raise InputValidationError(
+                    "settings, if specified, must be of "
+                    "type ParameterData")
             # Settings converted to uppercase
-            settings_dict = _uppercase_dict(settings.get_dict(),
-                                            dict_name='settings')
+            settings_dict = _uppercase_dict(
+                settings.get_dict(), dict_name='settings')
 
         # Set up pseodo potentials
         # The existance of pseudopoential is optional
@@ -450,17 +470,19 @@ class BaseCastepInputGenerator(object):
                 kinds = kindstring.split('_')
                 the_pseudo = inputdict.pop(link)
                 if not isinstance(the_pseudo, (UpfData, UspData, OTFGData)):
-                    raise InputValidationError("Pseudo for kind(s) {} is not of "
-                                               "supported ".format(",".join(kinds)))
+                    raise InputValidationError(
+                        "Pseudo for kind(s) {} is not of "
+                        "supported ".format(",".join(kinds)))
                 for kind in kinds:
                     if kind in pseudos:
-                        raise InputValidationError("Pseudo for kind {} passed "
-                                                   "more than one time".format(kind))
+                        raise InputValidationError(
+                            "Pseudo for kind {} passed "
+                            "more than one time".format(kind))
                     pseudos[kind] = the_pseudo
 
-
         # Check parent calc folder
-        parent_calc_folder = inputdict.pop(self.get_linkname('parent_folder'), None)
+        parent_calc_folder = inputdict.pop(
+            self.get_linkname('parent_folder'), None)
         if parent_calc_folder is not None:
             if not isinstance(parent_calc_folder, RemoteData):
                 raise InputValidationError("parent_calc_folder, if specified, "
@@ -474,14 +496,16 @@ class BaseCastepInputGenerator(object):
                 require_parent = True
                 break
         if parent_calc_folder is None and require_parent:
-                raise InputValidationError("No parent calculation folder passed"
+            raise InputValidationError(
+                "No parent calculation folder passed"
                 " for restart calculation using reuse/continuation")
 
         # Check if a code is specified
         try:
             code = inputdict.pop(self.get_linkname('code'))
         except KeyError:
-            raise InputValidationError("No code specified for this calculation")
+            raise InputValidationError(
+                "No code specified for this calculation")
 
         # Here, there should be no more parameters...
         # But in case there is, check if this is something not implemented
@@ -489,25 +513,30 @@ class BaseCastepInputGenerator(object):
         if inputdict:
             for key in inputdict:
                 if key not in self._use_methods:
-                    raise InputValidationError("The following input data nodes are "
-                                               "unrecognised: {}".format(inputdict.keys()))
+                    raise InputValidationError(
+                        "The following input data nodes are "
+                        "unrecognised: {}".format(inputdict.keys()))
         ##############################
         # END OF INITIAL INPUT CHECK #
         ##############################
 
         # Generate input file
-        cellfile, paramfile, pseudo_copy_list = self._generate_CASTEPinputdata(parameters,
-                                      structure,
-                                      pseudos,
-                                      settings_dict,
-                                      settings=settings,
-                                      kpoints=kpoints, **inputdict)
+        cellfile, paramfile, pseudo_copy_list = self._generate_CASTEPinputdata(
+            parameters,
+            structure,
+            pseudos,
+            settings_dict,
+            settings=settings,
+            kpoints=kpoints,
+            **inputdict)
 
         local_copy_list.extend(pseudo_copy_list)
 
-        cell_input_filename = tempfolder.get_abs_path(self._SEED_NAME + ".cell")
+        cell_input_filename = tempfolder.get_abs_path(self._SEED_NAME +
+                                                      ".cell")
 
-        param_input_filename = tempfolder.get_abs_path(self._SEED_NAME + ".param")
+        param_input_filename = tempfolder.get_abs_path(self._SEED_NAME +
+                                                       ".param")
 
         with open(cell_input_filename, "w") as incell:
             incell.write(cellfile.get_string())
@@ -516,7 +545,8 @@ class BaseCastepInputGenerator(object):
             inparam.write(paramfile.get_string())
 
         # IMPLEMENT OPERATIONS FOR RESTART
-        symlink = settings_dict.pop('PARENT_FOLDER_SYMLINK', self._default_symlink_usage)
+        symlink = settings_dict.pop('PARENT_FOLDER_SYMLINK',
+                                    self._default_symlink_usage)
 
         if parent_calc_folder is not None:
             if symlink:
@@ -524,10 +554,9 @@ class BaseCastepInputGenerator(object):
             else:
                 remote_list = remote_copy_list
             remote_list.append(
-                    (parent_calc_folder.get_computer().uuid,
-                        os.path.join(parent_calc_folder.get_remote_path(),
-                                     self._restart_copy_from),
-                        self._restart_copy_to))
+                (parent_calc_folder.get_computer().uuid,
+                 os.path.join(parent_calc_folder.get_remote_path(),
+                              self._restart_copy_from), self._restart_copy_to))
 
         calcinfo = CalcInfo()
 
@@ -559,12 +588,13 @@ class BaseCastepInputGenerator(object):
         calcinfo.retrieve_list.append(self._SEED_NAME + ".castep")
         calcinfo.retrieve_list.append(self._SEED_NAME + ".bands")
 
-
-        settings_retrieve_list = settings_dict.pop("ADDITIONAL_RETRIEVE_LIST", [])
+        settings_retrieve_list = settings_dict.pop("ADDITIONAL_RETRIEVE_LIST",
+                                                   [])
         calcinfo.retrieve_list.extend(settings_retrieve_list)
 
         # If we are doing geometryoptimisation retrieved the geom file and -out.cell file
-        calculation_mode = parameters.get_dict().get("PARAM", {}).get("task", "")
+        calculation_mode = parameters.get_dict().get("PARAM", {}).get(
+            "task", "")
 
         # dictionary for task specific file retrieve
         task_extra = self.retrieve_dict.get(calculation_mode.lower(), [])
@@ -589,9 +619,10 @@ class BaseCastepInputGenerator(object):
             pass
 
         if settings_dict:
-            raise InputValidationError("The following keys have been found in "
-                                       "the settings input node, but were not understood: {}".format(
-                ",".join(settings_dict.keys())))
+            raise InputValidationError(
+                "The following keys have been found in "
+                "the settings input node, but were not understood: {}".format(
+                    ",".join(settings_dict.keys())))
 
         return calcinfo
 
@@ -609,11 +640,19 @@ class BaseCastepInputGenerator(object):
         if input_remote:
             raise ValidationError("Cannot set several parent calculation to a "
                                   "{} calculation".format(
-                self.__class__.__name__))
+                                      self.__class__.__name__))
 
         self.use_parent_folder(remotedata)
 
-    def create_restart(self, ignore_state=False, restart_type="restart", reuse=False, use_symlink=None, use_output_structure=False, use_castep_bin=False, param_update=None, param_delete=None):
+    def create_restart(self,
+                       ignore_state=False,
+                       restart_type="restart",
+                       reuse=False,
+                       use_symlink=None,
+                       use_output_structure=False,
+                       use_castep_bin=False,
+                       param_update=None,
+                       param_delete=None):
         """
         Method to restart the calculation by creating a new one.
         Return a new calculation with all the essential input nodes in the unstored stated.
@@ -641,19 +680,20 @@ class BaseCastepInputGenerator(object):
 
         """
 
-        cout = _create_restart(self, ignore_state=ignore_state,
-                               restart_type=restart_type,
-                               reuse=reuse,
-                               use_symlink=use_symlink,
-                               use_output_structure=use_output_structure,
-                               use_castep_bin=use_castep_bin,
-                               param_update=param_update,
-                               param_delete=param_delete)
+        cout = _create_restart(
+            self,
+            ignore_state=ignore_state,
+            restart_type=restart_type,
+            reuse=reuse,
+            use_symlink=use_symlink,
+            use_output_structure=use_output_structure,
+            use_castep_bin=use_castep_bin,
+            param_update=param_update,
+            param_delete=param_delete)
         return cout
 
     @classmethod
-    def continue_from(cls, cin,
-                      *args, **kwargs):
+    def continue_from(cls, cin, *args, **kwargs):
         """
         Create a new calcualtion as a continution from a given calculation.
         This is effectively an "restart" for CASTEP and a lot of the parameters
@@ -715,11 +755,13 @@ class BaseCastepInputGenerator(object):
         return "{}{}".format(cls._get_linkname_pseudo_prefix(), suffix_string)
 
     @classmethod
-    def get_restart_file_relative_path(cls, param_data_dict, use_castep_bin=False):
+    def get_restart_file_relative_path(cls,
+                                       param_data_dict,
+                                       use_castep_bin=False):
         """
         Returns a relative path of the restart file
         """
-        parent_check_name = param_data_dict["PARAM"].get("check_point",  None)
+        parent_check_name = param_data_dict["PARAM"].get("check_point", None)
         if parent_check_name is None:
             if use_castep_bin:
                 parent_check_name = cls._SEED_NAME + ".castep_bin"
@@ -727,7 +769,6 @@ class BaseCastepInputGenerator(object):
                 parent_check_name = cls._SEED_NAME + ".check"
 
         return os.path.join(cls._PARENT_CALC_SUBFOLDER, parent_check_name)
-
 
     def use_pseudos_from_family(self, family_name):
         """
@@ -744,9 +785,10 @@ class BaseCastepInputGenerator(object):
         try:
             structure = self._get_reference_structure()
         except AttributeError:
-            raise ValueError("Structure is not set yet! Therefore, the method "
-                             "use_pseudos_from_family cannot automatically set "
-                             "the pseudos")
+            raise ValueError(
+                "Structure is not set yet! Therefore, the method "
+                "use_pseudos_from_family cannot automatically set "
+                "the pseudos")
 
         # A dict {kind_name: pseudo_object}
         # But we want to run with use_pseudo(pseudo, kinds)
@@ -802,12 +844,14 @@ class BaseCastepInputGenerator(object):
                 kinds = kindstring.split('_')
                 the_pseudo = inp_dict.pop(link)
                 if not isinstance(the_pseudo, (UpfData, UspData, OTFGData)):
-                    raise InputValidationError("Pseudo for kind(s) {} is not of "
-                                               "supoorted ".format(",".join(kinds)))
+                    raise InputValidationError(
+                        "Pseudo for kind(s) {} is not of "
+                        "supoorted ".format(",".join(kinds)))
                 for kind in kinds:
                     if kind in pseudos:
-                        raise InputValidationError("Pseudo for kind {} passed "
-                                                   "more than one time".format(kind))
+                        raise InputValidationError(
+                            "Pseudo for kind {} passed "
+                            "more than one time".format(kind))
                     if isinstance(the_pseudo, OTFGData):
                         pseudos[kind] = the_pseudo.string
                     elif isinstance(the_pseudo, (UspData, UpfData)):
@@ -818,10 +862,11 @@ class BaseCastepInputGenerator(object):
         out_info.update(param_dict)
 
         out_info["kpoints"] = in_kpn.get_desc()
-        out_info["structure"] = {"formula": in_structure.get_formula(),
-                                 "cell": in_structure.cell,
-                                 "label": in_structure.label
-                                }
+        out_info["structure"] = {
+            "formula": in_structure.get_formula(),
+            "cell": in_structure.cell,
+            "label": in_structure.label
+        }
         if in_settings is not None:
             out_info["settings"] = in_settings.get_dict()
         out_info["label"] = self.label
@@ -852,10 +897,12 @@ class BaseCastepInputGenerator(object):
             res = DeepDiff(other_param, this_param)
 
         # Compare the kpoints
+
+
 #        this_kpt = self.get_inputs_dict()[self.get_linkname('kpoints')]
 #        other_kpy = calc2.get_inputs_dict()[calc2.get_linkname('kpoints')]
 
-        # Compare psudo
+# Compare psudo
         return res
 
 
@@ -878,7 +925,8 @@ def _lowercase_dict(d, dict_name):
                 "This is not allowed.".format(dict_name, double_keys))
         return new_dict
     else:
-        raise TypeError("_lowercase_dict accepts only dictionaries as argument")
+        raise TypeError(
+            "_lowercase_dict accepts only dictionaries as argument")
 
 
 def _uppercase_dict(d, dict_name):
@@ -900,11 +948,15 @@ def _uppercase_dict(d, dict_name):
                 "This is not allowed.".format(dict_name, double_keys))
         return new_dict
     else:
-        raise TypeError("_uppercase_dict accepts only dictionaries as argument")
+        raise TypeError(
+            "_uppercase_dict accepts only dictionaries as argument")
 
 
-def _create_restart(cin, ignore_state=False, restart_type="restart",
-                    reuse=False, use_symlink=None,
+def _create_restart(cin,
+                    ignore_state=False,
+                    restart_type="restart",
+                    reuse=False,
+                    use_symlink=None,
                     use_output_structure=False,
                     use_castep_bin=False,
                     calc_class=None,
@@ -948,7 +1000,8 @@ def _create_restart(cin, ignore_state=False, restart_type="restart",
         if not ignore_state:
             raise InputValidationError(
                 "Calculation to be restarted must be in the {} state."
-                "use ignore_state keyword to override this".format(calc_states.FINISHED))
+                "use ignore_state keyword to override this".format(
+                    calc_states.FINISHED))
 
     if restart_type == "continuation":
         # If we do a conitniuation we actually have to re-use the file from previous run
@@ -972,13 +1025,15 @@ def _create_restart(cin, ignore_state=False, restart_type="restart",
 
     # Find the RemoteData of this calculation
     if reuse:
-        remote_folders = [o for o in cin.get_outputs() if isinstance(o, RemoteData)]
+        remote_folders = [
+            o for o in cin.get_outputs() if isinstance(o, RemoteData)
+        ]
         if len(remote_folders) > 1:
             raise InputValidationError("More than one output RemoteData found "
-                                   "in calculation {}".format(cin.pk))
-        elif len(remote_folders) == 0:
+                                       "in calculation {}".format(cin.pk))
+        elif not remote_folders:
             raise InputValidationError("No output RemoteData found "
-                                   "in calculation {}".format(cin.pk))
+                                       "in calculation {}".format(cin.pk))
         else:
             remote_folder = remote_folders[0]
             cout._set_parent_remotedata(remote_folder)
@@ -988,7 +1043,9 @@ def _create_restart(cin, ignore_state=False, restart_type="restart",
         try:
             cout.use_structure(cin.out.output_structure)
         except AttributeError:
-            cout.logger.warning("Warning: No output structure found. Fallback to input structure")
+            cout.logger.warning(
+                "Warning: No output structure found. Fallback to input structure"
+            )
             cout.use_structure(calc_inp[cin.get_linkname('structure')])
     else:
         cout.use_structure(calc_inp[cin.get_linkname('structure')])
@@ -1030,11 +1087,15 @@ def _create_restart(cin, ignore_state=False, restart_type="restart",
             # Set keyword reuse, pop any continuation keywords
             in_param_dict['PARAM'].pop('continuation', None)
             # Define the name of reuse here
-            in_param_dict['PARAM']["reuse"] = cin.get_restart_file_relative_path(in_param_dict, use_castep_bin)
+            in_param_dict['PARAM'][
+                "reuse"] = cin.get_restart_file_relative_path(
+                    in_param_dict, use_castep_bin)
         elif restart_type == "continuation":
             # Do the opposite
             in_param_dict['PARAM'].pop('reuse', None)
-            in_param_dict['PARAM']['continuation'] = cin.get_restart_file_relative_path(in_param_dict, use_castep_bin)
+            in_param_dict['PARAM'][
+                'continuation'] = cin.get_restart_file_relative_path(
+                    in_param_dict, use_castep_bin)
     else:
         # In this case we simply create a identical calculation
         # But we should discard reuse / continuation
@@ -1050,8 +1111,8 @@ def _create_restart(cin, ignore_state=False, restart_type="restart",
             if not_found:
                 suggest = [helper.get_suggestion(i) for i in not_found]
                 error_string = "Following keys are invalid -- "
-                for key, sug in zip(not_found, suggest):
-                    error_string += "{}: {}; ".format(key, sug)
+                for error_key, sug in zip(not_found, suggest):
+                    error_string += "{}: {}; ".format(error_key, sug)
                 raise HelperCheckError(error_string)
             else:
                 in_param_dict["PARAM"].update(dict_update["PARAM"])
@@ -1064,7 +1125,6 @@ def _create_restart(cin, ignore_state=False, restart_type="restart",
             tmp2 = in_param_dict["CELL"].pop(key, None)
             if (tmp1 is None) and (tmp2 is None):
                 raise RuntimeError("Key {} not found".format(key))
-
 
     # If we have not changed anything, link the old dict
     if in_param_dict == parent_param.get_dict():
