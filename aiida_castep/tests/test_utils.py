@@ -36,9 +36,16 @@ def test_ase_to_castep_index(unsorted_atoms):
 
 @pytest.mark.skipif(ase is None, reason="No ase module")
 def test_sort_atoms(unsorted_atoms, sorted_atoms):
-    unsorted_atoms = sort_atoms_castep(unsorted_atoms, copy=True, order=None)
+    unsorted_atoms = sort_atoms_castep(unsorted_atoms, order=None)
     assert np.all(unsorted_atoms.numbers == sorted_atoms.numbers)
     assert np.all(unsorted_atoms.positions == sorted_atoms.positions)
+
+
+@pytest.mark.skipif(ase is None, reason="No ase module")
+def test_desort_atoms(unsorted_atoms, sorted_atoms):
+    sorted_atoms = sort_atoms_castep(unsorted_atoms, order=None)
+    tmp = desort_atoms_castep(sorted_atoms, unsorted_atoms)
+    assert tmp == unsorted_atoms
 
 
 @pytest.mark.skipif(ase is None, reason="No ase module")

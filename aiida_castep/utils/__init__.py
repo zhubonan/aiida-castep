@@ -68,20 +68,17 @@ def castep_to_atoms(atoms, specie, ion):
     return [atom for atom in atoms if atom.symbol == specie][ion-1].index
 
 
-def sort_atoms_castep(atoms, copy=True, order=(0, 1, 2)):
+def sort_atoms_castep(atoms, copy=True, order=None):
     """
     Sort ``ase.Atoms`` instance  to castep style.
     A sorted ``Atoms`` will have the same index before and after calculation.
     This is useful when chaining optimisation requires specifying per atoms
     tags such as *SPIN* and *ionic_constraints*.
-    :param copy: If True then return a copy of the atoms.
     :param order: orders of coordinates. (0, 1, 2) means the sorted atoms
     will be ascending by x, then y, then z if there are equal x or ys.
 
     :returns: A ``ase.Atoms`` object that is sorted.
     """
-    if copy:
-        atoms = atoms.copy()
 
     # Sort castep style
     if order is not None:
@@ -91,10 +88,26 @@ def sort_atoms_castep(atoms, copy=True, order=(0, 1, 2)):
             atoms.numbers = atoms.numbers[isort]
 
     isort = np.argsort(atoms.numbers, kind="mergesort")
-    atoms.positions = atoms.positions[isort]
-    atoms.numbers = atoms.numbers[isort]
-
+    atoms = atoms[isort]
     return atoms
+
+
+def desort_atoms_castep(atoms, original_atoms):
+    """
+    Recover the original ordering of the atoms. CASTEP sort the atoms
+    in the order of atomic number and then the order of appearance internally.
+
+    :param copy: If True then return an copy of the atoms
+    :returns: A ``ase.Atoms`` object that has be sorted
+    """
+
+    isort = np.argsort(original_atoms.numbers, kind='mergesort')
+    rsort = np.zeros(isort.shape, dtype=int)
+    rsort.fill(-1)
+    for i, j in enumerate(isort):
+        rsort[j] = i
+
+    return atoms[rsort]
 
 
 def is_castep_sorted(atoms):
