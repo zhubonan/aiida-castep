@@ -46,6 +46,7 @@ class TestCastepParser(AiidaTestCase, BaseCalcCase, BaseDataCase):
         self.assertTrue(prv == pcv == ccv == cbv)
 
     def test_parser_retrieved(self):
+        from .utils import get_x2_structure
         self.setup_code_castep()
         calc = self.setup_calculation()
 
@@ -57,6 +58,17 @@ class TestCastepParser(AiidaTestCase, BaseCalcCase, BaseDataCase):
         geom_keys = ["geom_enthalpy"]
 
         for name, r in retrived_folders.items():
+            if 'O2' in name:
+                xtemp = 'O'
+            elif 'Si' in name:
+                xtemp = 'Si'
+            elif 'N2' in name:
+                xtemp = 'N'
+            elif 'H2' in name:
+                xtemp = 'H'
+            # Swap the correct structure to allow desort to work
+            calc.use_structure(get_x2_structure(xtemp))
+
             success, out = parser.parse_with_retrieved(r)
             out = dict(out)
 

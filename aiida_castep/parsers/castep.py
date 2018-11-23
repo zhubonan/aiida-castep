@@ -169,7 +169,7 @@ class CastepParser(Parser):
             if has_md_geom:
                 try:
                     idesort = get_desort_args(input_structure)
-                    positions = np.asarray(trajectory_data["positions"])[idesort]
+                    positions = np.asarray(trajectory_data["positions"])[:, idesort]
                     cells = trajectory_data["cells"]
                     symbols = np.asarray(trajectory_data["symbols"])[idesort]
                     stepids = np.arange(len(positions))

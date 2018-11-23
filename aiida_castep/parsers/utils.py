@@ -62,7 +62,7 @@ def desort_structure(structure, original_structure):
 
     return new_structure
 
-def get_desort_args(orginal_structure):
+def get_desort_args(original_structure):
     """
     Return an index array for desorting the structure
 
@@ -70,7 +70,7 @@ def get_desort_args(orginal_structure):
     """
     numbers = original_structure.get_ase().numbers
     isort = np.argsort(numbers, kind='mergesort')
-    rsort = [-1] * len(numberss)
+    rsort = [-1] * len(numbers)
     for i, s in enumerate(isort):
         rsort[s] = i
     assert -1 not in rsort

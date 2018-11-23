@@ -22,6 +22,18 @@ def get_STO_structure():
     return s
 
 
+def get_x2_structure(x):
+    """Return a O2 molecule in a box"""
+    a = 10
+
+    cell = ((a, 0., 0.), (0., a, 0.), (0., 0., a))
+    s = StructureData(cell=cell)
+    s.append_atom(position=(0., 0., 0.), symbols=[x])
+    s.append_atom(position=(1.4, 0., 0.), symbols=[x])
+    s.label = "O2"
+    return s
+
+
 def get_data_abs_path():
     """Get the data folder path for the backend module"""
     test_moudule = os.path.split(os.path.abspath(__file__))[0]
