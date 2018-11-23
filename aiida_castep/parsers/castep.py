@@ -5,7 +5,8 @@ from aiida.orm import DataFactory
 from aiida.parsers.parser import Parser  # , ParserParamManager
 from aiida_castep.parsers.raw_parser import parse_raw_ouput, units
 from aiida_castep.parsers.raw_parser import __version__ as raw_parser_version
-from aiida_castep.parsers.utils import structure_from_input, add_last_if_exists, desort_structure
+from aiida_castep.parsers.utils import (structure_from_input, add_last_if_exists,
+                                        desort_structure, get_desort_args)
 ParameterData = DataFactory("parameter")
 BandsData = DataFactory("array.bands")
 
@@ -167,9 +168,10 @@ class CastepParser(Parser):
             # If we have .geom file, save as in a trajectory data
             if has_md_geom:
                 try:
-                    positions = trajectory_data["positions"]
+                    idesort = get_desort_args(input_structure)
+                    positions = np.asarray(trajectory_data["positions"])[idesort]
                     cells = trajectory_data["cells"]
-                    symbols = trajectory_data["symbols"]
+                    symbols = np.asarray(trajectory_data["symbols"])[idesort]
                     stepids = np.arange(len(positions))
 
                 except KeyError:

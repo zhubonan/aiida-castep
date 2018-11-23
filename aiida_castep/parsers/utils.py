@@ -48,15 +48,11 @@ def desort_structure(structure, original_structure):
     according to the atomic numbers
     """
     new_structure = structure.copy()
-    isort = np.argsort(original_structure.get_ase().numbers, kind='mergesort')
 
-    sites = structure.sites
-    new_sites = [None] * len(sites)
+    rsort = get_desort_args(original_structure)
+    new_sites = np.array(structure.sites)[rsort]
 
     # Map back to the original order
-    for i, s in enumerate(isort):
-        new_sites[s] = sites[i]
-
     new_structure.clear_sites()
     for s in new_sites:
         new_structure.append_site(s)
@@ -65,3 +61,19 @@ def desort_structure(structure, original_structure):
     assert [s.kind_name for s in original_structure.sites] == [s.kind_name for s in new_structure.sites]
 
     return new_structure
+
+def get_desort_args(orginal_structure):
+    """
+    Return an index array for desorting the structure
+
+    :return: An array used to recovery the original order
+    """
+    numbers = original_structure.get_ase().numbers
+    isort = np.argsort(numbers, kind='mergesort')
+    rsort = [-1] * len(numberss)
+    for i, s in enumerate(isort):
+        rsort[s] = i
+    assert -1 not in rsort
+
+    return rsort
+
