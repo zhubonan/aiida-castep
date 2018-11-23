@@ -1,0 +1,2 @@
+recursive-include aiida_castep/tests/data/ *
+include setup.json
