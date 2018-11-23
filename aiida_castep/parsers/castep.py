@@ -5,8 +5,7 @@ from aiida.orm import DataFactory
 from aiida.parsers.parser import Parser  # , ParserParamManager
 from aiida_castep.parsers.raw_parser import parse_raw_ouput, units
 from aiida_castep.parsers.raw_parser import __version__ as raw_parser_version
-from aiida_castep.parsers.utils import structure_from_input, add_last_if_exists
-
+from aiida_castep.parsers.utils import structure_from_input, add_last_if_exists, desort_structure
 ParameterData = DataFactory("parameter")
 BandsData = DataFactory("array.bands")
 
@@ -150,7 +149,9 @@ class CastepParser(Parser):
                 cell=cell, positions=positions, symbols=symbols)
             calc_in = self._calc
             # Use the output label as the input label
-            output_structure.label = calc_in.get_inputs_dict()[calc_in.get_linkname("structure")].label
+            input_structure = calc_in.get_inputs_dict()[calc_in.get_linkname("structure")]
+            output_structure = desort_structure(output_structure, input_structure)
+            output_structure.label = input_structure.label
             new_nodes_list.append(
                 (self.get_linkname_outstructure(), output_structure))
 
