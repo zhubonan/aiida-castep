@@ -12,8 +12,9 @@ BandsData = DataFactory("array.bands")
 
 ERR_FILE_WARNING_MSG = ".err files found in workdir"
 
-__version__ = "0.2.1"
-assert __version__ == raw_parser_version, "Inconsistent version numbers"
+__version__ = "0.2.2"
+# No need to have consistent raw parser version
+#assert __version__ == raw_parser_version, "Inconsistent version numbers"
 
 
 class CastepParser(Parser):

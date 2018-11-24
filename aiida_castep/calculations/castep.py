@@ -16,7 +16,7 @@ KpointsData = DataFactory("array.kpoints")
 StructureData = DataFactory("structure")
 
 # Define the version of the calculation
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 assert __version__ == base_version
 
 

@@ -19,7 +19,7 @@ from aiida_castep.data import OTFGData, UspData, get_pseudos_from_structure
 
 from .utils import get_castep_ion_line
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 StructureData = DataFactory("structure")
 ParameterData = DataFactory("parameter")
@@ -42,7 +42,8 @@ class BaseCastepInputGenerator(object):
     _SEED_NAME = 'aiida'
 
     # Additional files that should always be retrieved if they exist
-    _internal_retrieve_list = ["*.err", "*.den_fmt", "*-out.cell"]
+    _internal_retrieve_list = ["*.err", "*.den_fmt", "*-out.cell",
+                               "*.pdos_bin", "*.dome_bin", "*.ome_bin"]
 
     # in restarts, will not copy but use symlinks
     _default_symlink_usage = True
