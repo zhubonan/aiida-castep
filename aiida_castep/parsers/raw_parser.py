@@ -9,7 +9,8 @@ from aiida_castep.parsers.utils import CASTEPOutputParsingError
 import logging
 logger = logging.getLogger("aiida")
 
-__version__ = "0.2.1"
+from .._version import calc_parser_version
+__version__ = calc_parser_version
 
 # TODO update CODATA for castep 16.1 and above
 

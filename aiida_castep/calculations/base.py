@@ -19,7 +19,8 @@ from aiida_castep.data import OTFGData, UspData, get_pseudos_from_structure
 
 from .utils import get_castep_ion_line
 
-__version__ = "0.2.2"
+from .._version import calc_parser_version
+__version__ = calc_parser_version
 
 StructureData = DataFactory("structure")
 ParameterData = DataFactory("parameter")

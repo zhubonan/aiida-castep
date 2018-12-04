@@ -11,14 +11,14 @@ from aiida_castep.calculations.base import __version__ as base_version
 
 from .utils import get_castep_ion_line
 
+from .._version import calc_parser_version
+__version__ = calc_parser_version
+
 JobCalculation = CalculationFactory("job")
 KpointsData = DataFactory("array.kpoints")
 StructureData = DataFactory("structure")
 
 # Define the version of the calculation
-__version__ = "0.2.2"
-assert __version__ == base_version
-
 
 class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
     """
