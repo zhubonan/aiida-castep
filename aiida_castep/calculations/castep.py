@@ -3,6 +3,7 @@ Calculations of CASTEP
 """
 from __future__ import print_function
 
+import aiida
 from aiida.common.exceptions import InputValidationError
 from aiida.common.utils import classproperty
 from aiida.orm import CalculationFactory, DataFactory
@@ -14,7 +15,12 @@ from .utils import get_castep_ion_line
 from .._version import calc_parser_version
 __version__ = calc_parser_version
 
-JobCalculation = CalculationFactory("job")
+
+if aiida.__version__.startswith("0"):
+    JobCalculation = CalculationFactory("job", True)
+else:
+    JobCalculation = CalculationFactory("job")
+
 KpointsData = DataFactory("array.kpoints")
 StructureData = DataFactory("structure")
 
