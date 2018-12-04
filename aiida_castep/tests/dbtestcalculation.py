@@ -9,11 +9,12 @@ from aiida.common.folders import SandboxFolder
 from aiida.orm import DataFactory, CalculationFactory
 from aiida.backends.testbase import AiidaTestCase
 from aiida.orm import Code
-from aiida_castep.calculations.castep import CastepBSCalculation as BSCalc
 from aiida_castep.calculations.castep import CastepTSCalculation as TSCalc
 from .dbcommon import BaseDataCase, BaseCalcCase
 
 CasCalc = CalculationFactory("castep.castep")
+BSCalc = CalculationFactory("castep.bs")
+TSCalc = CalculationFactory("castep.ts")
 StructureData = DataFactory("structure")
 ParameterData = DataFactory("parameter")
 KpointsData = DataFactory("array.kpoints")

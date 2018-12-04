@@ -11,7 +11,7 @@ from aiida_castep.calculations.base import __version__ as base_version
 
 from .utils import get_castep_ion_line
 
-JobCalculation = CalculationFactory("job", True)
+JobCalculation = CalculationFactory("job")
 KpointsData = DataFactory("array.kpoints")
 StructureData = DataFactory("structure")
 
@@ -131,6 +131,25 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
                     continue
 
         return outcome, dryrun_out
+
+
+    def duplicate(self):
+        """
+        Duplicate this calculation return an new, unstore calculation with
+        the same attributes but no links attached. label and descriptions
+        are also copied.
+        """
+        new = type(self)()
+
+        attrs = self.get_attrs()
+        if attrs:
+            for k, v in attrs.items():
+                new._set_attr(k, v)
+
+        new.label = self.label
+        new.description = self.description
+
+        return new
 
 
 class Pot1dCalculation(CastepCalculation):

@@ -17,7 +17,6 @@ def upload_otfg_family(entries,
     """
     from aiida.orm import Group
     from aiida.common.exceptions import UniquenessError, NotExistent
-    from aiida.backends.utils import get_automatic_user
     from aiida.orm.querybuilder import QueryBuilder
     from aiida.common import aiidalogger
 
@@ -29,7 +28,7 @@ def upload_otfg_family(entries,
         group = Group(
             name=group_name,
             type_string=OTFGGROUP_TYPE,
-            user=get_automatic_user())
+            )
         group_created = True
 
     group.description = group_description

@@ -47,7 +47,8 @@ def desort_structure(structure, original_structure):
     Recover the order of structure. CASTEP will sort the input structure
     according to the atomic numbers
     """
-    new_structure = structure.copy()
+    import copy
+    new_structure = copy.deepcopy(structure)
 
     rsort = get_desort_args(original_structure)
     new_sites = np.array(structure.sites)[rsort]

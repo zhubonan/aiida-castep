@@ -5,7 +5,9 @@ Utility module with useful functions
 
 from __future__ import division
 from __future__ import print_function
+from copy import copy
 import numpy as np
+
 
 
 def atoms_to_castep(atoms, index):
@@ -192,8 +194,8 @@ def get_transport(calc):
     """
     Get a transport for the calculation node
     """
-    from aiida.backends.utils import get_authinfo, get_automatic_user
-    authinfo = get_authinfo(calc.get_computer(), get_automatic_user())
+    from aiida.backends.utils import get_authinfo
+    authinfo = get_authinfo(calc.get_computer())
     return authinfo.get_transport()
 
 

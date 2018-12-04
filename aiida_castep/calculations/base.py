@@ -1017,7 +1017,7 @@ def _create_restart(cin,
 
     # Duplicate the calculation
     if calc_class is None:
-        cout = cin.copy()
+        cout = cin.duplicate()
     else:
         cout = calc_class()
         cout.set_computer(cin.get_computer())
