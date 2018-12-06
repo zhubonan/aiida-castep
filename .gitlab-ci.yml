@@ -6,6 +6,7 @@ image:
 before_script:
     - export HOME=/home/aiida
     - export PATH=$HOME/.local/bin:$PATH
+    - pip install --upgrade --user pip
     - pip install --user -e .
     - git clone https://github.com/aiidateam/aiida_core.git
     - cd aiida_core
