@@ -7,11 +7,16 @@ before_script:
     - export HOME=/home/aiida
     - export PATH=$HOME/.local/bin:$PATH
     - pip install --user -e .
-    - reentry scan aiida
+    - git clone https://github.com/aiidateam/aiida_core.git
+    - cd aiida_core
+    - git checkout v1.0.0a4
+    - pip install --user -e .
+    - reentry scan -r aiida
 
 pytest_tests:
   script:
     - pip install --user pytest
+    - cd $HOME/aiida-castep
     - pytest aiida_castep/tests
 
 db_tests:

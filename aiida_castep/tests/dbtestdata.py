@@ -5,8 +5,9 @@ Data for data plugins
 
 import io
 
-from aiida.common.folders import SandboxFolder
 from aiida.orm import DataFactory
+from aiida.common.folders import SandboxFolder
+from aiida.common.exceptions import ValidationError
 from aiida.backends.testbase import AiidaTestCase
 import aiida_castep.data.otfg as otf
 import aiida_castep.data.usp as usp
@@ -101,7 +102,7 @@ class TestOTFGData(AiidaTestCase, BaseDataCase):
         self.assertEqual((entry, uploaded), (3, 3))
 
         # This should fail
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             entry, uploaded = otf.upload_otfg_family(otfgs, "Test", "Test")
 
         entry, uploaded = otf.upload_otfg_family([O.entry] + otfgs, "Test", "Test", stop_if_existing=False)
