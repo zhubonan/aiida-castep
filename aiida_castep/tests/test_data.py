@@ -7,8 +7,7 @@ Use pytest
 import io
 import pytest
 
-from aiida.common.folders import SandboxFolder
-from aiida.utils.fixtures import PluginTestCase
+from aiida.common.exceptions import ValidationError
 from aiida_castep.utils.fixtures.data import create_otfg_family, sto_otfgs
 import os
 
@@ -50,7 +49,15 @@ def test_otfg_create(new_database, otfg, otfgdata):
     Ti = otfgdata(string=setting, element=element)
     assert Ti.string == setting
     assert Ti.element == element
+    assert Ti.entry == Ti_otfg
+
     Ti.store()
+
+    Sr = otfgdata()
+    Sr.set_string(Sr_otfg)
+    Sr._del_attr("element")
+    with pytest.raises(ValidationError):
+        Sr.store()
 
 
 def test_otfg_get_or_create(new_database, otfg, otfgdata):
@@ -113,7 +120,7 @@ def test_set_up_family_from_string(new_database, otfg,
     assert (entry, uploaded) == (1, 1)
 
     # Creating duplicated family - should fail
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         entry, uploaded = otfg.upload_otfg_family(
             text_entries
             , "Test", "Test")
@@ -142,7 +149,7 @@ def test_set_up_family_from_nodes(new_database, otfg, otfg_nodes, otfgdata):
     assert len(groups) == 1
     assert len(groups[0].nodes) == 1
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         entry, uploaded = otfg.upload_otfg_family(otfg_nodes,
                                                   "Test", "Test",
                                                   stop_if_existing=True)

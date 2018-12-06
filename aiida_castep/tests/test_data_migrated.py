@@ -9,6 +9,7 @@ import os
 
 from aiida.common.folders import SandboxFolder
 from aiida.utils.fixtures import PluginTestCase
+from aiida.common.exceptions import ValidationError
 from unittest import TestCase
 import pytest
 
@@ -146,9 +147,10 @@ class TestOTFGData(BaseDataCase):
             Sr.set_string("bla")
             Sr.store()
 
-            # This should fail
+            # This should fail there are more than one
             Sr4, create = self.otfg.get_or_create("Sr_bla", use_first=False)
 
+        Sr4, create = self.otfg.get_or_create("Sr_bla", use_first=True)
     def test_set_up_family(self):
 
         Ti, Sr, O, C9 = self.get_otfgs()
@@ -158,7 +160,7 @@ class TestOTFGData(BaseDataCase):
         self.assertEqual((entry, uploaded), (3, 3))
 
         # This should fail
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             entry, uploaded = self.otf.upload_otfg_family(otfgs, "Test", "Test")
 
         entry, uploaded = self.otf.upload_otfg_family([O.entry] + otfgs, "Test", "Test", stop_if_existing=False)
