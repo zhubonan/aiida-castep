@@ -29,13 +29,23 @@ def otfg():
     return otfg
 
 
+@pytest.fixture(scope="module")
+def imps(aiida_profile):
+
+    class Imports(object):
+        from aiida.orm import DataFactory
+        import aiida_castep.data.otfg as otfg
+
+    return Imports
+
+
 def test_otfg_split(new_database, otfg):
     element, setting = otfg.split_otfg_entry(Ti_otfg)
     assert element == "Ti"
     assert setting == "3|1.8|9|10|11|30U:40:31:32(qc=5.5)"
 
 
-def test_otfg_create(new_database, otfg, otfgdata):
+def test_otfg_create(new_database, imps, otfg, otfgdata):
     """
     Test for creating OTFGData notes
     """
@@ -110,22 +120,22 @@ def otfg_nodes(aiida_profile, otfgdata):
     return otfgs.values()
 
 
-def test_set_up_family_from_string(new_database, otfg,
+def test_set_up_family_from_string(new_database, imps,
                                    otfg_nodes, otfgdata):
 
     text_entries = [n.entry for n in otfg_nodes]
-    entry, uploaded = otfg.upload_otfg_family(
+    entry, uploaded = imps.otfg.upload_otfg_family(
         text_entries[:1],
         "Test", "Test")
     assert (entry, uploaded) == (1, 1)
 
     # Creating duplicated family - should fail
     with pytest.raises(ValidationError):
-        entry, uploaded = otfg.upload_otfg_family(
+        entry, uploaded = imps.otfg.upload_otfg_family(
             text_entries
             , "Test", "Test")
 
-    entry, uploaded = otfg.upload_otfg_family(
+    entry, uploaded = imps.otfg.upload_otfg_family(
         text_entries
         , "Test", "Test", stop_if_existing=False)
 

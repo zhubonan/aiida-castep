@@ -20,29 +20,43 @@ O_otfg = "O 2|1.1|15|18|20|20:21(qc=7)"
 
 # This fixture will be run for each class and ensure
 # AiiDA test environment has been loaded correctly
-@pytest.mark.use_fixtures("aiida_profile")
+
+
+@pytest.fixture(scope="class")
+def import_things(aiida_profile, request):
+    import aiida_castep.data.otfg as otf
+    import aiida_castep.data.usp as usp
+    from aiida.orm import DataFactory
+    request.cls.otfg = DataFactory("castep.otfgdata")
+    request.cls.otf = otf
+    request.cls.usp = usp
+    request.module.usp = usp
+
+
+@pytest.mark.usefixtures("import_things")
 class BaseDataCase(TestCase):
     """Base to include some useful things"""
 
-    AIIDA_ENV_LOADED = False
-    @pytest.fixture(autouse=True, scope="function")
-    def populate_env(self):
-        """
-        Popoulate the class namespace with the imported modules
-        """
-        if not self.AIIDA_ENV_LOADED:
-            import aiida_castep.data.otfg as otf
-            import aiida_castep.data.usp as usp
-            from aiida.orm import DataFactory
-            self.otfg = DataFactory("castep.otfgdata")
-            self.otf = otf
-            self.usp = usp
-            self.AIIDA_ENV_LOADED = True
+    # @pytest.fixture(autouse=True, scope="function")
+    # def populate_env(self):
+    #     """
+    #     Popoulate the class namespace with the imported modules
+    #     """
+    #     if not self.AIIDA_ENV_LOADED:
+    #         import aiida_castep.data.otfg as otf
+    #         import aiida_castep.data.usp as usp
+    #         from aiida.orm import DataFactory
+    #         self.otfg = DataFactory("castep.otfgdata")
+    #         self.otf = otf
+    #         self.usp = usp
+    #         self.AIIDA_ENV_LOADED = True
 
 
     @pytest.fixture(autouse=True)
-    def reset_db(self, new_database):
-        return
+    def reset_db(self, aiida_profile):
+        aiida_profile.reset_db()
+        yield
+        aiida_profile.reset_db()
 
     def create_family(self):
         """Creat families for testsing"""
@@ -81,12 +95,8 @@ class BaseDataCase(TestCase):
         return s
 
 
-@pytest.mark.use_fixtures("new_database")
 class TestOTFGData(BaseDataCase):
 
-    @classmethod
-    def setUpClass(cls):
-        super(TestOTFGData, cls).setUpClass()
 
     def setUp(self):
         self.otfg_nodes = {}
@@ -151,6 +161,7 @@ class TestOTFGData(BaseDataCase):
             Sr4, create = self.otfg.get_or_create("Sr_bla", use_first=False)
 
         Sr4, create = self.otfg.get_or_create("Sr_bla", use_first=True)
+
     def test_set_up_family(self):
 
         Ti, Sr, O, C9 = self.get_otfgs()
@@ -226,7 +237,7 @@ class TestUspData(BaseDataCase):
                 fp = io.StringIO(u"foo bla 42")
                 sub.create_file_from_filelike(fp, "{}_00.usp".format(element))
 
-            self.usp.upload_usp_family(os.path.join(f.abspath, "pseudo"), "STO", "")
+            usp.upload_usp_family(os.path.join(f.abspath, "pseudo"), "STO", "")
 
             with self.assertRaises(ValueError):
                 self.usp.upload_usp_family(os.path.join(f.abspath, "pseudo"), "STO", "")
