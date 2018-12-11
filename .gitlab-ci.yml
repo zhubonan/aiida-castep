@@ -1,5 +1,5 @@
 image: 
-  name: aiidateam/aiida_core_base:0.11.2
+  name: aiidateam/aiida_core_base:latest
   entrypoint: [""]
   
 
@@ -7,10 +7,6 @@ before_script:
     - export HOME=/home/aiida
     - export PATH=$HOME/.local/bin:$PATH
     - pip install --upgrade --user pip
-    - git clone https://github.com/aiidateam/aiida_core.git
-    - cd aiida_core
-    - git checkout v1.0.0a4
-    - pip install --user -e .
     - cd $HOME/aiida-castep
     - pip install --user -e .
     - reentry scan -r aiida
