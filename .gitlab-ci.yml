@@ -1,9 +1,12 @@
 image: 
-  name: aiidateam/aiida_core_base:0.12.2
-  entrypoint: [""]
+  name: aiidateam/aiida_core_base:latest
   
 
 before_script:
+    - apt-get update
+    # Disable interactive configuration of tzdata
+    - DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql-all 
+    - apt-get install -y mlocate && updatedb
     - export HOME=/home/aiida
     - export PATH=$HOME/.local/bin:$PATH
     - pip install --upgrade --user pip
@@ -14,16 +17,16 @@ pytest_tests:
   variables:
     DB_HOST: "postgres"
   services:
-    - postgres:10
+    - postgres:9.5
   script:
     - pip install --user pytest
-    - pytest aiida_castep/tests
+    - su -c '/home/aiida/.local/bin/pytest aiida_castep/tests' aiida
 
 db_tests:
   variables:
     DB_HOST: "postgres"
   services:
-    - postgres:10
+    - postgres:9.5
   script:
     - TEST_AIIDA_BACKEND="django" bash .ci-data/setup_profiles.sh
     - verdi -p test_django devel tests db.castep
