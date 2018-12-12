@@ -1,5 +1,5 @@
 image: 
-  name: aiidateam/aiida_core_base:latest
+  name: aiidateam/aiida_core_base:0.12.2
   entrypoint: [""]
   
 
@@ -7,11 +7,14 @@ before_script:
     - export HOME=/home/aiida
     - export PATH=$HOME/.local/bin:$PATH
     - pip install --upgrade --user pip
-    - cd $HOME/aiida-castep
     - pip install --user -e .
     - reentry scan -r aiida
 
 pytest_tests:
+  variables:
+    DB_HOST: "postgres"
+  services:
+    - postgres:10
   script:
     - pip install --user pytest
     - cd $HOME/aiida-castep
@@ -21,7 +24,7 @@ db_tests:
   variables:
     DB_HOST: "postgres"
   services:
-    - postgres:9.5
+    - postgres:10
   script:
     - TEST_AIIDA_BACKEND="django" bash .ci-data/setup_profiles.sh
     - verdi -p test_django devel tests db.castep
