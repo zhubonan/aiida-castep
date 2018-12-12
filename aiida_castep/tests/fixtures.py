@@ -3,6 +3,36 @@ Collection of fixtures for basic setup
 """
 import pytest
 
+Ti_otfg = "Ti 3|1.8|9|10|11|30U:40:31:32(qc=5.5)"
+Sr_otfg = "Sr 3|2.0|5|6|7|40U:50:41:42"
+O_otfg = "O 2|1.1|15|18|20|20:21(qc=7)"
+
+
+@pytest.fixture(scope="module")
+def otfgdata():
+    from aiida.orm import DataFactory
+    return DataFactory("castep.otfgdata")
+
+
+@pytest.fixture(scope="module")
+def otfg():
+    import aiida_castep.data.otfg as otfg
+    return otfg
+
+
+@pytest.fixture(scope="module", autouse=True)
+def imps(aiida_profile, request):
+
+    from aiida.orm import CalculationFactory
+    from aiida.orm import DataFactory
+    import aiida_castep.data.otfg as otfg
+    ParameterData = DataFactory("parameter")
+    for k, v in locals().items():
+        setattr(request.module, k, v)
+
+    return
+
+
 
 @pytest.fixture
 def localhost(aiida_profile, tmpdir):
@@ -49,6 +79,95 @@ def remotedata(localhost, tmpdir):
     rmd.set_computer(localhost)
     rmd.set_remote_path(str(tmpdir))
     return rmd
+
+
+@pytest.fixture
+def kpoints_data(aiida_profile):
+    """
+    Return a factory for kpoints
+    """
+    from aiida.orm import DataFactory
+    return DataFactory("array.kpoints")()
+
+
+@pytest.fixture
+def kpoints_mesh(kpoints_data):
+    """Factory for kpoints with mesh"""
+    def _kpoints_mesh(mesh, *args, **kwargs):
+        kpoints_data.set_kpoints_mesh(mesh)
+        return kpoints_data
+    return _kpoints_mesh
+
+
+@pytest.fixture
+def kpoints_list(kpoints_data):
+    """Factory for kpoints with mesh"""
+    def _kpoints_list(klist, *args, **kwargs):
+        kpoints_data.set_kpoints(klist, *args, **kwargs)
+        return kpoints_data
+    return _kpoints_list
+
+
+@pytest.fixture
+def OTFG_family_factory(aiida_profile):
+    """Return a factory for upload OTFGS"""
+    from aiida_castep.data.otfg import upload_otfg_family
+
+    def _factory(otfg_entries, name, desc="TEST"):
+        upload_otfg_family(otfg_entries, name, desc)
+        return
+
+    return _factory
+
+
+@pytest.fixture
+def STO_calculation(aiida_profile, STO_structure,
+                    OTFG_family_factory,
+                    code_echo,
+                    localhost, kpoints_mesh):
+
+
+    c = CalculationFactory("castep.castep")()
+    pdict = {"PARAM": {
+        "task": "singlepoint"
+    },
+             "CELL": {
+                 "symmetry_generate": True
+             }}
+    # pdict["CELL"].pop("block species_pot")
+    param = ParameterData(dict=pdict)
+    c.use_structure(STO_structure)
+    OTFG_family_factory(["C9"], "C9")
+    c.use_pseudos_from_family("C9")
+    c.use_kpoints(kpoints_mesh((3, 3, 3)))
+    c.use_code(code_echo)
+    c.set_computer(localhost)
+    c.set_resources({"num_machines": 1, "num_mpiprocs_per_machine": 2})
+    c.use_parameters(param)
+
+    return c
+
+
+def test_sto_calc(STO_calculation):
+    STO_calculation.store_all()
+    assert STO_calculation.pk
+
+@pytest.fixture
+def STO_structure(aiida_profile):
+    """Return a STO structure"""
+    StructureData = DataFactory("structure")
+    a = 3.905
+
+    cell = ((a, 0., 0.), (0., a, 0.), (0., 0., a))
+    s = StructureData(cell=cell)
+    s.append_atom(position=(0., 0., 0.), symbols=["Sr"])
+    s.append_atom(position=(a / 2, a / 2, a / 2), symbols=["Ti"])
+    s.append_atom(position=(a / 2, a / 2, 0.), symbols=["O"])
+    s.append_atom(position=(a / 2, 0., a / 2), symbols=["O"])
+    s.append_atom(position=(0., a / 2, a / 2), symbols=["O"])
+    s.label = "STO"
+    return s
+
 
 
 def test_localhost_fixture(localhost):
