@@ -17,7 +17,6 @@ pytest_tests:
     - postgres:10
   script:
     - pip install --user pytest
-    - cd $HOME/aiida-castep
     - pytest aiida_castep/tests
 
 db_tests:
