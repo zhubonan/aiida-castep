@@ -39,8 +39,6 @@
         ],
         "aiida.tests": [
             "castep.calculation = aiida_castep.tests.dbtestcalculation",
-            "castep.data = aiida_castep.tests.dbtestdata",
-            "castep.parser = aiida_castep.tests.dbtestparser"
         ],
         "aiida.cmdline.data" : [
             "castep-usp = aiida_castep.cmdline.usp_cmd:usp_cmd",

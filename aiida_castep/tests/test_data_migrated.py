@@ -8,7 +8,6 @@ import io
 import os
 
 from aiida.common.folders import SandboxFolder
-from aiida.utils.fixtures import PluginTestCase
 from aiida.common.exceptions import ValidationError
 from unittest import TestCase
 import pytest
@@ -30,7 +29,7 @@ def import_things(aiida_profile, request):
     request.cls.otfg = DataFactory("castep.otfgdata")
     request.cls.otf = otf
     request.cls.usp = usp
-    request.module.usp = usp
+    request.cls.usp = usp
 
 
 @pytest.mark.usefixtures("import_things")
@@ -237,7 +236,7 @@ class TestUspData(BaseDataCase):
                 fp = io.StringIO(u"foo bla 42")
                 sub.create_file_from_filelike(fp, "{}_00.usp".format(element))
 
-            usp.upload_usp_family(os.path.join(f.abspath, "pseudo"), "STO", "")
+            self.usp.upload_usp_family(os.path.join(f.abspath, "pseudo"), "STO", "")
 
             with self.assertRaises(ValueError):
                 self.usp.upload_usp_family(os.path.join(f.abspath, "pseudo"), "STO", "")

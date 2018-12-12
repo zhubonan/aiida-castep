@@ -20,17 +20,20 @@ def otfg():
     return otfg
 
 
-@pytest.fixture(scope="module", autouse=True)
-def imps(aiida_profile, request):
+@pytest.fixture(scope="module")
+def imps(aiida_profile):
 
-    from aiida.orm import CalculationFactory
-    from aiida.orm import DataFactory
-    import aiida_castep.data.otfg as otfg
-    ParameterData = DataFactory("parameter")
-    for k, v in locals().items():
-        setattr(request.module, k, v)
+    class Imports:
 
-    return
+        def __init__(self):
+            from aiida.orm import CalculationFactory
+            from aiida.orm import DataFactory
+            import aiida_castep.data.otfg as otfg
+            ParameterData = DataFactory("parameter")
+            for k, v in locals().items():
+                setattr(self, k, v)
+
+    return Imports()
 
 
 
@@ -123,11 +126,11 @@ def OTFG_family_factory(aiida_profile):
 @pytest.fixture
 def STO_calculation(aiida_profile, STO_structure,
                     OTFG_family_factory,
-                    code_echo,
+                    code_echo, imps,
                     localhost, kpoints_mesh):
 
 
-    c = CalculationFactory("castep.castep")()
+    c = imps.CalculationFactory("castep.castep")()
     pdict = {"PARAM": {
         "task": "singlepoint"
     },
@@ -135,7 +138,7 @@ def STO_calculation(aiida_profile, STO_structure,
                  "symmetry_generate": True
              }}
     # pdict["CELL"].pop("block species_pot")
-    param = ParameterData(dict=pdict)
+    param = imps.ParameterData(dict=pdict)
     c.use_structure(STO_structure)
     OTFG_family_factory(["C9"], "C9")
     c.use_pseudos_from_family("C9")
@@ -153,9 +156,9 @@ def test_sto_calc(STO_calculation):
     assert STO_calculation.pk
 
 @pytest.fixture
-def STO_structure(aiida_profile):
+def STO_structure(aiida_profile, imps):
     """Return a STO structure"""
-    StructureData = DataFactory("structure")
+    StructureData = imps.DataFactory("structure")
     a = 3.905
 
     cell = ((a, 0., 0.), (0., a, 0.), (0., 0., a))
