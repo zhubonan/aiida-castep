@@ -1,12 +1,12 @@
 image: 
-  name: aiidateam/aiida_core_base:latest
+  name: bonanzhu/aiida_core_base:0.12.2-dev
   
 
 before_script:
     - apt-get update
     # Disable interactive configuration of tzdata
-    - DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql-all 
-    - apt-get install -y mlocate && updatedb
+    #- DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql-all 
+    #- apt-get install -y mlocate && updatedb
     - export HOME=/home/aiida
     - export PATH=$HOME/.local/bin:$PATH
     - pip install --upgrade --user pip
