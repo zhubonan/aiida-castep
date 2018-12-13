@@ -3,6 +3,8 @@ Calculations of CASTEP
 """
 from __future__ import print_function
 
+import os
+
 from aiida.common.exceptions import InputValidationError
 from aiida.common.utils import classproperty
 from aiida.orm import CalculationFactory, DataFactory
@@ -63,6 +65,7 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
 
     def submit_test(self,
                     dryrun=False,
+                    restart_check=False,
                     verbose=True,
                     castep_exe="castep.serial",
                     **kwargs):
@@ -73,10 +76,63 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
         * memory_MB: memory usage estimated MB
         * disk_MB: disk space usage estimated in MB
         """
-        from fnmatch import fnmatch
         outcome = super(CastepCalculation, self).submit_test(**kwargs)
-        if not dryrun:
-            return outcome
+        outinfo = {}
+        outinfo["_submit_test"] = outcome
+        if dryrun:
+            folder, dryrun_results = self._dryrun_test(outcome[0], castep_exe,
+                                                       verbose)
+            outinfo["dryrun_results"] = dryrun_results
+
+        if restart_check:
+            self.check_restart(verbose)
+
+    def _check_restart(self, verbose=True):
+        """
+        Check the existence of restart file if requested
+        """
+        from .utils import _lowercase_dict
+
+        def _print(inp):
+            if verbose:
+                print(inp)
+
+        inps = self.get_inputs_dict()
+        paramdict = inps[self.get_linkname("parameters")].get_dict()["PARAM"]
+
+        paramdict = _lowercase_dict(paramdict)
+        stemp = paramdict.get("reuse", None)
+        if not stemp:
+            stemp = paramdict.get("continuation", None)
+
+        if stemp is not None:
+            fname = os.path.split(stemp)[-1]
+        else:
+            # No restart file needed
+            _print("This calculation does not require a restart file.")
+            return
+
+        # Now check if the remote folder has this file
+        remote_data = inps.get(self.get_linkname("parent_folder"), None)
+        if not remote_data:
+            raise InputValidationError(
+                "Restart requires "
+                "partent_folder to be specified".format(fname))
+        else:
+            folder_list = remote_data.listdir()
+            if fname not in folder_list:
+                raise InputValidationError(
+                    "Restart file {}"
+                    " is not in the remote folder".format(fname))
+            else:
+                _print("Check finished, all OK")
+
+    def _dryrun_test(self, folder, castep_exe, verbose=True):
+        """
+        Do a dryrun test in a folder with prepared inputs
+        """
+
+        from fnmatch import fnmatch
 
         def _print(inp):
             if verbose:
@@ -88,14 +144,13 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
             output = check_output([castep_exe, "-v"]).decode()
         except OSError:
             _print("CASTEP executable '{}' is not found".format(castep_exe))
-            return outcome
+            return
 
         # Now start dryrun
         _print("Running with {}".format(
             check_output(["which", castep_exe]).decode()))
         _print(output)
 
-        folder = outcome[0]
         _print("Starting dryrun...")
         call([castep_exe, "--dryrun", self._SEED_NAME], cwd=folder.abspath)
 
@@ -110,12 +165,13 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
 
         # Gather information from the dryrun file
         import re
-        dryrun_out = {}
+        dryrun_results = {}
         with folder.open(self._DEFAULT_OUTPUT_FILE) as fh:
             for line in fh:
-                mth = re.match(r"\s*k-Points For SCF Sampling:\s+(\d+)\s*", line)
+                mth = re.match(r"\s*k-Points For SCF Sampling:\s+(\d+)\s*",
+                               line)
                 if mth:
-                    dryrun_out["num_kpoints"] = int(mth.group(1))
+                    dryrun_results["num_kpoints"] = int(mth.group(1))
                     _print("Number of k-points: {}".format(mth.group(1)))
                     mth = None
                     continue
@@ -123,14 +179,14 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
                     r"\| Approx\. total storage required"
                     r" per process\s+([0-9.]+)\sMB\s+([0-9.]+)", line)
                 if mth:
-                    dryrun_out["memory_MB"] = (float(mth.group(1)))
-                    dryrun_out["disk_MB"] = (float(mth.group(2)))
+                    dryrun_results["memory_MB"] = (float(mth.group(1)))
+                    dryrun_results["disk_MB"] = (float(mth.group(2)))
                     _print("RAM: {} MB, DISK: {} MB".format(
                         mth.group(1), mth.group(2)))
                     mth = None
                     continue
 
-        return outcome, dryrun_out
+        return folder, dryrun_results
 
 
 class Pot1dCalculation(CastepCalculation):
@@ -314,7 +370,8 @@ class CastepExtraKpnCalculation(TaskSpecificCalculation):
             mesh_name = "{}_kpoints_mp_grid".format(self.kpn_name)
             cell[mesh_name] = "{} {} {}".format(*mesh)
             if offset != [0., 0., 0.]:
-                cell[mesh_name.replace("grid", "offset")] = "{} {} {}".format(*offset)
+                cell[mesh_name.replace("grid",
+                                       "offset")] = "{} {} {}".format(*offset)
         else:
             bs_kpts_lines = []
             for kpoint, weight in zip(bs_kpts_list, weights):

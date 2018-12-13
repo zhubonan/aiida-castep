@@ -17,7 +17,7 @@ from aiida_castep.calculations.datastructure import CellFile, ParamFile
 from aiida_castep.calculations.helper import CastepHelper
 from aiida_castep.data import OTFGData, UspData, get_pseudos_from_structure
 
-from .utils import get_castep_ion_line
+from .utils import get_castep_ion_line, _lowercase_dict, _uppercase_dict
 
 __version__ = "0.2.2"
 
@@ -42,8 +42,10 @@ class BaseCastepInputGenerator(object):
     _SEED_NAME = 'aiida'
 
     # Additional files that should always be retrieved if they exist
-    _internal_retrieve_list = ["*.err", "*.den_fmt", "*-out.cell",
-                               "*.pdos_bin", "*.dome_bin", "*.ome_bin"]
+    _internal_retrieve_list = [
+        "*.err", "*.den_fmt", "*-out.cell", "*.pdos_bin", "*.dome_bin",
+        "*.ome_bin"
+    ]
 
     # in restarts, will not copy but use symlinks
     _default_symlink_usage = True
@@ -905,52 +907,6 @@ class BaseCastepInputGenerator(object):
 
 # Compare psudo
         return res
-
-
-def _lowercase_dict(d, dict_name):
-    """
-    Make sure the dictionary's keys are in lower case
-    :param dict_name: A string of the name for the dictionary. Only used in
-    warning message.
-    """
-    from collections import Counter
-
-    if isinstance(d, dict):
-        new_dict = dict((str(k).lower(), v) for k, v in d.iteritems())
-        if len(new_dict) != len(d):
-            num_items = Counter(str(k).lower() for k in d.keys())
-            double_keys = ",".join([k for k, v in num_items if v > 1])
-            raise InputValidationError(
-                "Inside the dictionary '{}' there are the following keys that "
-                "are repeated more than once when compared case-insensitively: {}."
-                "This is not allowed.".format(dict_name, double_keys))
-        return new_dict
-    else:
-        raise TypeError(
-            "_lowercase_dict accepts only dictionaries as argument")
-
-
-def _uppercase_dict(d, dict_name):
-    """
-    Make sure the dictionary's keys are in upper case
-    :param dict_name: A string of the name for the dictionary. Only used in
-    warning message.
-    """
-    from collections import Counter
-
-    if isinstance(d, dict):
-        new_dict = dict((str(k).upper(), v) for k, v in d.iteritems())
-        if len(new_dict) != len(d):
-            num_items = Counter(str(k).upper() for k in d.keys())
-            double_keys = ",".join([k for k, v in num_items if v > 1])
-            raise InputValidationError(
-                "Inside the dictionary '{}' there are the following keys that "
-                "are repeated more than once when compared case-insensitively: {}."
-                "This is not allowed.".format(dict_name, double_keys))
-        return new_dict
-    else:
-        raise TypeError(
-            "_uppercase_dict accepts only dictionaries as argument")
 
 
 def _create_restart(cin,
