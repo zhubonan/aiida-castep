@@ -17,7 +17,7 @@ pytest_tests:
   variables:
     DB_HOST: "postgres"
   services:
-    - postgres:9.5
+    - postgres:10
   script:
     - pip install --user pytest
     - su -c '/home/aiida/.local/bin/pytest aiida_castep/tests' aiida
@@ -26,7 +26,7 @@ db_tests:
   variables:
     DB_HOST: "postgres"
   services:
-    - postgres:9.5
+    - postgres:10
   script:
     - TEST_AIIDA_BACKEND="django" bash .ci-data/setup_profiles.sh
     - verdi -p test_django devel tests db.castep
