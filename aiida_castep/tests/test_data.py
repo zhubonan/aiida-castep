@@ -8,13 +8,14 @@ import io
 import pytest
 
 from aiida.common.exceptions import ValidationError
-from aiida_castep.utils.fixtures.data import create_otfg_family, sto_otfgs
 import os
 
 
 Ti_otfg = "Ti 3|1.8|9|10|11|30U:40:31:32(qc=5.5)"
 Sr_otfg = "Sr 3|2.0|5|6|7|40U:50:41:42"
 O_otfg = "O 2|1.1|15|18|20|20:21(qc=7)"
+
+OTFG_COLLECTION = {"Sr": Sr_otfg, "Ti": Ti_otfg, "O": O_otfg}
 
 
 @pytest.fixture(scope="module")
@@ -185,15 +186,16 @@ def test_set_up_family_from_nodes(new_database, otfg, otfg_nodes, otfgdata):
         assert o.uuid in uuid_in_the_group
 
 
-def test_assign_from_structure(new_database, create_otfg_family):
+def test_assign_from_structure(new_database, OTFG_family_factory):
     """
     Test using get_pseudos_from_structure
     """
 
     from aiida_castep.data import get_pseudos_from_structure
     from aiida.common.exceptions import NotExistent
-    from aiida_castep.utils.fixtures.data import OTFG_COLLECTION
     from .utils import get_STO_structure
+
+    OTFG_family_factory([Sr_otfg, Ti_otfg, O_otfg], "STO")
 
     STO = get_STO_structure()
 
@@ -205,13 +207,15 @@ def test_assign_from_structure(new_database, create_otfg_family):
     with pytest.raises(NotExistent):
         pseudo_list = get_pseudos_from_structure(STO, "STO_O_missing")
 
-
+    OTFG_family_factory([Sr_otfg, Ti_otfg, O_otfg, "C9"], "STO+C9",
+                        stop_if_existing=False)
     STO.append_atom(symbols=["Ce"], position=[0, 0, 0])
     pseudo_list = get_pseudos_from_structure(STO, "STO+C9")
     assert pseudo_list["Sr"].entry == OTFG_COLLECTION["Sr"]
     assert pseudo_list["O"].entry == OTFG_COLLECTION["O"]
     assert pseudo_list["Ti"].entry == OTFG_COLLECTION["Ti"]
     assert pseudo_list["Ce"].entry == "C9"
+
 
 @pytest.fixture
 def usp_folder(new_workdir):

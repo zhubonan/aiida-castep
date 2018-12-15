@@ -116,8 +116,8 @@ def OTFG_family_factory(aiida_profile):
     """Return a factory for upload OTFGS"""
     from aiida_castep.data.otfg import upload_otfg_family
 
-    def _factory(otfg_entries, name, desc="TEST"):
-        upload_otfg_family(otfg_entries, name, desc)
+    def _factory(otfg_entries, name, desc="TEST", **kwargs):
+        upload_otfg_family(otfg_entries, name, desc, **kwargs)
         return
 
     return _factory
