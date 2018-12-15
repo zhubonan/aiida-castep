@@ -25,6 +25,10 @@ pytest_tests:
     - su -c '/home/aiida/.local/bin/pytest aiida_castep/tests' aiida
 
 doc_build:
+  variables:
+    DB_HOST: "postgres"
+  services:
+    - postgres:10
   script:
     # The profile needs to be there for the building of docs
     - TEST_AIIDA_BACKEND="django" bash .ci-data/setup_profiles.sh
