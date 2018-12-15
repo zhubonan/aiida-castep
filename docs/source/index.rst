@@ -53,9 +53,6 @@ However, there several advantages of running through the AiiDA framework.
 Calculations ran though AiiDA can be also exported as plain files, in fact these files are stored in a
 file repository so it is merely a copying + renaming process.
 
-.. note: Importing existing calculations should be possible, but has not been implemented yet,
-   mainly due the developer not having such need.
-
 
 A graphical example
 ===================
@@ -72,6 +69,11 @@ It can be seen that the second calculations reused the structure and the remote 
 from the first calculations. Some nodes are shared between the two calculations, namely the *Code* (CASTEP executable),
 the pseudopotentials and the k-point mesh. The second calculation also has an additional input of the k-point
 path to compute the band structure.
+
+You may want to do similar workflows for a range of material, or perhaps
+also investigate the effects of strain or pressure and other properties.
+Having a record of not only the input and output of each calculation,
+but also how they are linked together would help in these kind of studies.
 
 
 User's guide
