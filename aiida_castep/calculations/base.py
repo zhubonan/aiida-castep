@@ -44,8 +44,7 @@ class BaseCastepInputGenerator(object):
 
     # Additional files that should always be retrieved if they exist
     _internal_retrieve_list = [
-        "*.err", "*.den_fmt", "*-out.cell", "*.pdos_bin", "*.dome_bin",
-        "*.ome_bin"
+        "*.err", "*.den_fmt", "*-out.cell", "*.pdos_bin",
     ]
 
     # in restarts, will not copy but use symlinks
@@ -68,9 +67,10 @@ class BaseCastepInputGenerator(object):
         "magres": [".magres"],
         "transitionstatesearch": [".ts"],
         "molecular dynamics": [".md"],
+        "moleculardynamics": [".md"],
         "geometryoptimisation": [".geom"],
         "geometryoptimization": [".geom"],
-        "spectral": [".ome_bin"],
+        "spectral": [".ome_bin", ".dome_bin"],
     }
 
     @classproperty
@@ -94,10 +94,8 @@ class BaseCastepInputGenerator(object):
             "parameters": {
                 'valid_types':
                 ParameterData,
-                'additional_parameter':
-                None,
-                'linkname':
-                'parameters',
+                'additional_parameter': None,
+                'linkname': 'parameters',
                 'docstring':
                 ("Use a node that specifies the input parameters.",
                  "Usually needs to contain PARAM and CELL keys.")
@@ -375,7 +373,6 @@ class BaseCastepInputGenerator(object):
             cellfile["SPECIES_POT"] = species_pot_list
 
         # --------- PARAMETERS in cell file---------
-        cell_entry_list = []
         for key, value in input_params["CELL"].iteritems():
 
             if "species_pot" in key:
@@ -389,12 +386,12 @@ class BaseCastepInputGenerator(object):
             # We identify the key should be treated as a block it is not a string and has len() > 0
             cellfile[key] = value
 
-        ### Parameters for PARAM files ###
+        # Parameters for PARAM files
         paramfile.update(input_params["PARAM"])
         param_header = self._generate_header_lines([parameters])
         paramfile.header = param_header
 
-        ### Added header to .cell file ###
+        # Added header to .cell file
         cell_file_header = self._generate_header_lines(
             [parameters, structure, kpoints, settings])
         cellfile.header = cell_file_header

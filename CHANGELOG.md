@@ -27,6 +27,10 @@ The primiary drive of this is to allow unconverged but cleanly finished calculat
 0.3.1
 =====
 * Fixed a bug where offset of kpoints grid is ignored
+* Fixed a bug where OTFG family upload is not handled correctly.
+* Added routine to check the existence of remote check file in `submit_test` 
+* Updated the default file retrieve list and task specific retrieve list.
+* Documentation improvements
 
 0.4.0
 ======
