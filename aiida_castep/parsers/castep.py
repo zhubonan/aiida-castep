@@ -7,12 +7,14 @@ from aiida_castep.parsers.raw_parser import parse_raw_ouput, units
 from aiida_castep.parsers.raw_parser import __version__ as raw_parser_version
 from aiida_castep.parsers.utils import (structure_from_input, add_last_if_exists,
                                         desort_structure, get_desort_args)
+from .._version import calc_parser_version
+__version__ = calc_parser_version
+
 ParameterData = DataFactory("parameter")
 BandsData = DataFactory("array.bands")
 
 ERR_FILE_WARNING_MSG = ".err files found in workdir"
 
-__version__ = "0.2.2"
 # No need to have consistent raw parser version
 #assert __version__ == raw_parser_version, "Inconsistent version numbers"
 

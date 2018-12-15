@@ -3,8 +3,7 @@ Calculations of CASTEP
 """
 from __future__ import print_function
 
-import os
-
+import aiida
 from aiida.common.exceptions import InputValidationError
 from aiida.common.utils import classproperty
 from aiida.orm import CalculationFactory, DataFactory
@@ -13,14 +12,19 @@ from aiida_castep.calculations.base import __version__ as base_version
 
 from .utils import get_castep_ion_line
 
-JobCalculation = CalculationFactory("job", True)
+from .._version import calc_parser_version
+__version__ = calc_parser_version
+
+
+if aiida.__version__.startswith("0"):
+    JobCalculation = CalculationFactory("job", True)
+else:
+    JobCalculation = CalculationFactory("job")
+
 KpointsData = DataFactory("array.kpoints")
 StructureData = DataFactory("structure")
 
 # Define the version of the calculation
-__version__ = "0.2.2"
-assert __version__ == base_version
-
 
 class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
     """
@@ -187,6 +191,25 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
                     continue
 
         return folder, dryrun_results
+
+
+    def duplicate(self):
+        """
+        Duplicate this calculation return an new, unstore calculation with
+        the same attributes but no links attached. label and descriptions
+        are also copied.
+        """
+        new = type(self)()
+
+        attrs = self.get_attrs()
+        if attrs:
+            for k, v in attrs.items():
+                new._set_attr(k, v)
+
+        new.label = self.label
+        new.description = self.description
+
+        return new
 
 
 class Pot1dCalculation(CastepCalculation):

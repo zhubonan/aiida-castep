@@ -1,24 +1,45 @@
 image: 
-  name: aiidateam/aiida_core_base:0.11.2
-  entrypoint: [""]
+  name: bonanzhu/aiida_core_base:0.12.2-dev
   
 
 before_script:
+    - apt-get update
+    - apt-get install make
+    # Disable interactive configuration of tzdata
+    #- DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql-all 
+    #- apt-get install -y mlocate && updatedb
     - export HOME=/home/aiida
     - export PATH=$HOME/.local/bin:$PATH
+    - pip install --upgrade --user pip
+    - pip install sphinx sphinx_rtd_theme
     - pip install --user -e .
-    - reentry scan aiida
+    - reentry scan -r aiida
 
 pytest_tests:
+  variables:
+    DB_HOST: "postgres"
+  services:
+    - postgres:10
   script:
     - pip install --user pytest
-    - pytest aiida_castep/tests
+    - su -c '/home/aiida/.local/bin/pytest aiida_castep/tests' aiida
 
+doc_build:
+  variables:
+    DB_HOST: "postgres"
+  services:
+    - postgres:10
+  script:
+    # The profile needs to be there for the building of docs
+    - TEST_AIIDA_BACKEND="django" bash .ci-data/setup_profiles.sh
+    - cd docs
+    - make
+    
 db_tests:
   variables:
     DB_HOST: "postgres"
   services:
-    - postgres:9.5
+    - postgres:10
   script:
     - TEST_AIIDA_BACKEND="django" bash .ci-data/setup_profiles.sh
     - verdi -p test_django devel tests db.castep

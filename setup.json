@@ -17,6 +17,7 @@
     "reentry_register": true,
     "install_requires": [
         "aiida-core >= 0.11.0",
+        "pgtest==1.1.0",
         "deepdiff",
         "ase"
     ],
@@ -37,9 +38,7 @@
             "castep.otfgdata = aiida_castep.data.otfg:OTFGData"
         ],
         "aiida.tests": [
-            "castep.calculation = aiida_castep.tests.dbtestcalculation",
-            "castep.data = aiida_castep.tests.dbtestdata",
-            "castep.parser = aiida_castep.tests.dbtestparser"
+            "castep.calculation = aiida_castep.tests.dbtestcalculation"
         ],
         "aiida.cmdline.data" : [
             "castep-usp = aiida_castep.cmdline.usp_cmd:usp_cmd",

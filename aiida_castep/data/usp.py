@@ -39,7 +39,6 @@ def upload_usp_family(folder,
     from aiida.common import aiidalogger
     from aiida.orm import Group
     from aiida.common.exceptions import UniquenessError, NotExistent
-    from aiida.backends.utils import get_automatic_user
     from aiida.orm.querybuilder import QueryBuilder
 
     files = [
@@ -58,7 +57,7 @@ def upload_usp_family(folder,
         group = Group(
             name=group_name,
             type_string=USPGROUP_TYPE,
-            user=get_automatic_user())
+        )
         group_created = True
 
     # Update the descript even if the group already existed

@@ -27,3 +27,7 @@ The primiary drive of this is to allow unconverged but cleanly finished calculat
 0.3.1
 =====
 * Fixed a bug where offset of kpoints grid is ignored
+
+0.4.0
+======
+* (WIP) Compatible with AiiDA 1.0a4

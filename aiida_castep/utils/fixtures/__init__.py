@@ -1,0 +1,3 @@
+"""
+Fixture module for tests
+"""

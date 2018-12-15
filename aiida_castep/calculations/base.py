@@ -19,7 +19,8 @@ from aiida_castep.data import OTFGData, UspData, get_pseudos_from_structure
 
 from .utils import get_castep_ion_line, _lowercase_dict, _uppercase_dict
 
-__version__ = "0.2.2"
+from .._version import calc_parser_version
+__version__ = calc_parser_version
 
 StructureData = DataFactory("structure")
 ParameterData = DataFactory("parameter")
@@ -973,7 +974,7 @@ def _create_restart(cin,
 
     # Duplicate the calculation
     if calc_class is None:
-        cout = cin.copy()
+        cout = cin.duplicate()
     else:
         cout = calc_class()
         cout.set_computer(cin.get_computer())

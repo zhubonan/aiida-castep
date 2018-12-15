@@ -4,8 +4,10 @@ Storing OTFG configuration as Data nodes
 import re
 from aiida.orm import Data
 from aiida.common.utils import classproperty
+from aiida.common.exceptions import ValidationError
 
 OTFGGROUP_TYPE = "data.castep.otfg.family"
+
 
 
 def upload_otfg_family(entries,
@@ -17,7 +19,6 @@ def upload_otfg_family(entries,
     """
     from aiida.orm import Group
     from aiida.common.exceptions import UniquenessError, NotExistent
-    from aiida.backends.utils import get_automatic_user
     from aiida.orm.querybuilder import QueryBuilder
     from aiida.common import aiidalogger
 
@@ -29,7 +30,7 @@ def upload_otfg_family(entries,
         group = Group(
             name=group_name,
             type_string=OTFGGROUP_TYPE,
-            user=get_automatic_user())
+            )
         group_created = True
 
     group.description = group_description
@@ -41,8 +42,9 @@ def upload_otfg_family(entries,
         # Add it if it is just one existing data
         if isinstance(s, OTFGData):
             element, setting = s.element, s.string
+        else:
+            element, setting = split_otfg_entry(s)
 
-        element, setting = split_otfg_entry(s)
         qb = QueryBuilder()
         qb.append(
             OTFGData,
@@ -57,14 +59,17 @@ def upload_otfg_family(entries,
         existing_otfg = qb.first()
 
         if existing_otfg is None:
-            # Can just use constructor instead?
-            otfg, created = OTFGData.get_or_create(
-                s, use_first=True, store_otfg=False)
-            otfg_and_created.append((otfg, created))
+
+            if isinstance(s, OTFGData):
+                otfg_and_created.append((s, True))
+            else:
+                otfg, created = OTFGData.get_or_create(
+                    s, use_first=True, store_otfg=False)
+                otfg_and_created.append((otfg, created))
 
         else:
             if stop_if_existing:
-                raise ValueError(
+                raise ValidationError(
                     "A OTFG group cannot be added when stop_if_existing is True"
                 )
             existing_otfg = existing_otfg[0]
@@ -162,8 +167,8 @@ class OTFGData(Data):
 
     def set_string(self, otfg_string):
         """Set the full string of OTFGData instance"""
-        if self.get_attr('element', None) is None:
-            self._set_attr("element", str("LIBRARY"))
+        if self.element is None:
+            self.set_element("LIBRARY")
         self._set_attr("otfg_string", str(otfg_string))
 
     def set_element(self, element):
@@ -220,6 +225,10 @@ class OTFGData(Data):
     def _validate(self):
         """Validate the format of OTFG configuration"""
         super(OTFGData, self)._validate()
+        if self.element is None:
+            raise ValidationError("The value of element is not set. "
+                                  "Set it to 'LIBRARY' manually to indicate. "
+                                  "This is a library")
 
     @classproperty
     def otfg_family_type_string(cls):
