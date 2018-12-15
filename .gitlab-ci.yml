@@ -26,6 +26,8 @@ pytest_tests:
 
 doc_build:
   script:
+    # The profile needs to be there for the building of docs
+    - TEST_AIIDA_BACKEND="django" bash .ci-data/setup_profiles.sh
     - cd docs
     - make
     
