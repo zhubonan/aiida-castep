@@ -4,12 +4,14 @@ image:
 
 before_script:
     - apt-get update
+    - apt-get install make
     # Disable interactive configuration of tzdata
     #- DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql-all 
     #- apt-get install -y mlocate && updatedb
     - export HOME=/home/aiida
     - export PATH=$HOME/.local/bin:$PATH
     - pip install --upgrade --user pip
+    - pip install sphinx sphinx_rtd_theme
     - pip install --user -e .
     - reentry scan -r aiida
 
@@ -22,6 +24,11 @@ pytest_tests:
     - pip install --user pytest
     - su -c '/home/aiida/.local/bin/pytest aiida_castep/tests' aiida
 
+doc_build:
+  script:
+    - cd docs
+    - make
+    
 db_tests:
   variables:
     DB_HOST: "postgres"
