@@ -82,11 +82,11 @@ Finally, we link the ``ParameterData`` to the calculation node using::
 
 .. note::
    It is recommended to use python types instead of strings to make it easy for querying.
-   No internal type check/enforcement is implemented.
-   The bottom line is that the text files generated needs to be understandable for CASTEP.
+   No internal type check or enforcement is implemented.
+   The bottom line is that the text files generated needs to be understood by CASTEP.
 
 .. note:: 
-  Block type keywords can be set using a list of strings each of a single line.
+  Block type keywords can be set using a list of strings each for a single line.
 
 Setup structure and k-points
 ----------------------------
@@ -124,6 +124,12 @@ Finally, we tell the calculation to use them as inputs::
  calc.use_kpoints(kpoints)
  calc.use_structure(silicon)
 
+.. note::
+   There are several useful routines in :py:mod:`aiida_castep.utils` to work with ``ase``,
+   such as generating constraints or converting trajectory to a list of ``Atoms`` for visualisation.
+   The output structure of a ``CastepCalculation`` is automatically sorted to have a index consistent with the input structure.
+         
+
 Setup pseudo potentials
 -----------------------
 
@@ -151,49 +157,53 @@ A similar interface also exists for ``UspData`` node::
 
  si00, create = UspData.get_or_create(path_to_workdir + "/Si_00.usp")
 
-The md5 of Usp files will be compared to see if the same ``UspData`` already exists.
+The md5 of usp files will be compared to see if the same ``UspData`` already exists.
+If that is the case the existing ``UspData`` node will be returned.
 A more convenient way of uploading a set of usp files is to use ``upload_usp_family`` function in ``aiida_castep.data.usp``.
 
 .. note::
-   The element of is inferred from the file name which should be in the format *<element>_<foo>.usp*.
+   The element is inferred from the file name which should be in the format *<element>_<foo>.usp*.
    Norm-conserving *recpot* files are treated as if they are *usp* files.
 
 To let the calculation use the pseudo potential::
 
  calc.use_pseudos(si00, kind="Si")
 
-Alternatively, we can create a family of the potentials::
+Alternatively, and in fact used more commonly, is to create a family of the potentials::
 
  from aiida_castep.data.usp import upload_usp_family
  upload_usp_family("./", "LDA_test", "A family of LDA potentials for testing")
+
+A family is just a collection of pseudopoentials. It can be applied to a calculation using::
+
  calc.use_pseudos_from_family("LDA_test")
 
-The ``use_pseudos_from_family`` is more convenient for calculations with multiple
-species. Note that the ``use_structure`` method most be called beforehand.
+For this to work, the ``use_structure`` method most be called beforehand to define the input structure
+of the calculation.
 
-Set the resources
------------------
+Setting the resources
+---------------------
 
-To run on remote cluster, we need request some resources.
+To run our calculations on remote clusters, we need request some resources.
 Please refer to AiiDA's `documentation <https://aiida-core.readthedocs.io/en/v0.12.0/scheduler/index.html#job-resourcesl>`__ for details as the settings are scheduler dependent.
 As an example for now::
 
  calc.set_max_wallclock_seconds(600)
  calc.set_resources({"num_machines": 1})
 
-This lets AiiDA known we want to run on a single node for 3600 seconds.
-You may want to call ``set_custom_schduler_commands`` for inserting additional lines in to the submission script,
-for example, to define the project account to be charged.
+This lets AiiDA know  we want to run on a single node for 3600 seconds.
+You may want to call ``set_custom_scheduler_commands`` for inserting additional lines in to the submission script,
+for example, to define the account to be charged.
 
-Submitting the calculations
----------------------------
+Submission
+----------
 
 Now we are ready to submit the calculation.
-But before actual submission we really should check if there is any mistake::
+But before actual submission we can have a glance of the inputs to see if there is any mistake by using::
 
  calc.get_castep_inputs()
 
-Returns a dictionary as a summary of the inputs of the calculation::
+A dictionary is returned as a summary of the inputs of the calculation::
 
   {'CELL': {'syemmetry_generate': True},
    'PARAM': {'basis_precision': 'medium',
@@ -212,25 +222,24 @@ Returns a dictionary as a summary of the inputs of the calculation::
     'formula': 'Si2',
     'label': None}}
 
-To generating the input files, call::
+To test generating the input files, call::
 
  calc.submit_test()
 
 This write inputs to written to date coded sub folders inside ``submit_test`` folder at current working directory.
-Typos in ``ParameterData``'s dictionary will be check and if there is any mistake an exception will be raised.
+The input keywords for cell and param file will be check, and if there is any mistake an exception will be raised.
 
 .. note::
    The content of the folder should be identical to what will be uploaded to remote computer.
    Hence we can also check if the job script is correctly generated.
 
-Finally, we are ready to submit::
+Finally, we are ready to submit the calculation::
 
  calc.store_all()
  calc.submit()
 
-This stores the calculation and mark our calculation for submission.
-Now, just sit back and wait for it finish.
-
+The first line stores the calculation and all of its inputs. The seconds line mark our calculation for submission.
+The acutal submission is handled by one of AiiDA's daemon process, so you need to have it running in the background.
 
 Monitoring
 ==========
@@ -245,11 +254,10 @@ Accessing Results
 
 A series of node will be created when the calculation is finished and parsed.
 Use ``calc.get_outputs_dict()`` to access the output nodes. 
-Alternatively, the main ``ParameterData`` node's content can be return using
-``calc.res.<tab completion>``. 
+Alternatively, the main ``ParameterData`` node's content can be return using ``calc.res.<tab completion>``. 
 Other nodes can be access using ``calc.out.<tab completion>``. 
 The calculation's state is set to "FINISHED" after it is completed without error.
 This does not mean that the underlying task has succeeded.
 For example, an unconverged geometry optimization due to the maximum iteration being reached is still an "FINISHED" calculation,
 as CASTEP has completed what the user has requested.
-On the other hand, if the caluclation is terminated due to the time limit (cleanly exited or not), it will be set to the "FAILED" state.
+On the other hand, if the calculation is terminated due to the time limit (cleanly exited or not), it will be set to the "FAILED" state.

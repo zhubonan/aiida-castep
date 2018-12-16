@@ -9,3 +9,4 @@ aiida_castep/calculations/helper/castep_helpinfo.json
 .pytest_cache
 *.sublime-project
 *.sublime-workspace
+/aiida_castep/tests/tmp
