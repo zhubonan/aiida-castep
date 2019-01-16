@@ -208,6 +208,8 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
 
         new.label = self.label
         new.description = self.description
+        # Set the computer as well
+        new.set_computer(self.get_computer())
 
         return new
 
