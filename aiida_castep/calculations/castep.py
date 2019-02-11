@@ -39,6 +39,10 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
         "geometryoptimisation",
     ]
 
+    _copied_attributes = ["jobresource_param", 
+                          "custom_scheduler_commands", 
+                          "max_wallclock_seconds"]
+
     def _init_internal_params(self):
 
         super(CastepCalculation, self)._init_internal_params()
@@ -204,7 +208,8 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
         attrs = self.get_attrs()
         if attrs:
             for k, v in attrs.items():
-                new._set_attr(k, v)
+                if k in self._copied_attributes:
+                    new._set_attr(k, v)
 
         new.label = self.label
         new.description = self.description
