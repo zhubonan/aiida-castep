@@ -223,7 +223,7 @@ def parse_castep_text_output(out_lines, input_dict):
     """
     from collections import defaultdict
 
-    psedu_files = {}
+    pseudo_files = {}
     parsed_data = {}
     parsed_data["warnings"] = []
 
@@ -287,11 +287,11 @@ def parse_castep_text_output(out_lines, input_dict):
                     break
                 else:
                     try:
-                        specie, psedu_file = line.strip().split()
+                        specie, pp_file = line.strip().split()
                     except ValueError:
                         break
                     else:
-                        psedu_files.update({specie: psedu_file})
+                        pseudo_files.update({specie: pp_file})
         if "Total number of ions" in line:
             parsed_data["num_ions"] = int(line.strip().split("=")[1].strip())
             continue
@@ -322,7 +322,7 @@ def parse_castep_text_output(out_lines, input_dict):
         parsed_data["warnings"].append(critical_warnings["NOSTART"])
         return parsed_data, {}, critical_warnings.values()
 
-    parsed_data.update(psedu_pots=psedu_files)
+    parsed_data.update(pseudo_pots=pseudo_files)
 
     def append_value_and_unit(line, name):
         """

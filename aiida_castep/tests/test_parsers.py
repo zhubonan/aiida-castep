@@ -45,7 +45,7 @@ class TestParsers(unittest.TestCase):
         self.assertFalse(parsed_data["warnings"])
         self.assertTrue(parsed_data["n_kpoints"])
         self.assertTrue(parsed_data["space_group"])
-        self.assertTrue(parsed_data["psedu_pots"])
+        self.assertTrue(parsed_data["pseudo_pots"])
         self.assertTrue(parsed_data["point_group"])
         self.assertTrue(trajectory_data["enthalpy"])
         self.assertTrue(trajectory_data["total_energy"])
