@@ -39,6 +39,7 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
         "geometryoptimisation",
     ]
 
+    # NOT CURRENTLY USED
     _copied_attributes = ["jobresource_param", 
                           "custom_scheduler_commands", 
                           "max_wallclock_seconds"]
@@ -208,7 +209,7 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
         attrs = self.get_attrs()
         if attrs:
             for k, v in attrs.items():
-                if k in self._copied_attributes:
+                if k not in self._updatable_attributes:
                     new._set_attr(k, v)
 
         new.label = self.label
