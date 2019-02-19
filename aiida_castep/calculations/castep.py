@@ -222,7 +222,7 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
     def compare_with(self, the_other_calc, reverse=False):
         """
         Compare with another calculation
-        Look for difference in get_castep_inputs functions
+        Look for difference in get_castep_input_summary functions
         :params node: pk or uuid or node
         :params reverse: reverse the comparison, by default this node
         is the "new" and the one compared with is "old".
@@ -234,8 +234,8 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
             calc2 = the_other_calc
 
         from deepdiff import DeepDiff
-        this_param = self.get_castep_inputs()
-        other_param = calc2.get_castep_inputs()
+        this_param = self.get_castep_input_summary()
+        other_param = calc2.get_castep_input_summary()
         if reverse is True:
             res = DeepDiff(this_param, other_param)
         else:
@@ -250,7 +250,7 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
 # Compare psudo
         return res
 
-    def get_castep_inputs(self):
+    def get_castep_input_summary(self):
         """
         Convenient fuction for getting a summary of the
         input of this calculation
@@ -373,6 +373,7 @@ class TaskSpecificCalculation(CastepCalculation):
     def _generate_CASTEPinputdata(self, *args, **kwargs):
         param = args[0].get_dict()
 
+        # Check if task is correctly set
         if param['PARAM']['task'].lower() not in map(str.lower,
                                                      self._acceptable_tasks):
             raise InputValidationError("Wrong TASK value {}"
@@ -527,6 +528,18 @@ class CastepExtraKpnCalculation(TaskSpecificCalculation):
         if extra_kpn_node:
             getattr(out_calc, "use_" + inp_name)(extra_kpn_node)
         return out_calc
+
+    def get_castep_input_summary(self):
+        """
+        Generate a dictionary to summarize the inputs to CASTEP
+        """
+
+        inp_name = "{}_kpoints".format(self.kpn_name)  # Name of the input
+        linkname = self.get_linkname(inp_name)  # Name of the link
+
+        out_dict = super(CastepExtraKpnCalculation, self).get_castep_input_summary()
+        out_dict[inp_name] = self.get_inputs_dict().get(linkname)
+        return out_dict
 
     @classmethod
     def continue_from(cls, *args, **kwargs):
