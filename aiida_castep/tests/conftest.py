@@ -140,7 +140,7 @@ def STO_calculation(aiida_profile, STO_structure,
     # pdict["CELL"].pop("block species_pot")
     param = imps.ParameterData(dict=pdict)
     c.use_structure(STO_structure)
-    OTFG_family_factory(["C9"], "C9")
+    OTFG_family_factory(["C9"], "C9", stop_if_existing=False)
     c.use_pseudos_from_family("C9")
     c.use_kpoints(kpoints_mesh((3, 3, 3)))
     c.use_code(code_echo)

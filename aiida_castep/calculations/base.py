@@ -979,17 +979,16 @@ def _create_restart(cin,
     if param_update:
         from .helper import HelperCheckError
         helper = cout.get_input_helper()
-        for key, value in param_update.items():
-            dict_update, not_found = helper._from_flat_dict(param_update)
-            if not_found:
-                suggest = [helper.get_suggestion(i) for i in not_found]
-                error_string = "Following keys are invalid -- "
-                for error_key, sug in zip(not_found, suggest):
-                    error_string += "{}: {}; ".format(error_key, sug)
-                raise HelperCheckError(error_string)
-            else:
-                in_param_dict["PARAM"].update(dict_update["PARAM"])
-                in_param_dict["CELL"].update(dict_update["CELL"])
+        dict_update, not_found = helper._from_flat_dict(param_update)
+        if not_found:
+            suggest = [helper.get_suggestion(i) for i in not_found]
+            error_string = "Following keys are invalid -- "
+            for error_key, sug in zip(not_found, suggest):
+                error_string += "{}: {}; ".format(error_key, sug)
+            raise HelperCheckError(error_string)
+        else:
+            in_param_dict["PARAM"].update(dict_update["PARAM"])
+            in_param_dict["CELL"].update(dict_update["CELL"])
 
     # Remove keywords
     if param_delete:

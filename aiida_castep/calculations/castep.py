@@ -313,10 +313,53 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
             out_info["settings"] = in_settings.get_dict()
         out_info["label"] = self.label
         out_info["pseudos"] = pseudos
-
         return out_info
 
- 
+
+    def update_parameters(self, force=False, delete=None, **kwargs):
+        """
+        Convenient function to update the parameters of the calculation.
+        Will atomiatically set the PARAM or CELL field in unstored
+        ParaemterData linked to the calculation
+
+        Usage
+        =====
+        calc.update_parameters(task="singlepoint")
+        """
+        param_node = self.get_inputs_dict()[self.get_linkname('parameters')]
+        if param_node.is_stored:
+           if force:
+               param_node = ParameterData(dict=param_node.get_dict())
+           else:
+            raise RuntimeError("The input ParameterData<{}> is already stored".format(param_node.pk))
+
+        param_dict = param_node.get_dict()
+
+        # Update the dictionary
+        from .helper import HelperCheckError
+        helper = self.get_input_helper()
+        dict_update, not_found = helper._from_flat_dict(kwargs)
+        if not_found:
+            suggest = [helper.get_suggestion(i) for i in not_found]
+            error_string = "Following keys are invalid -- "
+            for error_key, sug in zip(not_found, suggest):
+                error_string += "{}: {}; ".format(error_key, sug)
+            raise HelperCheckError(error_string)
+        else:
+            param_dict["PARAM"].update(dict_update["PARAM"])
+            param_dict["CELL"].update(dict_update["CELL"])
+
+        # Delete any keys as requested
+        if delete:
+            for key in delete:
+                tmp1 = param_dict["PARAM"].pop(key, None)
+                tmp2 = param_dict["CELL"].pop(key, None)
+                if (tmp1 is None) and (tmp2 is None):
+                    raise RuntimeError("Key {} not found".format(key))
+
+        # Apply the change to the node
+        param_node.set_dict(param_dict)
+
 
 class Pot1dCalculation(CastepCalculation):
     """
