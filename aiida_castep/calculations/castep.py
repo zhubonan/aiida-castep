@@ -95,11 +95,13 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
 
         if restart_check:
             self.check_restart(verbose)
+        return outcome
 
     def _check_restart(self, verbose=True):
         """
         Check the existence of restart file if requested
         """
+        import os
         from .utils import _lowercase_dict
 
         def _print(inp):
@@ -109,7 +111,7 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
         inps = self.get_inputs_dict()
         paramdict = inps[self.get_linkname("parameters")].get_dict()["PARAM"]
 
-        paramdict = _lowercase_dict(paramdict)
+        paramdict = _lowercase_dict(paramdict, "paramdict")
         stemp = paramdict.get("reuse", None)
         if not stemp:
             stemp = paramdict.get("continuation", None)
@@ -134,7 +136,7 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
                     "Restart file {}"
                     " is not in the remote folder".format(fname))
             else:
-                _print("Check finished, all OK")
+                _print("Check finished, restart file '{}' exists.".format(fname))
 
     def _dryrun_test(self, folder, castep_exe, verbose=True):
         """
