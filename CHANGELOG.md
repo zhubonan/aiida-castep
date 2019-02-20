@@ -31,6 +31,8 @@ The primiary drive of this is to allow unconverged but cleanly finished calculat
 * Added routine to check the existence of remote check file in `submit_test` 
 * Updated the default file retrieve list and task specific retrieve list.
 * Documentation improvements
+* rename `get_castep_inputs` to `get_castep_input_summary`
+* added method `update_parameters` to `CastepCalculation` for easy manipulation of the input parameters.
 
 0.4.0
 ======
