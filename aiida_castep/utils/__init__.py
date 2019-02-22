@@ -44,13 +44,24 @@ def ase_to_castep_index(atoms, indices):
     return res
 
 
-def generate_ionic_fix_cons(atoms, indices, mask=None):
+def generate_ionic_fix_cons(atoms, indices, mask=None, count_start=1):
     """
     create ionic constraint section via indices and ase Atoms
-    mask: a list of 3 integers, must be 0 (no fix) or 1 (fix this Cartesian)
+
+    Parameters
+    ==========
+
+    :param atoms: atoms object to be fixed
+    :param indices: indices of the atoms to be fixed
+    :param mask: a list of 3 integers, must be 0 (no fix) or 1 (fix this Cartesian)
+
+    :returns: (lines, index of the next constraint)
+
     """
+
+    # Convert to castep style indices (element, index)
     castep_indices = ase_to_castep_index(atoms, indices)
-    count = 1
+    count = count_start
     lines = []
     if mask == None:
         mask = (1, 1, 1)
@@ -62,8 +73,43 @@ def generate_ionic_fix_cons(atoms, indices, mask=None):
         if mask[2]:
             lines.append("{:<4d} {:<2}    {:<4d} 0 0 1".format(count+2, symbol, i))
         count += sum(mask)
-    return lines
+    return lines, count
 
+def generate_rel_fix(atoms, indices, ref_index=0, count_start=1):
+    """
+    Generate relative constraints
+
+    WARNING: In CASTEP the mass of atoms are coupled in the fix,
+    hence to truelly fix the relative positions you will have to
+    declare all atoms having the same weight using the
+    SPECIES_MASS block.
+
+    Parameters
+    ==========
+
+    :param atoms: atoms object to be fixed
+
+    :param indices: indices of the atoms to be fixed
+
+    :param ref_index: index of the reference atom in amoung the atoms
+    being fixed. Default is the first atom appear in the indices.
+
+    :returns: (lines, index of the next constraint)
+    """
+    castep_indices = ase_to_castep_index(atoms, indices)
+    lines = []
+    count = count_start
+    symbol_ref, i_ref = castep_indices[ref_index]
+    for symbol, i in castep_indices[1:]:
+        lines.append("{:<4d} {:<2}    {:<4d} 1 0 0".format(count, symbol, i))
+        lines.append("{:<4d} {:<2}    {:<4d} -1 0 0".format(count, symbol_ref, i_ref))
+        lines.append("{:<4d} {:<2}    {:<4d} 0 1 0".format(count + 1, symbol, i))
+        lines.append("{:<4d} {:<2}    {:<4d} 0 -1 0".format(count + 1, symbol_ref, i_ref))
+        lines.append("{:<4d} {:<2}    {:<4d} 0 0 1".format(count + 2, symbol, i))
+        lines.append("{:<4d} {:<2}    {:<4d} 0 0 -1".format(count + 2, symbol_ref, i_ref))
+
+        count += 3
+    return lines, count
 
 def castep_to_atoms(atoms, specie, ion):
     """Convert castep like index to ase Atoms index"""
