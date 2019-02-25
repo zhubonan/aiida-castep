@@ -336,6 +336,7 @@ def parse_castep_text_output(out_lines, input_dict):
     skip = 0
     body_lines = out_lines[body_start:]
 
+    iter_parser = get_iter_parser()
     for count, line in enumerate(body_lines):
 
         # Allow sking certain number of lines
@@ -343,34 +344,15 @@ def parse_castep_text_output(out_lines, input_dict):
             skip -= 1
             continue
 
+        res_tmp = iter_parser.parse(line)
+        if res_tmp:
+            name, value = res_tmp[:2]
+            trajectory_data[name].append(value)
+            continue
+
         if "Calculation parallelised over" in line:
             num_cores = int(line.strip().split()[-2])
             parsed_data["parallel_procs"] = num_cores
-            continue
-
-        # For dm and fixed occupancy runs
-        if "Final energy" in line:
-            append_value_and_unit(line, "total_energy")
-            continue
-
-        if "Final free" in line:
-            append_value_and_unit(line, "free_energy")
-            continue
-
-        if "0K energy" in line:
-            append_value_and_unit(line, "zero_K_energy")
-            continue
-
-        if "Integrated Spin" in line:
-            append_value_and_unit(line, "spin_density")
-            continue
-
-        if "Integrated |Spin" in line:
-            append_value_and_unit(line, "abs_spin_density")
-            continue
-
-        if "finished iteration" in line:
-            append_value_and_unit(line, "enthalpy")
             continue
 
         if "Stress Tensor" in line:
@@ -514,7 +496,7 @@ class Matcher(object):
             value = match.group(1)
             if self.convfunc:
                 value = self.convfunc(value)
-            out = {self.name: value}
+            out = (self.name, value)
         else:
             out = None
         return out, match
@@ -531,20 +513,21 @@ class UnitMatcher(Matcher):
         """
         out, match = super(UnitMatcher, self).match_pattern(line)
         if out:
-            out["unit"] = match.group(2)
+            unit = match.group(2)
             conv = self.convfunc if self.convfunc else float
-            out[self.name] = conv(out[self.name])
+            out = (out[0],conv(out[1]), unit)
         return out, match
 
 def get_iter_parser():
     tail1 = r' *= *([0-9.+-eE]+) +(\w+)'
-    mfree = UnitMatcher(r'^Final free energy (E-TS)' + tail1, "free_energy")
-    mtotal = UnitMatcher(r'^Total energy, E' + tail1, "total_energy")
-    mzeroK = UnitMatcher(r'^NB est. 0K energy (E-0.5TS)' + tail1, "zero_K_energy")
-    spin = UnitMatcherr(r'^Integrated Spin Density' + tail1, "spin_density")
-    absspin = UnitMatcherr(r'^Integrated \|Spin Density\|' + tail1, "abs_spin_density")
-    enthalpy = UnitMatcher(r'^\w+: finished iteration +\d+ +with enthalpy' + tail1, "enthalpy")
-    parser = LineParser([mfree, mtotal, mzeroK, spin, absspin, enthalpy])
+    mfree = UnitMatcher(r'^Final free energy \(E-TS\)' + tail1, "free_energy")
+    mtotal = UnitMatcher(r'^Final energy, E' + tail1, "total_energy")
+    mtotal2 = UnitMatcher(r'^Final energy' + tail1, "total_energy")
+    mzeroK = UnitMatcher(r'^NB est. 0K energy \(E-0.5TS\)' + tail1, "zero_K_energy")
+    spin = UnitMatcher(r'^Integrated Spin Density' + tail1, "spin_density")
+    absspin = UnitMatcher(r'^Integrated \|Spin Density\|' + tail1, "abs_spin_density")
+    enthalpy = UnitMatcher(r'^ *\w+: finished iteration +\d+ +with enthalpy' + tail1, "enthalpy")
+    parser = LineParser([mfree, mtotal, mtotal2, mzeroK, spin, absspin, enthalpy])
     return parser
 
 def parse_geom_text_output(out_lines, input_dict):
