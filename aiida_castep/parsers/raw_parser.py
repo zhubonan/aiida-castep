@@ -334,8 +334,8 @@ def parse_castep_text_output(out_lines, input_dict):
 
     # Parse repeating information
     skip = 0
-
     body_lines = out_lines[body_start:]
+
     for count, line in enumerate(body_lines):
 
         # Allow sking certain number of lines
@@ -458,6 +458,94 @@ def parse_castep_text_output(out_lines, input_dict):
 
     return parsed_data, trajectory_data, critical_warnings.values()
 
+
+class LineParser(object):
+    """
+    Parser for a line
+    """
+
+    def __init__(self, conditions):
+        """initialize the Parser by passing the conditions"""
+        self._cond = conditions
+
+    def parse(self, line):
+        """
+        Return parsing results
+
+        :returns: Result of the first matched Matcher object or None if no match is found
+        """
+        out = None
+        for c in self._cond:
+            out, match = c.match_pattern(line)
+            if out:
+                break
+        return out
+
+
+class Matcher(object):
+    """
+    Class of the condition to match the line
+    """
+
+    def __init__(self, regex, name, convfunc=None):
+        """
+        Initialize a Matcher object.
+
+        Parameters
+        ==========
+        :param string regex: Pattern to be matched
+        :param string name: Name of the results
+        """
+        self.regex = re.compile(regex)
+        self.convfunc = convfunc
+        self.name = name
+
+
+    def match_pattern(self, line):
+        """
+        Match pattern
+
+        :returns: (out, match) Out is a dicationary of {self.name: <matched_value>}.
+        and match is a re.MatchObject or None
+        """
+
+        match =  self.regex.match(line)
+        if match:
+            value = match.group(1)
+            if self.convfunc:
+                value = self.convfunc(value)
+            out = {self.name: value}
+        else:
+            out = None
+        return out, match
+
+class UnitMatcher(Matcher):
+    """
+    The pattern of a UnitMatcher should have two groups with second group
+    being the unit. The first group will be converted to float
+    """
+
+    def match_pattern(self, line):
+        """
+        Match the pattern
+        """
+        out, match = super(UnitMatcher, self).match_pattern(line)
+        if out:
+            out["unit"] = match.group(2)
+            conv = self.convfunc if self.convfunc else float
+            out[self.name] = conv(out[self.name])
+        return out, match
+
+def get_iter_parser():
+    tail1 = r' *= *([0-9.+-eE]+) +(\w+)'
+    mfree = UnitMatcher(r'^Final free energy (E-TS)' + tail1, "free_energy")
+    mtotal = UnitMatcher(r'^Total energy, E' + tail1, "total_energy")
+    mzeroK = UnitMatcher(r'^NB est. 0K energy (E-0.5TS)' + tail1, "zero_K_energy")
+    spin = UnitMatcherr(r'^Integrated Spin Density' + tail1, "spin_density")
+    absspin = UnitMatcherr(r'^Integrated \|Spin Density\|' + tail1, "abs_spin_density")
+    enthalpy = UnitMatcher(r'^\w+: finished iteration +\d+ +with enthalpy' + tail1, "enthalpy")
+    parser = LineParser([mfree, mtotal, mzeroK, spin, absspin, enthalpy])
+    return parser
 
 def parse_geom_text_output(out_lines, input_dict):
     """
