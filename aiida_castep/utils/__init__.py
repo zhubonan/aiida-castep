@@ -48,9 +48,6 @@ def generate_ionic_fix_cons(atoms, indices, mask=None, count_start=1):
     """
     create ionic constraint section via indices and ase Atoms
 
-    Parameters
-    ==========
-
     :param atoms: atoms object to be fixed
     :param indices: indices of the atoms to be fixed
     :param mask: a list of 3 integers, must be 0 (no fix) or 1 (fix this Cartesian)
@@ -79,20 +76,19 @@ def generate_rel_fix(atoms, indices, ref_index=0, count_start=1):
     """
     Generate relative constraints
 
-    WARNING: In CASTEP the mass of atoms are coupled in the fix,
-    hence to truelly fix the relative positions you will have to
-    declare all atoms having the same weight using the
-    SPECIES_MASS block.
+    .. note::
 
-    Parameters
-    ==========
+      In CASTEP the mass of atoms are coupled in the fix,
+      hence to truelly fix the relative positions you will have to
+      declare all atoms having the same weight using the
+      SPECIES_MASS block.
 
     :param atoms: atoms object to be fixed
 
     :param indices: indices of the atoms to be fixed
 
     :param ref_index: index of the reference atom in amoung the atoms
-    being fixed. Default is the first atom appear in the indices.
+      being fixed. Default is the first atom appear in the indices.
 
     :returns: (lines, index of the next constraint)
     """
