@@ -328,15 +328,11 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
         keywords to PARAM or CELL field of the ParameterData
         (i.e for generating .param and .cell file)
 
-        Usage
-        =====
+
         calc.update_parameters(task="singlepoint")
 
-        Parameters
-        ==========
-
-        :param force: Force the update even if the ParameterData node is stored
-        :param delete: A list of the keywords to be deleted
+        :param force: flag to force the update even if the ParameterData node is stored.
+        :param delete: A list of the keywords to be deleted.
         """
         param_node = self.get_inputs_dict()[self.get_linkname('parameters')]
         if param_node.is_stored:
