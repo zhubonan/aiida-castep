@@ -473,8 +473,6 @@ class Matcher(object):
         """
         Initialize a Matcher object.
 
-        Parameters
-        ==========
         :param string regex: Pattern to be matched
         :param string name: Name of the results
         """
@@ -488,7 +486,7 @@ class Matcher(object):
         Match pattern
 
         :returns: (out, match) Out is a dicationary of {self.name: <matched_value>}.
-        and match is a re.MatchObject or None
+          and match is a re.MatchObject or None
         """
 
         match =  self.regex.match(line)
@@ -519,6 +517,9 @@ class UnitMatcher(Matcher):
         return out, match
 
 def get_iter_parser():
+    """
+    Generate a LineParser object to parse repeating outputs
+    """
     tail1 = r' *= *([0-9.+-eE]+) +(\w+)'
     mfree = UnitMatcher(r'^Final free energy \(E-TS\)' + tail1, "free_energy")
     mtotal = UnitMatcher(r'^Final energy, E' + tail1, "total_energy")
