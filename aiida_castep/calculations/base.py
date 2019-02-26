@@ -834,7 +834,8 @@ def _create_restart(cin,
                     use_castep_bin=False,
                     calc_class=None,
                     param_update=None,
-                    param_delete=None):
+                    param_delete=None,
+                    keep_input_model=False):
     """
     Method to restart the calculation by creating a new one.
     Return a new calculation with all the essential input nodes in the unstored stated.
@@ -865,6 +866,8 @@ def _create_restart(cin,
     :param param_update: A dictionary of the parameter keywords to be updated.
     The key can be put into the top level and will be assigned accordingly.
     :param param_delete: A list of the keys to be removed from param file or cell file
+    :param keep_input_model: If True, keeps the input model of the parent calculation.
+      i.e. use input check file rather that the check file written.
     """
 
     from aiida.common.datastructures import calc_states
@@ -909,7 +912,15 @@ def _create_restart(cin,
                                        "in calculation {}".format(cin.pk))
         else:
             remote_folder = remote_folders[0]
-            cout._set_parent_remotedata(remote_folder)
+
+    # We just keep the existing link
+    elif keep_input_model:
+        remote_folder = cin.get_inputs_dict().get(cin.get_linkname("parent_folder"))
+    else:
+        remote_folder = None
+
+    if remote_folder:
+        cout._set_parent_remotedata(remote_folder)
 
     # Use the out_put structure if required
     if use_output_structure:
@@ -969,6 +980,12 @@ def _create_restart(cin,
             in_param_dict['PARAM'][
                 'continuation'] = cin.get_restart_file_relative_path(
                     in_param_dict, use_castep_bin)
+        else:
+            raise RuntimeError("Invalid restart type: " + restart_type)
+
+    elif keep_input_model:
+        # No need to change the continuation/reuse field
+        pass
     else:
         # In this case we simply create a identical calculation
         # But we should discard reuse / continuation
