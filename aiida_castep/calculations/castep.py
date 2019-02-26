@@ -2,6 +2,7 @@
 Calculations of CASTEP
 """
 from __future__ import print_function
+import warnings
 
 import aiida
 from aiida.common.exceptions import InputValidationError
@@ -23,6 +24,7 @@ else:
 
 KpointsData = DataFactory("array.kpoints")
 StructureData = DataFactory("structure")
+ParameterData = DataFactory("parameter")
 
 # Define the version of the calculation
 
@@ -33,13 +35,14 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
     """
 
     _default_symlink_usage = True
+
+    # NOT CURRENTLY USED
     _acceptable_tasks = [
         "singlepoint",
         "geometryoptimization",
         "geometryoptimisation",
     ]
 
-    # NOT CURRENTLY USED
     _copied_attributes = ["jobresource_param", 
                           "custom_scheduler_commands", 
                           "max_wallclock_seconds"]
@@ -322,11 +325,14 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
         """
         Convenient function to update the parameters of the calculation.
         Will atomiatically set the PARAM or CELL field in unstored
-        ParaemterData linked to the calculation
+        ParaemterData linked to the calculation.
+        If no ``ParameterData`` is linked to the calculation, a new node will be
+        created.
 
-        This method relies on the help information to check and assign
-        keywords to PARAM or CELL field of the ParameterData
-        (i.e for generating .param and .cell file)
+        ..note:
+          This method relies on the help information to check and assign
+          keywords to PARAM or CELL field of the ParameterData
+          (i.e for generating .param and .cell file)
 
 
         calc.update_parameters(task="singlepoint")
@@ -334,9 +340,16 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
         :param force: flag to force the update even if the ParameterData node is stored.
         :param delete: A list of the keywords to be deleted.
         """
-        param_node = self.get_inputs_dict()[self.get_linkname('parameters')]
+        param_node = self.get_inputs_dict().get(self.get_linkname('parameters'), None)
+        # Create the node if none is found
+        if param_node is None:
+            warnings.warn("No existing ParameterData node found, creating a new one.")
+            param_node = ParameterData(dict={"CELL": {}, "PARAM": {}})
+            self.use_parameters(param_node)
+
         if param_node.is_stored:
            if force:
+               # Create a new node if the existing node is stored
                param_node = ParameterData(dict=param_node.get_dict())
            else:
             raise RuntimeError("The input ParameterData<{}> is already stored".format(param_node.pk))

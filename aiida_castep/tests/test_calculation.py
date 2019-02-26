@@ -20,20 +20,31 @@ def test_castep_summary(STO_calculation):
         assert k in out_dict
 
 
-def test_castep_update(STO_calculation):
+def test_update_parameters(STO_calculation):
+    """
+    Test the update_parameters method
+    """
 
+    sto = STO_calculation
     updates = {"task": "geometryoptimisation",
                "xc_functional": "pbe",
                "fix_all_cell": True}
-    STO_calculation.update_parameters(**updates)
-    dtmp = STO_calculation.inp.parameters.get_dict()
+    sto.update_parameters(**updates)
+    dtmp = sto.inp.parameters.get_dict()
     assert dtmp["PARAM"]["task"] == updates["task"]
     assert dtmp["PARAM"]["xc_functional"] == updates["xc_functional"]
     assert dtmp["CELL"]["fix_all_cell"] == updates["fix_all_cell"]
 
-    STO_calculation.update_parameters(delete=["task"])
+    sto.update_parameters(delete=["task"])
     assert "task" not in dtmp["PARAM"]
 
-    STO_calculation.inp.parameters.store()
+    sto.inp.parameters.store()
     with pytest.raises(RuntimeError):
-        STO_calculation.update_parameters(delete=["task"])
+        sto.update_parameters(delete=["task"])
+
+    # Unlink the parameters
+    sto._remove_link_from(sto.get_linkname("parameters"))
+    # This should still work, a new input ParameterData is created
+    sto.update_parameters(**updates)
+    assert sto.get_linkname("parameters") in \
+        sto.get_inputs_dict()
