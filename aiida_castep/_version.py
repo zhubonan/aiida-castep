@@ -7,6 +7,7 @@ be increased.This avoids falsely matching nodes via hashes.
 
 CHNAGELOG
 0.2.3 -> FIX a typo psedu_pots -> pseudo_pots
+0.2.4 -> Sort the bands and parsed kpoints from .bands file using the index given
 """
 
-calc_parser_version = "0.2.3"
+calc_parser_version = "0.2.4"

@@ -122,7 +122,8 @@ class CastepParser(Parser):
 
         # Append the final value of trajectory_data into out_dict
         last_value_keys = ["free_energy", "total_energy",
-             "zero_K_energy", "spin_density", "abs_spin_density", "enthalpy"]
+                           "zero_K_energy", "spin_density",
+                           "abs_spin_density", "enthalpy"]
         for key in last_value_keys:
             add_last_if_exists(trajectory_data, key, out_dict)
 
@@ -312,14 +313,27 @@ def bands_to_bandsdata(bands_res):
     :rtype: ``aiida.orm.bands.data.array.bands.BandsData``
     """
 
-    bands = BandsData()
-    kpts = [k[1:-1] for k in bands_res[1]]
-    _weights = [k[-1] for k in bands_res[1]]
-    bands.set_kpoints(kpts, weights=_weights)
-    # We need to swap the axes from kpt,spin,engs to spin,kpt,engs
     import numpy as np
+    bands = BandsData()
 
-    bands_array = np.array(bands_res[2]).swapaxes(0, 1)
+    # Extract the index of the kpoints
+    # kpn_array are rows (kindex, kx, ky, kz, weight)
+    kpn_array = np.array(bands_res[1])
+    k_index = kpn_array[:, 0]
+
+    # We need to restore the order of the kpoints
+    k_sort = np.argsort(k_index)
+    # Sort the kpn_array
+    kpn_array = kpn_array[k_sort]
+
+    _weights = kpn_array[:, -1]
+    kpts = kpn_array[:, 1:-1]
+    bands.set_kpoints(kpts, weights=_weights)
+
+    # We need to swap the axes from kpt,spin,engs to spin,kpt,engs
+    bands_array = np.array(bands_res[2])[k_sort]  #  Sort the bands
+    bands_array = bands_array.swapaxes(0, 1)
+
     # Squeeze the first dimension e.g when there is a single spin
     if bands_array.shape[0] == 1:
         bands_array = bands_array[0]
