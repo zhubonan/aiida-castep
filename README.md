@@ -2,6 +2,10 @@ AiiDA plugin for working with CASTEP
 ====================================
 [![Documentation Status](https://readthedocs.org/projects/aiida-castep/badge/?version=master)](https://aiida-castep.readthedocs.io/en/master/?badge=master)
 [![pipeline status](https://gitlab.com/bz1/aiida-castep/badges/master/pipeline.svg)](https://gitlab.com/bz1/aiida-castep/commits/master)
+(masster)  
+[![Documentation Status](https://readthedocs.org/projects/aiida-castep/badge/?version=dev)](https://aiida-castep.readthedocs.io/en/master/?badge=dev)
+[![pipeline status](https://gitlab.com/bz1/aiida-castep/badges/dev/pipeline.svg)](https://gitlab.com/bz1/aiida-castep/commits/dev)
+(dev)  
 
 This is a  plugin for using CASTEP in AiiDA.
 The plugin is OK for production but still under active development.
@@ -37,9 +41,14 @@ TODOS
 * Support for submitting file based CASTEP calculations.
 * At the moment there is no enforcement on the type in `ParameterData` input node. For example, setting *smearing_width* to 0.1 and "0.1" is equivalent, but they will store differently in the database.
 * WorkChain development for automated restart of calculations. (Waiting for AiiDA 1.0.0)
+* Update the plugin to work with AiiDA 1.0.0
 
 How to test
 -----------
 
 Use `verdi -p <test_profile> devel tests db.castep` to do tests.
-Make sure the plugin is installed and AiiDA is configured before this.
+Make sure the plugin is installed and AiiDA is configured before this.  
+Tests are being migrated using the `pytest` interface providided by `aiida_core`.
+To check these tests, type `pytest` while inside the package folder.
+You may have to install additional dependencies, which can be done with
+`pip install aiida_core[testing]`.
