@@ -34,6 +34,7 @@ The primiary drive of this is to allow unconverged but cleanly finished calculat
 * rename `get_castep_inputs` to `get_castep_input_summary`. This method returns a dictionary of a summary of the run.
 * added method `update_parameters` to `CastepCalculation` for easy manipulation of the input parameters.
 * Fixed a inconsistency due to kpoint index being ignored when parsing `.bands` file. (parser version 0.2.4)
+* Various documentation improvements
 
 0.4.0
 ======

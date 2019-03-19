@@ -1,2 +1,3 @@
 recursive-include aiida_castep/tests/data/ *
+include aiida_castep/calculations/helper/*.json
 include setup.json

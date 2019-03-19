@@ -12,11 +12,11 @@ This is not limited to the case where the calculation failed or the geometry opt
 does not converged within the iteration limit. For example, you may just want to create
 a series of calculation with slightly different parameters, which can be
 achieved using the ``param_update`` and ``param_delete`` keywords with ``ignore_state=True``.
-For more detail, please see the docstring of :py:func:`aiida_castep.calculations.base._create_restart`.
+For more detail, please see the docstring of :py:func:`aiida_castep.calculations.base.create_restart_`.
 
 
 Creating pseudopotential families
---------------------------------
+---------------------------------
 
 These can be achieved using functions :py:func:`aiida_castep.data.otfg.upload_otfg_family`
 and :py:func:`aiida_castep.data.usp.upload_usp_family`.

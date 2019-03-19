@@ -655,15 +655,20 @@ class BaseCastepInputGenerator(object):
                        param_update=None,
                        param_delete=None):
         """
-        Method to restart the calculation by creating a new one.
+        A method to help restart the calculation by creating a new one.
         Return a new calculation with all the essential input nodes in the unstored stated.
 
-        CASTEP has two modes of 'restart', activated by setting CONTINUATION or REUSE keywords in .param file.
+        CASTEP has two modes of 'restart', activated by setting CONTINUATION or REUSE keywords in .param file:
 
-        CONTINUATION -- Restart from the end of the last run. Only limited set of parameters can be modified. If unmodifiable parameters were changed, they are ignored. E.g changes of task, nextra_bands, cut_off_energy will be ignored. This is often used for geometry optimisation or md runs.
+        CONTINUATION
+          Restart from the end of the last run.
+          Only limited set of parameters can be modified.
+          If unmodifiable parameters were changed, they are ignored.
+          E.g changes of task, nextra_bands, cut_off_energy will be ignored. This is often used for geometry optimisation or md runs.
 
-        REUSE -- Essentially making a new calculation with parameters read from .cell and .param file.
-        Data from *castep_bin* or *check* will be used to initialise te model of the new run. This is often used for bandstructure, dos, spectral calculation.
+        REUSE
+          Essentially making a new calculation with parameters read from .cell and .param file.
+          Data from ``castep_bin`` or ``check`` will be reused to initialise the model of the new run when applicable. This is often used for bandstructure, dos, spectral calculation.
 
         Note both castep_bin and check file may be used.
         They are almost the same except castep_bin does not have wavefunctions stored.
@@ -673,15 +678,20 @@ class BaseCastepInputGenerator(object):
         :param str restart_type: "continuation" or "restart". If set to continuation the child calculation has keyword 'continuation' set.
         :param bool reuse: Wether we want to reuse the previous calculation.
             only applies for "restart" run
-        :param bool parent_folder_symlink: if True, symlink are used instead of hard copies of the files. Default given be self._default_symlink_usage
+        :param bool parent_folder_symlink: if True, symlink are used instead of hard copies of the files. Default given be cin._default_symlink_usage
         :param bool use_output_structure: if True, the output structure of parent calculation is used as the input of the child calculation.
             This is useful for photon/bs calculation.
+        :param calc_class: Class of the new calculation, e.g can restart into a CastepBSCalculation.
+        :param param_update: A dictionary of the parameter keywords to be updated.
+            The key can be put into the top level and will be assigned accordingly.
+        :param param_delete: A list of the keys to be removed from param file or cell file
+        :param keep_input_model: If True, keeps the input model of the parent calculation.
+            i.e. use input check file rather that the check file written.
 
-        :returns: A new unstored node.
-
+        ..see also:: :py:func:`aiida_castep.calculations.base.create_restart_`
         """
 
-        cout = _create_restart(
+        cout = create_restart_(
             self,
             ignore_state=ignore_state,
             restart_type=restart_type,
@@ -696,15 +706,15 @@ class BaseCastepInputGenerator(object):
     @classmethod
     def continue_from(cls, cin, *args, **kwargs):
         """
-        Create a new calcualtion as a continution from a given calculation.
+        Create a new calculation as a continuation from a given calculation.
         This is effectively an "restart" for CASTEP and a lot of the parameters
         can be tweaked. For example, conducting bandstructure calculation from
         finished geometry optimisations.
         CASTEP has two modes of 'restart', activated by setting CONTINUATION or REUSE keywords in .param file.
 
-        ..see also:: ``create_restart``
+        ..see also:: :py:func:`aiida_castep.calculations.base.create_restart_`
         """
-        cout = _create_restart(cin, calc_class=cls, *args, **kwargs)
+        cout = create_restart_(cin, calc_class=cls, *args, **kwargs)
 
         return cout
 
@@ -832,7 +842,7 @@ class BaseCastepInputGenerator(object):
         return self.get_inputs_dict()[self.get_linkname('structure')]
 
 
-def _create_restart(cin,
+def create_restart_(cin,
                     ignore_state=False,
                     restart_type="restart",
                     reuse=False,
@@ -844,37 +854,38 @@ def _create_restart(cin,
                     param_delete=None,
                     keep_input_model=False):
     """
-    Method to restart the calculation by creating a new one.
+    A function to help restart the calculation by creating a new one.
     Return a new calculation with all the essential input nodes in the unstored stated.
 
-    CASTEP has two modes of 'restart', activated by setting CONTINUATION or REUSE keywords in .param file.
+    CASTEP has two modes of 'restart', activated by setting CONTINUATION or REUSE keywords in .param file:
 
     CONTINUATION
-    ------------
-    Restart from the end of the last run. Only limited set of parameters can be modified. If unmodifiable parameters were changed, they are ignored. E.g changes of task, nextra_bands, cut_off_energy will be ignored. This is often used for geometry optimisation or md runs.
+      Restart from the end of the last run.
+      Only limited set of parameters can be modified.
+      If unmodifiable parameters were changed, they are ignored.
+      E.g changes of task, nextra_bands, cut_off_energy will be ignored. This is often used for geometry optimisation or md runs.
 
     REUSE
-    -----
-    Essentially making a new calculation with parameters read from .cell and .param file.
-    Data from *.castep_bin or *.check will be used to initialise te model of the new run. This is often used for bandstructure, dos, spectral calculation.
+      Essentially making a new calculation with parameters read from .cell and .param file.
+      Data from ``castep_bin`` or ``check`` will be reused to initialise the model of the new run when applicable. This is often used for bandstructure, dos, spectral calculation.
 
     Note both castep_bin and check file may be used.
     They are almost the same except castep_bin does not have wavefunctions stored.
 
-
     :param bool ignore_state: Ignore the state of parent calculation
     :param str restart_type: "continuation" or "restart". If set to continuation the child calculation has keyword 'continuation' set.
     :param bool reuse: Wether we want to reuse the previous calculation.
-    only applies for "restart" run
-    :param bool parent_folder_symlink: if True, symlink are used instead of hard copies of the files. Default given be cin._default_symlink_usage
+        only applies for "restart" run
+    :param bool parent_folder_symlink: if True, symlink are used instead of hard copies of the files.
+        Default given be cin._default_symlink_usage
     :param bool use_output_structure: if True, the output structure of parent calculation is used as the input of the child calculation.
-    This is useful for photon/bs calculation.
-    :param Calculation calc_class: Class of the new calculation. E.g can restart into a CastepBSCalculation.
+        This is useful for photon/bs calculation.
+    :param calc_class: Class of the new calculation. E.g can restart into a CastepBSCalculation.
     :param param_update: A dictionary of the parameter keywords to be updated.
-    The key can be put into the top level and will be assigned accordingly.
+        The key can be put into the top level and will be assigned accordingly.
     :param param_delete: A list of the keys to be removed from param file or cell file
     :param keep_input_model: If True, keeps the input model of the parent calculation.
-      i.e. use input check file rather that the check file written.
+        i.e. use input check file rather that the check file written.
     """
 
     from aiida.common.datastructures import calc_states

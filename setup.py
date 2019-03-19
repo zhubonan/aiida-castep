@@ -37,9 +37,9 @@ if __name__ == '__main__':
         kwargs = json.load(info)
 
     # Determine if we are install in the git repository
-    GIT_VERSION = git_version()
-    if GIT_VERSION != "Unkown":
-        kwargs["version"] = kwargs["version"] + "-" + GIT_VERSION
+#    GIT_VERSION = git_version()
+#    if GIT_VERSION != "Unkown":
+#        kwargs["version"] = kwargs["version"] + "-" + GIT_VERSION
 
     # Included the README.md as the long description
     with open(join(ROOT, 'README.md'), 'r') as f:

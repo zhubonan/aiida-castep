@@ -12,7 +12,7 @@ before_script:
     - export PATH=$HOME/.local/bin:$PATH
     - pip install --upgrade --user pip
     - pip install sphinx sphinx_rtd_theme
-    - pip install --user -e .
+    - pip install --user .
     - reentry scan -r aiida
 
 pytest_tests:
