@@ -720,8 +720,15 @@ class BaseCastepInputGenerator(object):
         return out
 
     @classmethod
-    def get_input_helper(cls):
-        helper = CastepHelper()
+    def get_input_helper(cls, version=None):
+        """
+        Get a CASTEP help object.
+        :param version: Specify a specific version of the help
+        :type version: str
+
+        :return: A CastepHelper object
+        """
+        helper = CastepHelper(version)
         return helper
 
     @classmethod

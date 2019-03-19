@@ -4,7 +4,6 @@ build
 build/*
 *.pyc
 *.workspace
-aiida_castep/calculations/helper/castep_helpinfo.json
 *.egg-info
 .pytest_cache
 *.sublime-project
