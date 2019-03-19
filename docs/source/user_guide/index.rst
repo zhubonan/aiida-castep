@@ -9,6 +9,7 @@ User's guide
     first_calc
     outputs
     additional
+    tips
 
 
 

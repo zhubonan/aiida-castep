@@ -80,6 +80,9 @@ Tests for the plugin is written using ``pytest`` so all you need to do is type::
 
 from the project's root directory.
 
+.. note::
+   To make sure all dependencies are installed, try (re)install ``aiida_core`` with ``pip install aiida_core[testing]``.
+
 
 Using the plugin
 ----------------
