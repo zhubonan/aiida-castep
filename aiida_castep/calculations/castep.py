@@ -131,7 +131,7 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
         if not remote_data:
             raise InputValidationError(
                 "Restart requires "
-                "partent_folder to be specified".format(fname))
+                "parent_folder to be specified".format(fname))
         else:
             folder_list = remote_data.listdir()
             if fname not in folder_list:
@@ -274,6 +274,7 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
         in_settings = inp_dict.get(self.get_linkname('settings'), None)
         in_structure = inp_dict[self.get_linkname('structure')]
         in_code = inp_dict[self.get_linkname('code')]
+        in_remote = inp_dict.get(self.get_linkname('parent_folder'), None)
 
         # Snippet from Pseudos calculation
         pseudos = {}
@@ -314,6 +315,16 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
         out_info["custom_scheduler_commands"] = self.get_custom_scheduler_commands()
         out_info["wallclock"] = self.get_max_wallclock_seconds()
 
+        # Show the parent calculation whose RemoteData is linked to the node
+        if in_remote is not None:
+            input_calc = in_remote.get_inputs(node_type=JobCalculation)
+            assert len(input_calc) < 2, "More than one JobCalculation found, something seriously wrong"
+            if input_calc:
+                input_calc = input_calc[0]
+                out_info["parent_calc"] = {"pk": input_calc.pk,
+                                           "label": input_calc.label}
+            out_info["parent_calc_folder"] = in_remote
+
         if in_settings is not None:
             out_info["settings"] = in_settings.get_dict()
         out_info["label"] = self.label
@@ -351,6 +362,7 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
            if force:
                # Create a new node if the existing node is stored
                param_node = ParameterData(dict=param_node.get_dict())
+               self.use_parameters(param_node)
            else:
             raise RuntimeError("The input ParameterData<{}> is already stored".format(param_node.pk))
 
