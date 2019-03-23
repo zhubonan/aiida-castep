@@ -64,6 +64,7 @@ class BaseCastepInputGenerator(object):
 
     retrieve_dict = {
         "phonon": [".phonon"],
+        "phonon+efield": [".phonon", ".efield"],
         "magres": [".magres"],
         "transitionstatesearch": [".ts"],
         "molecular dynamics": [".md"],
