@@ -4,12 +4,14 @@ Use pytest
 # pylint: disable=unused-import,unused-argument,redefined-outer-name,too-many-function-args,
 # pylint: disable=protected-access,abstract-class-instantiated,no-value-for-parameter,unexpected-keyword-arg
 
-import io
 import pytest
+try:
+    from pathlib import Path
+except ImportError:
+    from pathlib2 import Path
+
 
 from aiida.common.exceptions import ValidationError
-import os
-
 
 Ti_otfg = "Ti 3|1.8|9|10|11|30U:40:31:32(qc=5.5)"
 Sr_otfg = "Sr 3|2.0|5|6|7|40U:50:41:42"
@@ -220,17 +222,33 @@ def test_assign_from_structure(new_database, OTFG_family_factory):
 @pytest.fixture
 def usp_folder(new_workdir):
     import os
-    for fn in ["Sr_00.usp", "Ti_00.usp", "Ce_00.usp"]:
+    for fn in ["Sr_00.usp", "Ti-00.usp", "Ce_00.recpot"]:
         with open(os.path.join(new_workdir, fn), "w") as fh:
             fh.write("Bla " + fn)
-    return new_workdir
+    return Path(new_workdir)
 
 
-def test_get_or_create(new_database, usp_folder):
+def test_usp_upload_family(new_database, usp_folder):
+    """
+    Test uploading the usp family
+    """
+    from aiida_castep.data.usp import upload_usp_family
+    upload_usp_family(str(usp_folder), "Test", "Test")
+
+    new = usp_folder / "O_00.usp"
+    new.write_text(unicode("asdfgghhd"))
+    # This will raise an exception as the same file is being uploaded
+    with pytest.raises(ValueError):
+        upload_usp_family(str(usp_folder), "Test", "Test",
+                          stop_if_existing=True)
+    # This should be OK
+    upload_usp_family(str(usp_folder), "Test", "Test", stop_if_existing=False)
+
+
+def test_usp_get_or_create(new_database, usp_folder):
     """Testing the logic or get_or_create"""
     import aiida_castep.data.usp as usp
-    import os
-    fpath = os.path.join(usp_folder, "Sr_00.usp")
+    fpath = usp_folder / "Sr_00.usp"
     node1, create = usp.UspData.get_or_create(fpath)
 
     assert create is True
@@ -249,3 +267,25 @@ def test_get_or_create(new_database, usp_folder):
                                               use_first=True)
     assert create is False
     assert node4.pk in (node1.pk, node2.pk)
+
+
+def test_usp_element_validation(new_database, usp_folder):
+    """Test the validation mechanism"""
+
+    import aiida_castep.data.usp as usp
+    fpath = str(usp_folder / "Sr_00.usp")
+    # Pass a inconsistent element should not work
+    with pytest.raises(ValidationError):
+        usp.UspData.get_or_create(fpath, element="Ti", store_usp=True)
+
+    fpath = usp_folder / "foo.usp"
+    fpath.write_text(unicode("adfalal"))
+    # This should work since the element is defined explicitly
+    usp.UspData.get_or_create(fpath, element="Ti", store_usp=True)
+
+    # This should also work
+    fpath = usp_folder / "bar.usp"
+    fpath.write_text(unicode("asdfddf"))
+    pp, _ = usp.UspData.get_or_create(fpath, store_usp=False)
+    pp.set_element("Ti")
+    pp.store()
