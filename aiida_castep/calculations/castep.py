@@ -2,7 +2,10 @@
 Calculations of CASTEP
 """
 from __future__ import print_function
+from __future__ import absolute_import
 import warnings
+import six
+from six.moves import zip
 
 import aiida
 from aiida.common.exceptions import InputValidationError
@@ -232,7 +235,7 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
         :params reverse: reverse the comparison, by default this node
         is the "new" and the one compared with is "old".
         """
-        if isinstance(the_other_calc, (int, basestring)):
+        if isinstance(the_other_calc, (int, six.string_types)):
             from aiida.orm import load_node
             calc2 = load_node(the_other_calc)
         else:
@@ -450,8 +453,8 @@ class TaskSpecificCalculation(CastepCalculation):
         param = args[0].get_dict()
 
         # Check if task is correctly set
-        if param['PARAM']['task'].lower() not in map(str.lower,
-                                                     self._acceptable_tasks):
+        all_tasks = [t.lower() for t in self._acceptable_tasks]
+        if param['PARAM']['task'].lower() not in all_tasks:
             raise InputValidationError("Wrong TASK value {}"
                                        " set in PARAM".format(
                                            param['PARAM']['task'].lower()))

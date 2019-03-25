@@ -3,6 +3,7 @@ Module for generation HELP information using CASTEP
 excutable.
 """
 from __future__ import print_function
+from __future__ import absolute_import
 import subprocess as sbp
 import re
 import sys

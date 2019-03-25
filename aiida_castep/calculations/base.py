@@ -2,7 +2,10 @@
 A module of base class for CASTEP calculations
 """
 from __future__ import print_function
+from __future__ import absolute_import
 
+import six
+from six.moves import zip
 import copy
 import os
 import time
@@ -20,6 +23,7 @@ from aiida_castep.data import OTFGData, UspData, get_pseudos_from_structure
 from .utils import get_castep_ion_line, _lowercase_dict, _uppercase_dict
 
 from .._version import calc_parser_version
+
 __version__ = calc_parser_version
 
 StructureData = DataFactory("structure")
@@ -206,7 +210,7 @@ class BaseCastepInputGenerator(object):
             parameters.get_dict(), dict_name="parameters")
         input_params = {
             k: _lowercase_dict(v, dict_name=k)
-            for k, v in input_params.iteritems()
+            for k, v in six.iteritems(input_params)
         }
 
         # Check if there are keywords that need to be blocked
@@ -374,7 +378,7 @@ class BaseCastepInputGenerator(object):
             cellfile["SPECIES_POT"] = species_pot_list
 
         # --------- PARAMETERS in cell file---------
-        for key, value in input_params["CELL"].iteritems():
+        for key, value in six.iteritems(input_params["CELL"]):
 
             if "species_pot" in key:
                 if pseudos:
@@ -517,7 +521,7 @@ class BaseCastepInputGenerator(object):
                 if key not in self._use_methods:
                     raise InputValidationError(
                         "The following input data nodes are "
-                        "unrecognised: {}".format(inputdict.keys()))
+                        "unrecognised: {}".format(list(inputdict.keys())))
         ##############################
         # END OF INITIAL INPUT CHECK #
         ##############################
@@ -624,7 +628,7 @@ class BaseCastepInputGenerator(object):
             raise InputValidationError(
                 "The following keys have been found in "
                 "the settings input node, but were not understood: {}".format(
-                    ",".join(settings_dict.keys())))
+                    ",".join(list(settings_dict.keys()))))
 
         return calcinfo
 
@@ -766,7 +770,7 @@ class BaseCastepInputGenerator(object):
         # by underscore
         if isinstance(kind, (tuple, list)):
             suffix_string = "_".join(kind)
-        elif isinstance(kind, basestring):
+        elif isinstance(kind, six.string_types):
             suffix_string = kind
         else:
             raise TypeError("The parameter 'kind' of _get_linkname_pseudo can "
@@ -820,7 +824,7 @@ class BaseCastepInputGenerator(object):
         # Will contain a list of all species of the pseudo with given PK
         pseudo_species = defaultdict(list)
 
-        for kindname, pseudo in kind_pseudo_dict.iteritems():
+        for kindname, pseudo in six.iteritems(kind_pseudo_dict):
             pseudo_dict[pseudo.pk] = pseudo
             pseudo_species[pseudo.pk].append(kindname)
 
@@ -1041,7 +1045,7 @@ def create_restart_(cin,
         cout.use_parameters(ParameterData(dict=in_param_dict))
 
     # Use exactly the same pseudopotential data
-    for linkname, input_node in cin.get_inputs_dict().iteritems():
+    for linkname, input_node in six.iteritems(cin.get_inputs_dict()):
         if isinstance(input_node, (UpfData, UspData, OTFGData)):
             cout.add_link_from(input_node, label=linkname)
 

@@ -1,7 +1,11 @@
 """
 Utility module
 """
+from __future__ import absolute_import
 from aiida.common.exceptions import InputValidationError
+import six
+from six.moves import range
+from six.moves import zip
 
 
 def get_castep_ion_line(name,
@@ -91,7 +95,7 @@ def _lowercase_dict(d, dict_name):
     from collections import Counter
 
     if isinstance(d, dict):
-        new_dict = dict((str(k).lower(), v) for k, v in d.iteritems())
+        new_dict = dict((str(k).lower(), v) for k, v in six.iteritems(d))
         if len(new_dict) != len(d):
             num_items = Counter(str(k).lower() for k in d.keys())
             double_keys = ",".join([k for k, v in num_items if v > 1])
@@ -114,7 +118,7 @@ def _uppercase_dict(d, dict_name):
     from collections import Counter
 
     if isinstance(d, dict):
-        new_dict = dict((str(k).upper(), v) for k, v in d.iteritems())
+        new_dict = dict((str(k).upper(), v) for k, v in six.iteritems(d))
         if len(new_dict) != len(d):
             num_items = Counter(str(k).upper() for k in d.keys())
             double_keys = ",".join([k for k, v in num_items if v > 1])

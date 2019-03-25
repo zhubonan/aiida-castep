@@ -6,11 +6,14 @@ Check for errors in input dictionary
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import json
 from glob import glob
 
 import logging
+from six.moves import zip
 logger = logging.getLogger(__name__)
 
 path = os.path.abspath(__file__)
@@ -102,13 +105,13 @@ class CastepHelper(object):
                 with("castep_helpinfo.json", "w") as fp:
                     json.dump(help_dict, fp)
                     file_path = os.path.realpath("castep_helpinfo.json")
-                    print("Saving in current path. "
-                      "Please move it to {}".format(file_path))
+                    print(("Saving in current path. "
+                      "Please move it to {}".format(file_path)))
             except OSError:
                 print("Cannot save the retrieved help information")
                 return
 
-        print("\n\nJSON file saved in {}".format(file_path))
+        print(("\n\nJSON file saved in {}".format(file_path)))
 
     def _check_dict(self, input_dict):
         """
@@ -245,7 +248,7 @@ class CastepHelper(object):
         """
         Return string for suggestion of the string
         """
-        return _get_suggestion(string, self.help_dict.keys())
+        return _get_suggestion(string, list(self.help_dict.keys()))
 
 
 def _get_suggestion(provided_string, allowed_strings):
