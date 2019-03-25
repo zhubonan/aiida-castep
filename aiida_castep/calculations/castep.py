@@ -8,9 +8,9 @@ import six
 from six.moves import zip
 
 import aiida
-from aiida.common.exceptions import InputValidationError
+from aiida.common import InputValidationError
 from aiida.common.utils import classproperty
-from aiida.orm import CalculationFactory, DataFactory
+from aiida.plugins import CalculationFactory, DataFactory
 from aiida_castep.calculations.base import BaseCastepInputGenerator
 from aiida_castep.calculations.base import __version__ as base_version
 
@@ -31,7 +31,7 @@ ParameterData = DataFactory("parameter")
 
 # Define the version of the calculation
 
-class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
+class CastepCalculation(BaseCastepInputGenerator, CalcJob):
     """
     Class representing a generic CASTEP calculation -
     This class should work for all types of calculations.
@@ -358,13 +358,13 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
         # Create the node if none is found
         if param_node is None:
             warnings.warn("No existing ParameterData node found, creating a new one.")
-            param_node = ParameterData(dict={"CELL": {}, "PARAM": {}})
+            param_node = Dict(dict={"CELL": {}, "PARAM": {}})
             self.use_parameters(param_node)
 
         if param_node.is_stored:
            if force:
                # Create a new node if the existing node is stored
-               param_node = ParameterData(dict=param_node.get_dict())
+               param_node = Dict(dict=param_node.get_dict())
                self.use_parameters(param_node)
            else:
             raise RuntimeError("The input ParameterData<{}> is already stored".format(param_node.pk))
@@ -655,9 +655,9 @@ class CastepExtraKpnCalculation(TaskSpecificCalculation):
         else:
             # Replace task
             param_dict['PARAM']['task'] = cls.TASK.lower()
-            from aiida.orm import DataFactory
+            from aiida.plugins import DataFactory
             ParameterData = DataFactory('parameter')
-            new_param = ParameterData(dict=param_dict)
+            new_param = Dict(dict=param_dict)
             cout._remove_link_from(cout.get_linkname('parameters'))
             cout.use_parameters(new_param)
 

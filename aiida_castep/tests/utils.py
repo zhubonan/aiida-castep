@@ -6,7 +6,7 @@ import os
 
 def get_STO_structure():
     """Return a STO structure"""
-    from aiida.orm import DataFactory
+    from aiida.plugins import DataFactory
     StructureData = DataFactory('structure')
 
     a = 3.905
@@ -24,7 +24,7 @@ def get_STO_structure():
 
 def get_x2_structure(x):
     """Return a O2 molecule in a box"""
-    from aiida.orm import DataFactory
+    from aiida.plugins import DataFactory
     StructureData = DataFactory('structure')
     a = 10
 

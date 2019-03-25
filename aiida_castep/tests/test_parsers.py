@@ -12,7 +12,7 @@ import os
 @pytest.fixture(scope="class")
 def import_things(aiida_profile, request):
 
-    from aiida.orm import DataFactory, CalculationFactory
+    from aiida.plugins import DataFactory, CalculationFactory
     FolderData = DataFactory("folder")
     for k, v in locals().items():
         setattr(request.cls, k, v)

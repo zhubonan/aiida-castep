@@ -11,20 +11,20 @@ from copy import deepcopy
 import time
 
 from aiida.orm import Code
-from aiida.orm.data.base import Str, Float, Bool, Int
-from aiida.orm.data.folder import FolderData
-from aiida.orm.data.remote import RemoteData
-from aiida.orm.data.parameter import ParameterData
-from aiida.orm.data.structure import StructureData
-from aiida.orm.data.array.kpoints import KpointsData
-from aiida.orm.data.singlefile import SinglefileData
+from aiida.orm import Str, Float, Bool, Int
+from aiida.orm.nodes.data.folder import FolderData
+from aiida.orm import RemoteData
+from aiida.orm import Dict
+from aiida.orm import StructureData
+from aiida.orm.nodes.data.array.kpoints import KpointsData
+from aiida.orm import SinglefileData
 from aiida.orm.group import Group
 from aiida.orm.utils import WorkflowFactory
-from aiida.common.exceptions import AiidaException, NotExistent
-from aiida.common.datastructures import calc_states
-from aiida.work.run import submit
-from aiida.work.workchain import WorkChain, if_, while_, append_
-from aiida.orm.utils import CalculationFactory
+from aiida.common import AiidaException, NotExistent
+from aiida.common import calc_states
+from aiida.engine import submit
+from aiida.engine import WorkChain, if_, while_, append_
+from aiida.plugins.utils import CalculationFactory
 
 from aiida_castep.parsers.raw_parser import (END_NOT_FOUND_MESSAGE,
  GEOM_FAILURE_MESSAGE, SCF_FAILURE_MESSAGE)
@@ -188,7 +188,7 @@ class CastepRelaxWorkChain(WorkChain):
             inputs['parent_folder'] = self.ctx.restart_calc.out.remote_folder
 
         # Finall make a ParameterData from the inputs
-        inputs["parameters"] = ParameterData(dict=inputs["parameters"])
+        inputs["parameters"] = Dict(dict=inputs["parameters"])
         process = CastepCalculation.process()
         calc = submit(process, **inputs)
 
@@ -401,7 +401,7 @@ class TwoStepRelax(WorkChain):
         Relax with varable cell
         """
         inputs = dict(self.ctx.inputs)
-        inputs["parameters"] = ParameterData(
+        inputs["parameters"] = Dict(
             dict=self.ctx.inputs["parameters"])
 
         process = CastepCalculation.process()

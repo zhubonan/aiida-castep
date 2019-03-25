@@ -11,7 +11,7 @@ O_otfg = "O 2|1.1|15|18|20|20:21(qc=7)"
 
 @pytest.fixture(scope="module")
 def otfgdata():
-    from aiida.orm import DataFactory
+    from aiida.plugins import DataFactory
     return DataFactory("castep.otfgdata")
 
 
@@ -27,8 +27,8 @@ def imps(aiida_profile):
     class Imports:
 
         def __init__(self):
-            from aiida.orm import CalculationFactory
-            from aiida.orm import DataFactory
+            from aiida.plugins import CalculationFactory
+            from aiida.plugins import DataFactory
             import aiida_castep.data.otfg as otfg
             ParameterData = DataFactory("parameter")
             for k, v in locals().items():
@@ -42,13 +42,13 @@ def imps(aiida_profile):
 def localhost(aiida_profile, tmpdir):
     """Fixture for a local computer called localhost"""
     # Check whether Aiida uses the new backend interface to create collections.
-    from aiida.utils.fixtures import _GLOBAL_FIXTURE_MANAGER
+    from aiida.manage.fixtures import _GLOBAL_FIXTURE_MANAGER
     from aiida.common import exceptions
     from aiida.orm import Computer
     aiida_profile = _GLOBAL_FIXTURE_MANAGER
     ldir = str(tmpdir)
     try:
-        computer = Computer.get("localhost")
+        computer = Computer.objects.get("localhost")
 
     except exceptions.NotExistent:
         computer = Computer()
@@ -77,7 +77,7 @@ def code_echo(localhost):
 @pytest.fixture()
 def remotedata(localhost, tmpdir):
     """Create an remote data"""
-    from aiida.orm.data.remote import RemoteData
+    from aiida.orm import RemoteData
 
     rmd = RemoteData()
     rmd.set_computer(localhost)
@@ -90,7 +90,7 @@ def kpoints_data(aiida_profile):
     """
     Return a factory for kpoints
     """
-    from aiida.orm import DataFactory
+    from aiida.plugins import DataFactory
     return DataFactory("array.kpoints")()
 
 

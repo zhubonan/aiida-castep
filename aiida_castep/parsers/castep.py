@@ -2,7 +2,7 @@
 Parsers for CASTEP
 """
 from __future__ import absolute_import
-from aiida.orm import DataFactory
+from aiida.plugins import DataFactory
 from aiida.parsers.parser import Parser  # , ParserParamManager
 from aiida_castep.parsers.raw_parser import parse_raw_ouput, units
 from aiida_castep.parsers.raw_parser import __version__ as raw_parser_version
@@ -168,8 +168,8 @@ class CastepParser(Parser):
         if trajectory_data:
 
             import numpy as np
-            from aiida.orm.data.array.trajectory import TrajectoryData
-            from aiida.orm.data.array import ArrayData
+            from aiida.orm.nodes.data.array.trajectory import TrajectoryData
+            from aiida.orm.nodes.data.array import ArrayData
 
             # If we have .geom file, save as in a trajectory data
             if has_md_geom:
@@ -210,7 +210,7 @@ class CastepParser(Parser):
                                        out_array))
 
         ######## ---- PROCESSING OUTPUT DATA --- ########
-        output_params = ParameterData(dict=out_dict)
+        output_params = Dict(dict=out_dict)
         new_nodes_list.append((self.get_linkname_outparams(), output_params))
         return successful, new_nodes_list
 

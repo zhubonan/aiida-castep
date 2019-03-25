@@ -5,7 +5,7 @@ from __future__ import absolute_import
 import re
 from aiida.orm import Data
 from aiida.common.utils import classproperty
-from aiida.common.exceptions import ValidationError
+from aiida.common import ValidationError
 import six
 
 OTFGGROUP_TYPE = "data.castep.otfg.family"
@@ -20,7 +20,7 @@ def upload_otfg_family(entries,
     Set a family for the OTFG pseudo potential strings
     """
     from aiida.orm import Group
-    from aiida.common.exceptions import UniquenessError, NotExistent
+    from aiida.common import UniquenessError, NotExistent
     from aiida.orm.querybuilder import QueryBuilder
     from aiida.common import aiidalogger
 

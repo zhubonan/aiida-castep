@@ -174,7 +174,7 @@ def reuse_kpoints_grid(grid, lowest_pk=False):
     :returns: A KpointsData node representing the grid requested
     """
     from aiida.orm.querybuilder import QueryBuilder
-    from aiida.orm.data.array.kpoints import KpointsData
+    from aiida.orm.nodes.data.array.kpoints import KpointsData
     q = QueryBuilder()
     q.append(KpointsData, tag="kpoints", filters={"attributes.mesh.0": grid[0],
                                    "attributes.mesh.1": grid[1],
@@ -198,7 +198,7 @@ def traj_to_atoms(traj, combine_ancesters=False,
     """
     from ase import Atoms
     from ase.calculators.singlepoint import SinglePointCalculator
-    from aiida.orm import QueryBuilder, Node, JobCalculation
+    from aiida.orm import QueryBuilder, Node, CalcJob
 
     # If a JobCalculation is passed, select its output trajectory
     if isinstance(traj, JobCalculation):

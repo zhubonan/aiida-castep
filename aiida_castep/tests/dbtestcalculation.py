@@ -6,9 +6,9 @@ from __future__ import print_function
 import os
 import unittest
 
-from aiida.common.exceptions import InputValidationError
+from aiida.common import InputValidationError
 from aiida.common.folders import SandboxFolder
-from aiida.orm import DataFactory, CalculationFactory
+from aiida.plugins import DataFactory, CalculationFactory
 from aiida.backends.testbase import AiidaTestCase
 from aiida.orm import Code
 from aiida_castep.calculations.castep import CastepTSCalculation as TSCalc
@@ -78,7 +78,7 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
         self.assertEqual(input_dict["pseudo_O"].entry, "C9")
 
         with SandboxFolder() as f:
-            p = ParameterData(dict=pdict)
+            p = Dict(dict=pdict)
             c.use_parameters(p)
             input_dict = c.get_inputs_dict()
             c._prepare_for_submission(f, input_dict)
@@ -124,7 +124,7 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
         k.store()
 
         settings_dict = {"SPINS": [0, 0]}
-        c.use_settings(ParameterData(dict=settings_dict))
+        c.use_settings(Dict(dict=settings_dict))
         c.label = "TEST CALC"
         c.description = "Test calculation for AiiDA CASTEP plugin."
         c.use_code(self.code)
@@ -161,7 +161,7 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
         k.set_kpoints_mesh([4, 4, 4], offset=(0.5, 0.5, 0.5))
 
         settings_dict = {"SPINS": [0, 0]}
-        c.use_settings(ParameterData(dict=settings_dict))
+        c.use_settings(Dict(dict=settings_dict))
         c.label = "TEST CALC"
         c.description = ("Test calculation for AiiDA CASTEP plugin. "
                          "Testing generation of inputs.")
@@ -192,7 +192,7 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
             # Continuation keywords present - should raise exception
             inputdict = c.get_inputs_dict()
             input_params["PARAM"]["continuation"] = "default"
-            p2 = ParameterData(dict=input_params)
+            p2 = Dict(dict=input_params)
             inputdict["parameters"] = p2
             with self.assertRaises(InputValidationError):
                 c._prepare_for_submission(f, inputdict)
@@ -371,7 +371,7 @@ class TestTSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
             pdict = self.get_default_input()
 
         # pdict["CELL"].pop("block species_pot")
-        p = ParameterData(dict=pdict)
+        p = Dict(dict=pdict)
         c.use_structure(STO)
         c.use_product_structure(STO)
         c.use_pseudos_from_family(C9)
@@ -452,7 +452,7 @@ class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
             pdict = self.get_default_input()
 
         # pdict["CELL"].pop("block species_pot")
-        p = ParameterData(dict=pdict)
+        p = Dict(dict=pdict)
         c.use_structure(STO)
         c.use_pseudos_from_family(C9)
         c.use_kpoints(self.get_kpoints_mesh())

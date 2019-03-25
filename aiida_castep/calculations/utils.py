@@ -2,7 +2,7 @@
 Utility module
 """
 from __future__ import absolute_import
-from aiida.common.exceptions import InputValidationError
+from aiida.common import InputValidationError
 import six
 from six.moves import range
 from six.moves import zip

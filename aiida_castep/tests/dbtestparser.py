@@ -5,7 +5,7 @@ Testing the parsers
 from __future__ import absolute_import
 import os
 
-from aiida.orm import DataFactory
+from aiida.plugins import DataFactory
 from aiida.parsers import ParserFactory
 from aiida.backends.testbase import AiidaTestCase
 from .dbcommon import BaseCalcCase, BaseDataCase

@@ -12,10 +12,10 @@ import time
 from textwrap import TextWrapper
 
 from aiida.backends.utils import get_current_profile
-from aiida.common.datastructures import CalcInfo, CodeInfo
-from aiida.common.exceptions import InputValidationError, MultipleObjectsError
+from aiida.common import CalcInfo, CodeInfo
+from aiida.common import InputValidationError, MultipleObjectsError
 from aiida.common.utils import classproperty
-from aiida.orm import DataFactory
+from aiida.plugins import DataFactory
 from aiida_castep.calculations.datastructure import CellFile, ParamFile
 from aiida_castep.calculations.helper import CastepHelper
 from aiida_castep.data import OTFGData, UspData, get_pseudos_from_structure
@@ -636,7 +636,7 @@ class BaseCastepInputGenerator(object):
         """
         Used to set a parent remotefolder
         """
-        from aiida.common.exceptions import ValidationError
+        from aiida.common import ValidationError
 
         if not isinstance(remotedata, RemoteData):
             raise ValueError('remotedata must be a RemoteData')
@@ -893,7 +893,7 @@ def create_restart_(cin,
         i.e. use input check file rather that the check file written.
     """
 
-    from aiida.common.datastructures import calc_states
+    from aiida.common import calc_states
 
     if cin.get_state(from_attribute=True) != calc_states.FINISHED:
         if not ignore_state:
@@ -979,7 +979,7 @@ def create_restart_(cin,
     if new_settings:
         if new_settings != old_settings_dict:
             # Link to an new settings
-            settings = ParameterData(dict=new_settings)
+            settings = Dict(dict=new_settings)
             cout.use_settings(settings)
         else:
             # Nothing changed, just use the old settings
@@ -1042,7 +1042,7 @@ def create_restart_(cin,
     if in_param_dict == parent_param.get_dict():
         cout.use_parameters(parent_param)
     else:
-        cout.use_parameters(ParameterData(dict=in_param_dict))
+        cout.use_parameters(Dict(dict=in_param_dict))
 
     # Use exactly the same pseudopotential data
     for linkname, input_node in six.iteritems(cin.get_inputs_dict()):

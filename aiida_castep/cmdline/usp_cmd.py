@@ -28,7 +28,7 @@ def listfamilies(element, with_description):
     load_dbenv_if_not_loaded()
     from aiida.orm import QueryBuilder
     from aiida_castep.data.usp import USPGROUP_TYPE
-    from aiida.orm import DataFactory, Group
+    from aiida.plugins import DataFactory, Group
     UspData = DataFactory("castep.uspdata")
     q = QueryBuilder()
     q.append(UspData, tag="uspdata")

@@ -3,11 +3,11 @@
 from __future__ import absolute_import
 import os
 
-from aiida.common.exceptions import InputValidationError
+from aiida.common import InputValidationError
 from aiida.common.folders import SandboxFolder
-from aiida.orm import DataFactory, CalculationFactory
+from aiida.plugins import DataFactory, CalculationFactory
 from aiida.orm import Code
-from aiida.common.exceptions import MultipleObjectsError
+from aiida.common import MultipleObjectsError
 
 import aiida_castep.data.otfg as otf
 import aiida_castep.data.usp as usp

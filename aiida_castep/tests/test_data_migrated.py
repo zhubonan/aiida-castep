@@ -9,7 +9,7 @@ import io
 import os
 
 from aiida.common.folders import SandboxFolder
-from aiida.common.exceptions import ValidationError
+from aiida.common import ValidationError
 from unittest import TestCase
 import pytest
 
@@ -26,7 +26,7 @@ O_otfg = "O 2|1.1|15|18|20|20:21(qc=7)"
 def import_things(aiida_profile, request):
     import aiida_castep.data.otfg as otf
     import aiida_castep.data.usp as usp
-    from aiida.orm import DataFactory
+    from aiida.plugins import DataFactory
     request.cls.otfg = DataFactory("castep.otfgdata")
     request.cls.otf = otf
     request.cls.usp = usp
@@ -80,7 +80,7 @@ class BaseDataCase(TestCase):
     @staticmethod
     def get_STO_structure():
         """Return a STO structure"""
-        from aiida.orm import DataFactory
+        from aiida.plugins import DataFactory
         StructureData = DataFactory("structure")
         a = 3.905
 
@@ -189,7 +189,7 @@ class TestOTFGData(BaseDataCase):
         """
 
         from aiida_castep.data import get_pseudos_from_structure
-        from aiida.common.exceptions import NotExistent
+        from aiida.common import NotExistent
 
         self.create_family()
         STO = self.get_STO_structure()
@@ -288,7 +288,7 @@ class TestUspData(BaseDataCase):
         """
 
         from aiida_castep.data import get_pseudos_from_structure
-        from aiida.common.exceptions import NotExistent
+        from aiida.common import NotExistent
 
         self.upload_usp_family()
         STO = self.get_STO_structure()
@@ -304,7 +304,7 @@ class TestUspData(BaseDataCase):
 
 if __name__ == "__main__":
     import unittest
-    from aiida.utils.fixtures import TestRunner, BACKEND_SQLA
+    from aiida.manage.fixtures import TestRunner, BACKEND_SQLA
     tests = unittest.defaultTestLoader.discover(".", pattern="dbtestdata_new.py")
     #TestRunner().run(tests)
     TestRunner().run(tests, backend=BACKEND_SQLA)

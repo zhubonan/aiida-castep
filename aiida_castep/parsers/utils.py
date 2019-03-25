@@ -3,7 +3,7 @@ Utility functions
 """
 from __future__ import absolute_import
 import numpy as np
-from aiida.parsers.exceptions import OutputParsingError
+from aiida.common import OutputParsingError
 from six.moves import zip
 
 class CASTEPOutputParsingError(OutputParsingError):
@@ -16,7 +16,7 @@ def structure_from_input(cell, positions, symbols):
     Convert it into an AiiDA structure object
     """
 
-    from aiida.orm import DataFactory
+    from aiida.plugins import DataFactory
     SructureData = DataFactory("structure")
 
     out_structure = SructureData(cell=cell)

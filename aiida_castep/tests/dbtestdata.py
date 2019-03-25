@@ -6,9 +6,9 @@ Data for data plugins
 from __future__ import absolute_import
 import io
 
-from aiida.orm import DataFactory
+from aiida.plugins import DataFactory
 from aiida.common.folders import SandboxFolder
-from aiida.common.exceptions import ValidationError
+from aiida.common import ValidationError
 from aiida.backends.testbase import AiidaTestCase
 import aiida_castep.data.otfg as otf
 import aiida_castep.data.usp as usp
@@ -121,7 +121,7 @@ class TestOTFGData(AiidaTestCase, BaseDataCase):
         """
 
         from aiida_castep.data import get_pseudos_from_structure
-        from aiida.common.exceptions import NotExistent
+        from aiida.common import NotExistent
         from .utils import get_STO_structure
 
         self.create_family()
@@ -224,7 +224,7 @@ class TestUspData(AiidaTestCase, BaseDataCase):
         """
 
         from aiida_castep.data import get_pseudos_from_structure
-        from aiida.common.exceptions import NotExistent
+        from aiida.common import NotExistent
         from .utils import get_STO_structure
 
         self.upload_usp_family()

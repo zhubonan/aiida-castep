@@ -8,7 +8,7 @@ from __future__ import absolute_import
 import re
 import os
 import warnings
-from aiida.orm import DataFactory
+from aiida.plugins import DataFactory
 from aiida.common.utils import classproperty
 import six
 
@@ -42,7 +42,7 @@ def upload_usp_family(folder,
     import aiida.common
     from aiida.common import aiidalogger
     from aiida.orm import Group
-    from aiida.common.exceptions import UniquenessError, NotExistent
+    from aiida.common import UniquenessError, NotExistent
     from aiida.orm.querybuilder import QueryBuilder
 
     files = [
@@ -306,7 +306,7 @@ class UspData(SinglefileData):
         return [_[1] for _ in groups]
 
     def _validate(self):
-        from aiida.common.exceptions import ValidationError
+        from aiida.common import ValidationError
         import aiida.common.utils
 
         super(UspData, self)._validate()

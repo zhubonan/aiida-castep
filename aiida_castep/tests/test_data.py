@@ -13,7 +13,7 @@ except ImportError:
     from pathlib2 import Path
 
 
-from aiida.common.exceptions import ValidationError
+from aiida.common import ValidationError
 
 Ti_otfg = "Ti 3|1.8|9|10|11|30U:40:31:32(qc=5.5)"
 Sr_otfg = "Sr 3|2.0|5|6|7|40U:50:41:42"
@@ -24,7 +24,7 @@ OTFG_COLLECTION = {"Sr": Sr_otfg, "Ti": Ti_otfg, "O": O_otfg}
 
 @pytest.fixture(scope="module")
 def otfgdata():
-    from aiida.orm import DataFactory
+    from aiida.plugins import DataFactory
     return DataFactory("castep.otfgdata")
 
 
@@ -38,7 +38,7 @@ def otfg():
 def imps(aiida_profile):
 
     class Imports(object):
-        from aiida.orm import DataFactory
+        from aiida.plugins import DataFactory
         import aiida_castep.data.otfg as otfg
 
     return Imports
@@ -196,7 +196,7 @@ def test_assign_from_structure(new_database, OTFG_family_factory):
     """
 
     from aiida_castep.data import get_pseudos_from_structure
-    from aiida.common.exceptions import NotExistent
+    from aiida.common import NotExistent
     from .utils import get_STO_structure
 
     OTFG_family_factory([Sr_otfg, Ti_otfg, O_otfg], "STO")
