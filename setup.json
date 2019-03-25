@@ -12,11 +12,11 @@
     "classifiers": [
         "Programming Language :: Python"
     ],
-    "version": "0.3.2",
+    "version": "1.0.0a",
     "setup_requires": ["reentry"],
     "reentry_register": true,
     "install_requires": [
-        "aiida-core >= 0.11.0, <1.0.0",
+        "aiida-core >= 1.0.0b1, <2.0.0",
         "pgtest==1.1.0",
         "deepdiff<=3.3.0",
         "ase",
