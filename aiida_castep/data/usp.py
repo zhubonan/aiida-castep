@@ -4,11 +4,13 @@ We take many things from upf.py here as usp is not too much different...
 TODO: Add function for usp file validation and parsing
 """
 
+from __future__ import absolute_import
 import re
 import os
 import warnings
 from aiida.orm import DataFactory
 from aiida.common.utils import classproperty
+import six
 
 USPGROUP_TYPE = "data.castep.usp.family"
 SinglefileData = DataFactory("singlefile")
@@ -285,7 +287,7 @@ class UspData(SinglefileData):
         if user is not None:
             group_query_params['user'] = user
 
-        if isinstance(filter_elements, basestring):
+        if isinstance(filter_elements, six.string_types):
             filter_elements = [filter_elements]
 
         if filter_elements is not None:

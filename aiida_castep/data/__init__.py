@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from .otfg import OTFGData
 from .usp import UspData
 from aiida.orm.data.upf import UpfData

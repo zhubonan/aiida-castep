@@ -1,10 +1,12 @@
 """
 Storing OTFG configuration as Data nodes
 """
+from __future__ import absolute_import
 import re
 from aiida.orm import Data
 from aiida.common.utils import classproperty
 from aiida.common.exceptions import ValidationError
+import six
 
 OTFGGROUP_TYPE = "data.castep.otfg.family"
 
@@ -265,7 +267,7 @@ class OTFGData(Data):
         if user is not None:
             group_query_params['user'] = user
 
-        if isinstance(filter_elements, basestring):
+        if isinstance(filter_elements, six.string_types):
             filter_elements = [filter_elements]
 
         if filter_elements is not None:

@@ -3,9 +3,12 @@ Command line interface for generating CASTEP help information
 """
 
 from __future__ import print_function
+from __future__ import absolute_import
 import click
 import sys
 from aiida.cmdline.commands import data_cmd
+from six.moves import map
+from six.moves import zip
 
 
 def dot_proc(iterable):
@@ -156,7 +159,8 @@ def list_file():
     if not tmp:
         print("No avaliale file detected")
     print("Avaliable files:")
-    map(lambda x: print("{} -- version: {}".format(*x)), zip(*tmp))
+    for fpath, ver in zip(*tmp):
+        print("{} -- version: {}".format(fpath, ver))
 
 
 def get_helper(*args, **kwargs):
