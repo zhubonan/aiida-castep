@@ -1,6 +1,7 @@
 """
 Collection of fixtures for basic setup
 """
+from __future__ import absolute_import
 import pytest
 
 Ti_otfg = "Ti 3|1.8|9|10|11|30U:40:31:32(qc=5.5)"

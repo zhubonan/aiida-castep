@@ -2,6 +2,7 @@
 Test parsing data
 """
 from __future__ import print_function
+from __future__ import absolute_import
 from aiida_castep.parsers.raw_parser import parse_castep_text_output, parse_geom_text_output, parse_dot_bands
 import unittest
 import pytest

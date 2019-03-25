@@ -16,11 +16,12 @@
     "setup_requires": ["reentry"],
     "reentry_register": true,
     "install_requires": [
-        "aiida-core >= 1.0.0b1, <2.0.0",
+        "aiida-core<2.0.0",
         "pgtest==1.1.0",
         "deepdiff<=3.3.0",
-        "ase",
-        "matplotlib<3"
+        "ase>=3.0,<4.0",
+        "matplotlib",
+        "six>=1.0,<2.0"
     ],
     "entry_points": {
         "aiida.calculations": [

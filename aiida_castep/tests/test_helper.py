@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 from aiida_castep.calculations.helper import CastepHelper, HelperCheckError
 import unittest
 

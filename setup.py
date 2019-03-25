@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
 import subprocess
 import os
 from os.path import abspath, dirname, join
@@ -49,5 +50,13 @@ if __name__ == '__main__':
         long_description=long_desc,
         long_description_content_type='text/markdown',
         include_package_data=True,
+        extras_require={
+            "pre-commit":[
+                "pre-commit==1.11.0",
+                "yapf==0.24.0",
+                "prospector==0.12.11",
+                "pylint==1.9.3"
+            ]
+        },
         **kwargs
     )

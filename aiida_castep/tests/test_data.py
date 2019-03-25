@@ -4,7 +4,9 @@ Use pytest
 # pylint: disable=unused-import,unused-argument,redefined-outer-name,too-many-function-args,
 # pylint: disable=protected-access,abstract-class-instantiated,no-value-for-parameter,unexpected-keyword-arg
 
+from __future__ import absolute_import
 import pytest
+import six
 try:
     from pathlib import Path
 except ImportError:
@@ -120,7 +122,7 @@ def otfg_nodes(aiida_profile, otfgdata):
         otemp.set_string("Foo")
         otfgs[symbol] = otemp
 
-    return otfgs.values()
+    return list(otfgs.values())
 
 
 def test_set_up_family_from_string(new_database, imps,
@@ -236,7 +238,7 @@ def test_usp_upload_family(new_database, usp_folder):
     upload_usp_family(str(usp_folder), "Test", "Test")
 
     new = usp_folder / "O_00.usp"
-    new.write_text(unicode("asdfgghhd"))
+    new.write_text(six.text_type("asdfgghhd"))
     # This will raise an exception as the same file is being uploaded
     with pytest.raises(ValueError):
         upload_usp_family(str(usp_folder), "Test", "Test",
@@ -279,13 +281,13 @@ def test_usp_element_validation(new_database, usp_folder):
         usp.UspData.get_or_create(fpath, element="Ti", store_usp=True)
 
     fpath = usp_folder / "foo.usp"
-    fpath.write_text(unicode("adfalal"))
+    fpath.write_text(six.text_type("adfalal"))
     # This should work since the element is defined explicitly
     usp.UspData.get_or_create(fpath, element="Ti", store_usp=True)
 
     # This should also work
     fpath = usp_folder / "bar.usp"
-    fpath.write_text(unicode("asdfddf"))
+    fpath.write_text(six.text_type("asdfddf"))
     pp, _ = usp.UspData.get_or_create(fpath, store_usp=False)
     pp.set_element("Ti")
     pp.store()

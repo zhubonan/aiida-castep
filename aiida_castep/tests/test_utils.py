@@ -2,6 +2,7 @@
 Tests for utils module
 """
 
+from __future__ import absolute_import
 import pytest
 from ..utils import *
 

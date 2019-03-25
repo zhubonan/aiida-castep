@@ -4,6 +4,7 @@ existing AiiDATestCase tests with minimum effort
 """
 
 
+from __future__ import absolute_import
 import io
 import os
 

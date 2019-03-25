@@ -2,6 +2,7 @@
 Testing the parsers
 """
 
+from __future__ import absolute_import
 import os
 
 from aiida.orm import DataFactory
