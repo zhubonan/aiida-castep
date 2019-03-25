@@ -36,6 +36,6 @@ The primiary drive of this is to allow unconverged but cleanly finished calculat
 * Fixed a inconsistency due to kpoint index being ignored when parsing `.bands` file. (parser version 0.2.4)
 * Various documentation improvements
 
-0.4.0
-======
-* (WIP) Compatible with AiiDA 1.0a4
+1.0.0a(WIP)
+===========
+* Compatible with AiiDA 1.0.0 release. Will no longer work with AiiDA 0.x versions.
