@@ -30,7 +30,7 @@ def imps(aiida_profile):
             from aiida.plugins import CalculationFactory
             from aiida.plugins import DataFactory
             import aiida_castep.data.otfg as otfg
-            ParameterData = DataFactory("parameter")
+            Dict = DataFactory("dict")
             for k, v in locals().items():
                 setattr(self, k, v)
 
@@ -139,7 +139,7 @@ def STO_calculation(aiida_profile, STO_structure,
                  "symmetry_generate": True
              }}
     # pdict["CELL"].pop("block species_pot")
-    param = imps.ParameterData(dict=pdict)
+    param = imps.Dict(dict=pdict)
     c.use_structure(STO_structure)
     OTFG_family_factory(["C9"], "C9", stop_if_existing=False)
     c.use_pseudos_from_family("C9")

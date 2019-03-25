@@ -27,7 +27,7 @@ from .._version import calc_parser_version
 __version__ = calc_parser_version
 
 StructureData = DataFactory("structure")
-ParameterData = DataFactory("parameter")
+Dict = DataFactory("Dict")
 KpointsData = DataFactory("array.kpoints")
 UpfData = DataFactory("upf")
 RemoteData = DataFactory("remote")
@@ -91,14 +91,14 @@ class BaseCastepInputGenerator(object):
                 'docstring': "Choose the input structure to use",
             },
             "settings": {
-                'valid_types': ParameterData,
+                'valid_types': Dict,
                 'additional_parameter': None,
                 'linkname': 'settings',
                 'docstring': "Use an additional node for special settings",
             },
             "parameters": {
                 'valid_types':
-                ParameterData,
+                Dict,
                 'additional_parameter': None,
                 'linkname': 'parameters',
                 'docstring':
@@ -192,7 +192,7 @@ class BaseCastepInputGenerator(object):
         CASTEP format
         Generated input here should be generic to all castep calculations
 
-        :param parameters, ParameterData: Input goes to the .cell or .param file
+        :param parameters, Dict: Input goes to the .cell or .param file
         :param settings_dict: A dictionary of the settings used for generation
         :param pseudos: A dictionary of pseudo potential Data for each kind
         :param structure: A StructureData instance
@@ -428,9 +428,9 @@ class BaseCastepInputGenerator(object):
         except KeyError:
             raise InputValidationError(
                 "No parameters specified for this calculation")
-        if not isinstance(parameters, ParameterData):
+        if not isinstance(parameters, Dict):
             raise InputValidationError(
-                "parameters is not of type ParameterData")
+                "parameters is not of type Dict")
 
         try:
             structure = inputdict.pop(self.get_linkname('structure'))
@@ -458,10 +458,10 @@ class BaseCastepInputGenerator(object):
         if settings is None:
             settings_dict = {}
         else:
-            if not isinstance(settings, ParameterData):
+            if not isinstance(settings, Dict):
                 raise InputValidationError(
                     "settings, if specified, must be of "
-                    "type ParameterData")
+                    "type Dict")
             # Settings converted to uppercase
             settings_dict = _uppercase_dict(
                 settings.get_dict(), dict_name='settings')

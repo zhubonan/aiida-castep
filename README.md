@@ -42,7 +42,7 @@ TODOS
 
 * Methods for importing existing calculations 
 * Support for submitting file based CASTEP calculations.
-* At the moment there is no enforcement on the type in `ParameterData` input node. For example, setting *smearing_width* to 0.1 and "0.1" is equivalent, but they will store differently in the database.
+* At the moment there is no enforcement on the type in `Dict` input node. For example, setting *smearing_width* to 0.1 and "0.1" is equivalent, but they will store differently in the database.
 * Update the plugin to work with AiiDA 1.0.0
 * WorkChain development for automated restart of calculations. (Waiting for AiiDA 1.0.0)
 

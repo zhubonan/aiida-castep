@@ -18,7 +18,7 @@ CasCalc = CalculationFactory("castep.castep")
 BSCalc = CalculationFactory("castep.bs")
 TSCalc = CalculationFactory("castep.ts")
 StructureData = DataFactory("structure")
-ParameterData = DataFactory("parameter")
+Dict = DataFactory("dict")
 KpointsData = DataFactory("array.kpoints")
 
 
@@ -66,7 +66,7 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
         c = CasCalc()
         pdict = self.get_default_input()
         # pdict["CELL"].pop("block species_pot")
-        p = ParameterData(dict=pdict).store()
+        p = Dict(dict=pdict).store()
         c.use_structure(STO)
         c.use_pseudos_from_family(full)
         c.use_pseudos_from_family(C9)
@@ -117,7 +117,7 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
         s.append_atom(position=(1., 0., 0.), symbols=["Ba"])
         s.store()
 
-        p = ParameterData(dict=input_params).store()
+        p = Dict(dict=input_params).store()
 
         k = KpointsData()
         k.set_kpoints_mesh([4, 4, 4])
@@ -155,7 +155,7 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
         s.append_atom(position=(1., 0., 0.), symbols=["Ba"])
         s.store()
 
-        p = ParameterData(dict=input_params).store()
+        p = Dict(dict=input_params).store()
 
         k = KpointsData()
         k.set_kpoints_mesh([4, 4, 4], offset=(0.5, 0.5, 0.5))

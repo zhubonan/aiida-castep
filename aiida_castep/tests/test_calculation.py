@@ -45,7 +45,7 @@ def test_update_parameters(STO_calculation):
 
     # Unlink the parameters
     sto._remove_link_from(sto.get_linkname("parameters"))
-    # This should still work, a new input ParameterData is created
+    # This should still work, a new input Dict is created
     sto.update_parameters(**updates)
     assert sto.get_linkname("parameters") in \
         sto.get_inputs_dict()

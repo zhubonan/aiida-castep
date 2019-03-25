@@ -16,7 +16,7 @@ from .utils import get_data_abs_path
 
 CasCalc = CalculationFactory("castep.castep")
 StructureData = DataFactory("structure")
-ParameterData = DataFactory("parameter")
+Dict = DataFactory("Dict")
 KpointsData = DataFactory("array.kpoints")
 
 Ti_otfg = "Ti 3|1.8|9|10|11|30U:40:31:32(qc=5.5)"
@@ -82,7 +82,7 @@ class BaseCalcCase(object):
         c = CasCalc()
         pdict = self.get_default_input()
         # pdict["CELL"].pop("block species_pot")
-        p = ParameterData(dict=pdict).store()
+        p = Dict(dict=pdict).store()
         c.use_structure(STO)
         c.use_pseudos_from_family(full)
         c.use_pseudos_from_family(C9)

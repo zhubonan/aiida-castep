@@ -20,14 +20,11 @@ from .._version import calc_parser_version
 __version__ = calc_parser_version
 
 
-if aiida.__version__.startswith("0"):
-    JobCalculation = CalculationFactory("job", True)
-else:
-    JobCalculation = CalculationFactory("job")
+JobCalculation = CalculationFactory("job")
 
 KpointsData = DataFactory("array.kpoints")
 StructureData = DataFactory("structure")
-ParameterData = DataFactory("parameter")
+Dict = DataFactory("dict")
 
 # Define the version of the calculation
 
@@ -340,24 +337,24 @@ class CastepCalculation(BaseCastepInputGenerator, CalcJob):
         Convenient function to update the parameters of the calculation.
         Will atomiatically set the PARAM or CELL field in unstored
         ParaemterData linked to the calculation.
-        If no ``ParameterData`` is linked to the calculation, a new node will be
+        If no ``Dict`` is linked to the calculation, a new node will be
         created.
 
         ..note:
           This method relies on the help information to check and assign
-          keywords to PARAM or CELL field of the ParameterData
+          keywords to PARAM or CELL field of the Dict
           (i.e for generating .param and .cell file)
 
 
         calc.update_parameters(task="singlepoint")
 
-        :param force: flag to force the update even if the ParameterData node is stored.
+        :param force: flag to force the update even if the Dict node is stored.
         :param delete: A list of the keywords to be deleted.
         """
         param_node = self.get_inputs_dict().get(self.get_linkname('parameters'), None)
         # Create the node if none is found
         if param_node is None:
-            warnings.warn("No existing ParameterData node found, creating a new one.")
+            warnings.warn("No existing Dict node found, creating a new one.")
             param_node = Dict(dict={"CELL": {}, "PARAM": {}})
             self.use_parameters(param_node)
 
@@ -367,7 +364,7 @@ class CastepCalculation(BaseCastepInputGenerator, CalcJob):
                param_node = Dict(dict=param_node.get_dict())
                self.use_parameters(param_node)
            else:
-            raise RuntimeError("The input ParameterData<{}> is already stored".format(param_node.pk))
+            raise RuntimeError("The input Dict<{}> is already stored".format(param_node.pk))
 
         param_dict = param_node.get_dict()
 
@@ -656,7 +653,7 @@ class CastepExtraKpnCalculation(TaskSpecificCalculation):
             # Replace task
             param_dict['PARAM']['task'] = cls.TASK.lower()
             from aiida.plugins import DataFactory
-            ParameterData = DataFactory('parameter')
+            Dict = DataFactory('parameter')
             new_param = Dict(dict=param_dict)
             cout._remove_link_from(cout.get_linkname('parameters'))
             cout.use_parameters(new_param)

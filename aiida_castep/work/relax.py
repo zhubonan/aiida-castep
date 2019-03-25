@@ -49,12 +49,12 @@ class CastepRelaxWorkChain(WorkChain):
         super(CastepRelaxWorkChain, cls).define(spec)
         spec.input('code', valid_type=Code)
         spec.input('structure', valid_type=StructureData)
-        spec.input('parameters', valid_type=ParameterData)
-        spec.input('settings', valid_type=ParameterData, required=False)
+        spec.input('parameters', valid_type=Dict)
+        spec.input('settings', valid_type=Dict, required=False)
         spec.input('pseudo_family', valid_type=Str, required=False)
         spec.input_group('pseudos', valid_type=Str, required=False)
         spec.input('kpoints', valid_type=KpointsData)
-        spec.input('options', valid_type=ParameterData, required=False)
+        spec.input('options', valid_type=Dict, required=False)
         spec.input('final_restart', valid_type=Bool, required=False, default=Bool(False))
         spec.input('geom_method', valid_type=Str, default=Str('LBFGS'))
         spec.outline(
@@ -70,7 +70,7 @@ class CastepRelaxWorkChain(WorkChain):
             cls.process_results,
             )
         spec.output('output_structure', valid_type=StructureData)
-        spec.output('output_parameters', valid_type=ParameterData)
+        spec.output('output_parameters', valid_type=Dict)
         spec.output('remote_folder', valid_type=RemoteData)
         spec.output('retrieved', valid_type=FolderData)
 
@@ -161,8 +161,8 @@ class CastepRelaxWorkChain(WorkChain):
             out['PARAM']['opt_strategy'] = "speed"
             self.report("Automatically set opt_strategy : speed.")
 
-        # Converge back into ParameterData
-        # Make a new ParameterData node for calculation
+        # Converge back into Dict
+        # Make a new Dict node for calculation
 
         return
 
@@ -187,7 +187,7 @@ class CastepRelaxWorkChain(WorkChain):
                     self.ctx.inputs['parameters'], False)
             inputs['parent_folder'] = self.ctx.restart_calc.out.remote_folder
 
-        # Finall make a ParameterData from the inputs
+        # Finall make a Dict from the inputs
         inputs["parameters"] = Dict(dict=inputs["parameters"])
         process = CastepCalculation.process()
         calc = submit(process, **inputs)
@@ -284,7 +284,7 @@ class CastepRelaxWorkChain(WorkChain):
         try:
             output_parameters = calc.get_outputs_dict()["output_parameters"].get_dict()
         except KeyError:
-            raise UnexpectedFailure("No ouput ParameterData find")
+            raise UnexpectedFailure("No ouput Dict find")
         try:
             warnings = output_parameters["warnings"]
         except KeyError:
@@ -328,12 +328,12 @@ class TwoStepRelax(WorkChain):
         super(TwoStepRelax, cls).define(spec)
         spec.input('code', valid_type=Code)
         spec.input('structure', valid_type=StructureData)
-        spec.input('parameters', valid_type=ParameterData)
-        spec.input('settings', valid_type=ParameterData, required=False)
+        spec.input('parameters', valid_type=Dict)
+        spec.input('settings', valid_type=Dict, required=False)
         spec.input('pseudo_family', valid_type=Str, required=False)
         spec.input_group('pseudos', valid_type=Str, required=False)
         spec.input('kpoints', valid_type=KpointsData)
-        spec.input('options', valid_type=ParameterData, required=False)
+        spec.input('options', valid_type=Dict, required=False)
         spec.input('var_cell_geom_method', valid_type=Str, default=Str('TPSD'))
         spec.input('var_cell_geom_iter', valid_type=Int, default=Int(20))
         spec.input('fix_cell_geom_method', valid_type=Str, default=Str('TPSD'))
@@ -345,7 +345,7 @@ class TwoStepRelax(WorkChain):
             cls.process_results,
             )
         spec.output('output_structure', valid_type=StructureData)
-        spec.output('output_parameters', valid_type=ParameterData)
+        spec.output('output_parameters', valid_type=Dict)
         spec.output('remote_folder', valid_type=RemoteData)
         spec.output('retrieved', valid_type=FolderData)
 

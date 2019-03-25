@@ -12,7 +12,7 @@ from .._version import calc_parser_version
 import six
 __version__ = calc_parser_version
 
-ParameterData = DataFactory("parameter")
+Dict = DataFactory("dict")
 BandsData = DataFactory("array.bands")
 
 ERR_FILE_WARNING_MSG = ".err files found in workdir"
