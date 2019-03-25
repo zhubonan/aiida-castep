@@ -1,8 +1,10 @@
 """
 Utility functions
 """
+from __future__ import absolute_import
 import numpy as np
 from aiida.parsers.exceptions import OutputParsingError
+from six.moves import zip
 
 class CASTEPOutputParsingError(OutputParsingError):
     pass

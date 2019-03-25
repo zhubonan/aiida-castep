@@ -1,6 +1,7 @@
 """
 Parsers for CASTEP
 """
+from __future__ import absolute_import
 from aiida.orm import DataFactory
 from aiida.parsers.parser import Parser  # , ParserParamManager
 from aiida_castep.parsers.raw_parser import parse_raw_ouput, units
@@ -8,6 +9,7 @@ from aiida_castep.parsers.raw_parser import __version__ as raw_parser_version
 from aiida_castep.parsers.utils import (structure_from_input, add_last_if_exists,
                                         desort_structure, get_desort_args)
 from .._version import calc_parser_version
+import six
 __version__ = calc_parser_version
 
 ParameterData = DataFactory("parameter")
@@ -190,7 +192,7 @@ class CastepParser(Parser):
                                         symbols=np.asarray(symbols),
                                         positions=np.asarray(positions))
                     # Save the rest
-                    for name, value in trajectory_data.iteritems():
+                    for name, value in six.iteritems(trajectory_data):
                         # Skip saving empty arrays
                         if len(value) > 0:
                             traj.set_array(name, np.asarray(value))
@@ -200,7 +202,7 @@ class CastepParser(Parser):
             # Otherwise, save data into a ArrayData node
             else:
                 out_array = ArrayData()
-                for name, value in trajectory_data.iteritems():
+                for name, value in six.iteritems(trajectory_data):
                     # Skip saving empty arrays
                     if len(value) > 0:
                         out_array.set_array(name, np.asarray(value))

@@ -2,11 +2,14 @@
 Module for parsing .castep file
 """
 
+from __future__ import absolute_import
 import re
 import numpy as np
 from aiida_castep.parsers.utils import CASTEPOutputParsingError
 
 import logging
+from six.moves import map
+from six.moves import range
 logger = logging.getLogger("aiida")
 
 from .._version import calc_parser_version
@@ -175,8 +178,9 @@ def parse_raw_ouput(outfile, input_dict,
         structure_data = dict(
             cell=last_cell, positions=last_positions, symbols=symbols)
 
-    # Parameter data to be returned
-    parameter_data = dict(out_data.items() + parser_info.items())
+    # Parameter data to be returned, combine both out_data and parser_info
+    parameter_data = dict(out_data)
+    parameter_data.update(parser_info)
 
     # Combine the warnings
     all_warnings = out_data["warnings"] + parser_info["warnings"]
@@ -251,7 +255,9 @@ def parse_castep_text_output(out_lines, input_dict):
 
 
     # A dictionary witch keys we should check at each line
-    all_warnings = dict(critical_warnings.items() + minor_warnings.items())
+    all_warnings = dict(critical_warnings)
+    all_warnings.update(minor_warnings)
+
     # Create a list of keys, the order is important here
     # specific warnings can be matched first
 
@@ -320,7 +326,7 @@ def parse_castep_text_output(out_lines, input_dict):
     # If we don't find a start of body then there is something wrong
     if body_start is None:
         parsed_data["warnings"].append(critical_warnings["NOSTART"])
-        return parsed_data, {}, critical_warnings.values()
+        return parsed_data, {}, list(critical_warnings.values())
 
     parsed_data.update(pseudo_pots=pseudo_files)
 
@@ -438,7 +444,7 @@ def parse_castep_text_output(out_lines, input_dict):
     else:
         parsed_data["geom_unconverged"] = None
 
-    return parsed_data, trajectory_data, critical_warnings.values()
+    return parsed_data, trajectory_data, list(critical_warnings.values())
 
 
 class LineParser(object):

@@ -1,6 +1,7 @@
 """Test module for the matchers"""
+from __future__ import absolute_import
 import pytest
-from raw_parser import Matcher, UnitMatcher, LineParser
+from .raw_parser import Matcher, UnitMatcher, LineParser
 
 
 def test_matcher():
