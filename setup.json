@@ -40,7 +40,7 @@
             "castep.otfgdata = aiida_castep.data.otfg:OTFGData"
         ],
         "aiida.tests": [
-            "castep.calculation = aiida_castep.tests.dbtestcalculation"
+            "castep.calculation = aiida_castep.tests.dbtests.dbtestcalculation"
         ],
         "aiida.cmdline.data" : [
             "castep-usp = aiida_castep.cmdline.usp_cmd:usp_cmd",

@@ -224,7 +224,7 @@ def usp_folder(new_workdir):
     for fn in ["Sr_00.usp", "Ti-00.usp", "Ce_00.recpot"]:
         with open(os.path.join(new_workdir, fn), "w") as fh:
             fh.write("Bla " + fn)
-    return Path(new_workdir)
+    return new_workdir
 
 
 def test_usp_upload_family(new_database, usp_folder):
