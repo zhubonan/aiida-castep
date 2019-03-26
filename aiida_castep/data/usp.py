@@ -233,10 +233,10 @@ class UspData(SinglefileData):
         return super(UspData, self).store(*args, **kwargs)
 
     def set_file(self, filename):
-        """Added file but also check data"""
-        import aiida.common.utils
+        """
+        Extract element and compute the md5hash
+        """
 
-        # Convert to string in case a Path object is passed
         filename = str(filename)
 
         try:
@@ -257,8 +257,8 @@ class UspData(SinglefileData):
                 pass
 
         md5sum = md5_file(filename)
-        super(UspData, self).set_file(filename)
         self.set_attribute('md5', md5sum)
+        super(UspData, self).set_file(filename)
 
     def set_element(self, element):
         """
