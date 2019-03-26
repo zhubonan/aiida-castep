@@ -28,7 +28,14 @@ def get_backend_str():
 
 @pytest.fixture(scope='session')
 def aiida_profile():
-    """setup a test profile for the duration of the tests"""
+    """setup a test profile for the duration of the tests
+    If the environmental variable AIIDA_TEST_PROFILE is present
+    will use an alternative fixture_manager that uses the test profile"""
+    import os
+    test_profile = os.environ.get('AIIDA_TEST_PROFILE', None)
+    if test_profile is not None:
+        from fixture import fixture_manager
+
     with fixture_manager() as fixture_mgr:
         yield fixture_mgr
 
@@ -36,7 +43,7 @@ def aiida_profile():
 @pytest.fixture(scope='function')
 def new_database(aiida_profile):
     """clear the database after each test"""
-    yield
+    yield aiida_profile
     aiida_profile.reset_db()
 
 
