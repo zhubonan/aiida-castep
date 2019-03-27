@@ -51,7 +51,6 @@ class CastepParser(Parser):
         except exceptions.NotExistent:
             return self.exit_codes.ERROR_NO_RETRIEVED_FOLDER
 
-        successful = True
         warnings = []
 
 
@@ -123,15 +122,10 @@ class CastepParser(Parser):
         # Add warnings from this level
         out_dict["warnings"].extend(warnings)
 
-        successful = all([raw_sucessful, successful])
-
-        # Saving to nodes
-        new_nodes_list = []
-
         ######## --- PROCESSING BANDS DATA -- ########
         if has_bands:
             bands = bands_to_bandsdata(bands_data)
-            new_nodes_list.append((self.get_linkname_outbands(), bands))
+            self.out(LINK_NAMES['bands'], bands)
 
         ######## --- PROCESSING STRUCTURE DATA --- ########
         try:
@@ -150,8 +144,7 @@ class CastepParser(Parser):
             input_structure = calc_in.get_inputs_dict()[calc_in.get_linkname("structure")]
             output_structure = desort_structure(output_structure, input_structure)
             output_structure.label = input_structure.label
-            new_nodes_list.append(
-                (self.get_linkname_outstructure(), output_structure))
+            self.out(LINK_NAMES['structure'], output_structure)
 
         ######### --- PROCESSING TRAJECTORY DATA --- ########
         # If there is anything to save
@@ -187,8 +180,7 @@ class CastepParser(Parser):
                         # Skip saving empty arrays
                         if len(value) > 0:
                             traj.set_array(name, np.asarray(value))
-                    new_nodes_list.append(
-                        (self.get_linkname_outtrajectory(), traj))
+                    self.out(LINK_NAMES['trajectory'])
 
             # Otherwise, save data into a ArrayData node
             else:
@@ -197,13 +189,12 @@ class CastepParser(Parser):
                     # Skip saving empty arrays
                     if len(value) > 0:
                         out_array.set_array(name, np.asarray(value))
-                new_nodes_list.append((self.get_linkname_outarray(),
-                                       out_array))
+                self.out(LINK_NAMES['array'], out_array)
 
         ######## ---- PROCESSING OUTPUT DATA --- ########
         output_params = Dict(dict=out_dict)
-        new_nodes_list.append((self.get_linkname_outparams(), output_params))
-        return successful, new_nodes_list
+        self.out(LINK_NAMES['parameters'], output_params)
+        return 0
 
 
 # MAPPTING from the created nodes to linknames
@@ -216,7 +207,7 @@ LINK_NAMES = {
     'bands': 'output_bands'
 }
 
-
+#TODO: NEED TO MIGRATE THIS
 class Pot1dParser(Parser):
     """
     Parser for Pot1d

@@ -74,4 +74,3 @@ def test_get_builder(aiida_profile, STO_calc_inputs):
 
     from aiida_castep.calculations.castep import CastepCalculation
     buider = CastepCalculation.get_builder()
-
