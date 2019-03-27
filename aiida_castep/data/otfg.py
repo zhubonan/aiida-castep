@@ -9,7 +9,7 @@ from aiida.common import ValidationError
 from .utils import split_otfg_entry
 import six
 
-OTFGGROUP_TYPE = GroupTypeString.CASTEP_OTFG
+OTFGGROUP_TYPE = "data.castep.otfg.family"
 
 
 def upload_otfg_family(entries,

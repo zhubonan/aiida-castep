@@ -12,7 +12,7 @@ from aiida.common.files import md5_file
 from .utils import get_usp_element
 import six
 
-USPGROUP_TYPE = GroupTypeString.CASTEP_USP
+USPGROUP_TYPE = "data.castep.usp.family"
 
 SinglefileData = DataFactory("singlefile")
 
