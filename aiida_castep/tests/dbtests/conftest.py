@@ -77,9 +77,30 @@ def imps(aiida_profile):
 
     return Imports()
 
+@pytest.fixture()
+def computer_generator(aiida_profile, tmpdir):
+    """
+    Return a generator for the Computers
+    """
+    from aiida.orm import Computer
+    defaults = dict(name='localhost', hostname='localhost',
+                    transport_type='local',
+                    enabled_state=True,
+                    scheduler_type='direct',
+                    workdir=tmpdir.strpath)
 
-@pytest.fixture
-def localhost(aiida_profile, tmpdir):
+    def _get_computer(**kwargs):
+        kwargs.update(defaults)
+        computer = Computer(**kwargs).store()
+        # Need to configure the computer before using
+        # Otherwise there is no AuthInfo
+        computer.configure()
+        return computer
+    return _get_computer
+
+
+@pytest.fixture()
+def localhost(computer_generator):
     """
     Fixture for a local computer called localhost.
     This is currently not in the AiiDA fixtures."""
@@ -87,10 +108,7 @@ def localhost(aiida_profile, tmpdir):
     try:
         computer = Computer.objects.get(name='localhost')
     except NotExistent:
-        computer = Computer(name='localhost', hostname='localhost',
-                            transport_type='local',
-                            scheduler_type='direct',
-                            workdir=tmpdir.strpath).store()
+        computer = computer_generator(name='localhost')
     return computer
 
 
@@ -185,9 +203,6 @@ def STO_calc_inputs(aiida_profile,
                     code_echo, imps,
                     c9,
                     localhost, kpoints_mesh):
-    from aiida.engine.processes.ports import PortNamespace
-    from aiida.engine.processes.builder import ProcessBuilderNamespace
-    from collections import MutableMapping
 
     inputs = inputs_default
     pdict = {"PARAM": {

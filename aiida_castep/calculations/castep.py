@@ -39,15 +39,19 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
     This class should work for all types of calculations.
     """
 
-    _DEFAULT_SEED_NAME = 'aiida'
-    _DEFAULT_INPUT_FILE_NAME = _DEFAULT_SEED_NAME + '.cell'
-    _DEFAULT_OUTPUT_FILE_NAME = _DEFAULT_SEED_NAME + '.castep'
-    _DEFAULT_SYMLINK_USAGE = True
-    _DEFAULT_PARENT_FOLDER_NAME = 'parent'
-    _DEFAULT_RETRIEVE_LIST = [
-        "*.err", "*.den_fmt", "*-out.cell", "*.pdos_bin",
-    ]
-    _DEFAULT_PARSER = 'castep.castep'
+    # Create a dict of the defaults
+    _DEFAULTS = {
+        "seedname": 'aiida',
+        'symlink_usage': True,
+        'parent_folder_name': 'parent',
+        'parser_name': 'castep.castep',
+        'use_kpoints': True,
+    }
+    _DEFAULTS['input_file_name'] = _DEFAULTS['seedname'] + '.cell'
+    _DEFAULTS['output_file_name'] = _DEFAULTS['seedname'] + '.castep'
+
+    _default_retrieve_list = ["*.err", "*.den_fmt", "*-out.cell",
+                              "*.pdos_bin"]
 
     # Some class methods
     retrieve_dict = {
@@ -74,31 +78,20 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
                           "custom_scheduler_commands", 
                           "max_wallclock_seconds"]
 
-    _internal_retrieve_list = [
-        "*.err", "*.den_fmt", "*-out.cell", "*.pdos_bin",
-    ]
-
     @classmethod
     def define(cls, spec):
         import aiida.orm as orm
         super(CastepCalculation, cls).define(spec)
-        spec.input('metadata.options.parser_name',
-                   valid_type=six.string_types, default=cls._DEFAULT_PARSER)
-        spec.input('metadata.options.use_kpoints',
-                   valid_type=bool, default=True)
-        spec.input('metadata.options.seedname', valid_type=six.string_types,
-                   default=cls._DEFAULT_SEED_NAME)
-        spec.input('metadata.options.input_filename', valid_type=six.string_types,
-                   default=cls._DEFAULT_INPUT_FILE_NAME)
-        spec.input('metadata.options.output_filename', valid_type=six.string_types,
-                   default=cls._DEFAULT_OUTPUT_FILE_NAME)
-        spec.input('metadata.options.symlink_usage', valid_type=bool,
-                   default=cls._DEFAULT_SYMLINK_USAGE)
-        spec.input('metadata.options.retrieve_list', valid_type=list,
-                   default=cls._DEFAULT_RETRIEVE_LIST)
-        spec.input('metadata.options.parent_folder_name', valid_type=six.string_types,
-                   default=cls._DEFAULT_PARENT_FOLDER_NAME)
 
+        # Initialise interal params, saved as metadata.options
+        for key, value in cls._DEFAULTS.items():
+            port_name = 'metadata.options.' + key
+            spec.input(port_name, default=value, valid_type=type(value))
+
+        spec.input('metadata.options.retrieve_list', valid_type=list,
+                   default=cls._default_retrieve_list)
+
+        # Begin defining the input nodes
         spec.input('structure', valid_type=orm.StructureData,
                    help="Defines the input structure")
         spec.input('settings', valid_type=orm.Dict, required=False,
@@ -231,7 +224,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
             settings_retrieve_list.append(self._SEED_NAME + "-out.cell")
 
         calcinfo.retrieve_list += settings_retrieve_list
-        calcinfo.retrieve_list += self._internal_retrieve_list
+        calcinfo.retrieve_list += self._default_retrieve_list
 
         # Remove parser options in the setting dictionary
         # At the moment parser options are not used here
@@ -507,8 +500,8 @@ class Pot1dCalculation(CastepCalculation):
     Class for pot1d Calculation
     """
 
-    _internal_retrieve_list = CastepCalculation.\
-                              _internal_retrieve_list + ["*.dat"]
+    _default_retrieve_list = CastepCalculation.\
+                              _default_retrieve_list + ["*.dat"]
 
     def _init_internal_params(self):
         super(Pot1dCalculation, self)._init_internal_params()

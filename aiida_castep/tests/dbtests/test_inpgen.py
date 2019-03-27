@@ -58,7 +58,11 @@ def test_inp_gen_cell(gen_instance,
     assert isinstance(gen_instance.cell_file["cell_constraints"], list)
     assert 'C9' in gen_instance.cell_file['SPECIES_POT'][0]
 
-def test_prepare_for_submission(STO_calc_inputs):
+@pytest.mark.process_execution
+def test_submission(new_database, STO_calc_inputs):
+    """
+    Test submitting a CastepCalculation
+    """
     from aiida_castep.calculations.castep import CastepCalculation
     from aiida.engine import run_get_node
     run_get_node(CastepCalculation, **STO_calc_inputs)
