@@ -38,87 +38,78 @@ class CastepParser(Parser):
 
         super(CastepParser, self).__init__(calc)
 
-    def parse_with_retrieved(self, retrieved):
+    def parse(self, retrieved_temporary_folder, **kwargs):
         """
         Receives a dictionary of retrieved nodes.retrieved.
         Top level logic of operation
         """
-
+        from aiida.common import exceptions
         import os
 
+        try:
+            output_folder = self.retrieved
+        except exceptions.NotExistent:
+            return self.exit_codes.ERROR_NO_RETRIEVED_FOLDER
+
         successful = True
-        seed_name = self._calc._SEED_NAME
         warnings = []
 
-        # Look for lags of the parser
-        try:
-            parser_opts = self._calc.inp.settings.get_dict()[
-                self.get_parser_settings_key()]
-        except (AttributeError, KeyError):
-            parser_opts = {}
+
+        # TODO Enable parser options
+        parser_opts = {}
 
         # NOT READLLY IN USE
-
-        input_dict = self._calc.inp.parameters.get_dict()
-
-        # Check that the retrieved folder is there
-        try:
-            out_folder = retrieved[self._calc._get_linkname_retrieved()]
-        except KeyError:
-            self.logger.error("No retrieved folder found")
-            return False, ()
+        input_dict = {}
 
         # check what is inside the folder
-        list_of_files = out_folder.get_folder_list()
+        filenames = [f.name for f in output_folder.list_objects()]
+
+        # Get calculation options
+        options = self.node.get_options()
+        seedname = options['seedname']
 
         # at least the stdout should exist
-        if self._calc._OUTPUT_FILE_NAME not in list_of_files:
+        if options['output_filename'] not in filenames:
             self.logger.error("Standard output not found")
-            successful = False
-            return successful, ()
+            return self.exit_codes.ERROR_NO_OUTPUT_FILE
 
         # The calculation is failed if there is any err file.
-        for f in list_of_files:
+        for f in filenames:
             if ".err" in f:
-                successful = False
-                self.logger.warning("Error files found in workdir.")
-                warnings.append(ERR_FILE_WARNING_MSG)
-                break
-
-        # look for other files
+                return self.exit_codes.ERROR_CASTEP_ERROR
 
         # Trajectory files
         has_md_geom = False
-        if seed_name + ".geom" in list_of_files:
+        if seedname + ".geom" in filenames:
             out_md_geom_file = os.path.join(
-                out_folder.get_abs_path('.'), seed_name + '.geom')
+                output_folder.get_abs_path('.'), seedname + '.geom')
             has_md_geom = True
-        elif seed_name + ".md" in list_of_files:
+        elif seedname + ".md" in filenames:
             out_md_geom_file = os.path.join(
-                out_folder.get_abs_path('.'), seed_name + '.md')
+                output_folder.get_abs_path('.'), seedname + '.md')
             has_md_geom = True
         else:
             out_md_geom_file = None
             has_md_geom = False
 
         # Handling bands
-        if self._calc._SEED_NAME + ".bands" in list_of_files:
+        if seedname + ".bands" in filenames:
             has_bands = True
-            out_bands_file = os.path.join(out_folder.get_abs_path('.'),
-                                          seed_name + '.bands')
+            out_bands_file = os.path.join(output_folder.get_abs_path('.'),
+                                          seedname + '.bands')
         else:
             has_bands = False
             out_bands_file = None
 
-        out_file = os.path.join(out_folder.get_abs_path(
-            '.'), self._calc._OUTPUT_FILE_NAME)
+        out_file = os.path.join(output_folder.get_abs_path(
+            '.'), options['output_filename'])
 
         # call the raw parsing function
         parsing_args = [out_file, input_dict,
                         parser_opts, out_md_geom_file,
                         out_bands_file]
 
-        # If there is a geom file then we parse it
+        ###### CALL THE RAW PASSING FUNCTION TO PARSE DATA #######
         out_dict, trajectory_data, structure_data, bands_data, raw_sucessful\
             = parse_raw_ouput(*parsing_args)
 
@@ -214,54 +205,16 @@ class CastepParser(Parser):
         new_nodes_list.append((self.get_linkname_outparams(), output_params))
         return successful, new_nodes_list
 
-    # getter method for various names
-    @classmethod
-    def get_parser_settings_key(cls):
-        """
-        Returns the name of the key to be used in the calculation settings, that
-        contains the dictionary with the parser_options.
-        Not used for now
-        """
-        return 'parser_options'
 
-    @classmethod
-    def get_linkname_outstructure(cls):
-        """
-        Returns the name of the link to the output_structure
-        Only exists if it is a geometry optimisation run.
-        """
-        return 'output_structure'
-
-    @classmethod
-    def get_linkname_outtrajectory(cls):
-        """
-        Returns the name of the link to the output_trajectory.
-        Node exists in case of calculation = "geometryoptimsiation"
-        """
-        return 'output_trajectory'
-
-    @classmethod
-    def get_linkname_outarray(cls):
-        """
-        Returns the name of the link to the output_array.
-        Exist if trajectory data cannot be created e.g not a optimisation run.
-        """
-        return 'output_array'
-
-    @classmethod
-    def get_linkname_out_kpoints(cls):
-        """
-        Not implemented for now
-        """
-        return 'output_kpoints'
-
-    @classmethod
-    def get_linkname_outbands(cls):
-        """
-        Returns the name of the link to the output band data.
-        Exists if we retrieved the bands file
-        """
-        return 'output_bands'
+# MAPPTING from the created nodes to linknames
+LINK_NAMES = {
+    'dict': 'output_parameters',
+    'structure': 'output_structure',
+    'trajectory': 'output_trajectory',
+    'array': 'output_array',
+    'kpoints': 'output_kpoints',
+    'bands': 'output_bands'
+}
 
 
 class Pot1dParser(Parser):
@@ -274,30 +227,30 @@ class Pot1dParser(Parser):
 
         # Check that the retrieved folder is there
         try:
-            out_folder = retrieved[self._calc._get_linkname_retrieved()]
+            output_folder = retrieved[self._calc._get_linkname_retrieved()]
         except KeyError:
             self.logger.error("No retrieved folder found")
             return False, ()
 
         # check what is inside the folder
-        list_of_files = out_folder.get_folder_list()
+        filenames = output_folder.get__list()
 
         # at least the stdout should exist
         oname = self._calc._OUTPUT_FILE_NAME
-        if oname not in list_of_files:
+        if oname not in filenames:
             self.logger.error("Standard output not found")
             successful = False
             return successful, ()
 
         # The calculation is failed if there is any err file.
-        for f in list_of_files:
+        for f in filenames:
             if ".err" in f:
                 successful = False
                 self.logger.warning("Error files found in workdir.")
                 break
 
         # Check for keyword
-        castep_file = out_folder.get_file_content(self._calc._OUTPUT_FILE_NAME)
+        castep_file = output_folder.get_file_content(self._calc._OUTPUT_FILE_NAME)
         if "Finished pot1d" in castep_file:
             successful = True
         else:

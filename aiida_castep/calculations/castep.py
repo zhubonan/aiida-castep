@@ -47,8 +47,8 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         'parser_name': 'castep.castep',
         'use_kpoints': True,
     }
-    _DEFAULTS['input_file_name'] = _DEFAULTS['seedname'] + '.cell'
-    _DEFAULTS['output_file_name'] = _DEFAULTS['seedname'] + '.castep'
+    _DEFAULTS['input_filename'] = _DEFAULTS['seedname'] + '.cell'
+    _DEFAULTS['output_filename'] = _DEFAULTS['seedname'] + '.castep'
 
     _default_retrieve_list = ["*.err", "*.den_fmt", "*-out.cell",
                               "*.pdos_bin"]
@@ -110,7 +110,16 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         spec.input('kpoints', valid_type=KpointsData, required=False,
                    help="Use a node defining the kpoints for the calculation")
 
-
+        # Define the exit codes
+        spec.exit_code(100,
+                       'ERROR_NO_RETRIEVED_FOLDER',
+                       message='The retrieved folder data node could not be accessed.')
+        spec.exit_code(101,
+                       'ERROR_NO_OUTPUT_FILE',
+                       message='The output file is not found.')
+        spec.exit_code(1,
+                       'ERROR_CASTEP_ERROR',
+                       message='CASTEP generated error file. See them for details')
     def prepare_for_submission(self, folder):
         """
         Routine to be called when create the input files and other stuff

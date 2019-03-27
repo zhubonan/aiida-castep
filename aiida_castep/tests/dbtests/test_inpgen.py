@@ -65,7 +65,9 @@ def test_submission(new_database, STO_calc_inputs):
     """
     from aiida_castep.calculations.castep import CastepCalculation
     from aiida.engine import run_get_node
-    run_get_node(CastepCalculation, **STO_calc_inputs)
+    _, return_node = run_get_node(CastepCalculation, **STO_calc_inputs)
+    assert return_node.exit_status == 101
+
 
 @pytest.mark.skip("Not working on aiida side")
 def test_get_builder(aiida_profile, STO_calc_inputs):
