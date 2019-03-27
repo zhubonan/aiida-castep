@@ -49,6 +49,20 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
     ]
     _DEFAULT_PARSER = 'castep.castep'
 
+    # Some class methods
+    retrieve_dict = {
+        "phonon": [".phonon"],
+        "phonon+efield": [".phonon", ".efield"],
+        "magres": [".magres"],
+        "transitionstatesearch": [".ts"],
+        "molecular dynamics": [".md"],
+        "moleculardynamics": [".md"],
+        "geometryoptimisation": [".geom"],
+        "geometryoptimization": [".geom"],
+        "spectral": [".ome_bin", ".dome_bin"],
+    }
+
+
     # NOT CURRENTLY USED
     _acceptable_tasks = [
         "singlepoint",
@@ -65,36 +79,29 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
     ]
 
     @classmethod
-    def define(self, spec):
-        super(CastepCalculation, self).define(spec)
-        self._init_interal_params(spec)
-        self._define_inputs(spec)
-
-    @classmethod
-    def _init_interal_params(self, spec):
+    def define(cls, spec):
+        import aiida.orm as orm
+        super(CastepCalculation, cls).define(spec)
         spec.input('metadata.options.parser_name',
-                   valid_type=six.string_types, default=self._default_parser)
+                   valid_type=six.string_types, default=cls._DEFAULT_PARSER)
         spec.input('metadata.options.use_kpoints',
                    valid_type=bool, default=True)
         spec.input('metadata.options.seedname', valid_type=six.string_types,
-                   default=self._DEFAULT_SEED_NAME)
+                   default=cls._DEFAULT_SEED_NAME)
         spec.input('metadata.options.input_filename', valid_type=six.string_types,
-                   default=self._DEFAULT_INPUT_FILE)
+                   default=cls._DEFAULT_INPUT_FILE_NAME)
         spec.input('metadata.options.output_filename', valid_type=six.string_types,
-                   default=self._DEFAULT_OUTPUT_FILE)
+                   default=cls._DEFAULT_OUTPUT_FILE_NAME)
         spec.input('metadata.options.symlink_usage', valid_type=bool,
-                   default=self._DEFAULT_SYMLINK_USAGE)
+                   default=cls._DEFAULT_SYMLINK_USAGE)
         spec.input('metadata.options.retrieve_list', valid_type=list,
-                   default=self._DEFAULT_RETRIEVE_LIST)
+                   default=cls._DEFAULT_RETRIEVE_LIST)
         spec.input('metadata.options.parent_folder_name', valid_type=six.string_types,
-                   default=self._DEFAULT_PARENT_FOLDER_NAME)
-    @classmethod
-    def _define_inputs(self, spec):
-        """Define the inputs to the calculation"""
-        import aiida.orm as orm
+                   default=cls._DEFAULT_PARENT_FOLDER_NAME)
+
         spec.input('structure', valid_type=orm.StructureData,
                    help="Defines the input structure")
-        spec.input('settings', valid_type=orm.Dict,
+        spec.input('settings', valid_type=orm.Dict, required=False,
                    help="Use an additional node for sepcial settings")
         spec.input('parameters', valid_type=orm.Dict,
                    help="Use a node that sepcifies the input parameters")
@@ -111,7 +118,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
                    help="Use a node defining the kpoints for the calculation")
 
 
-    def _prepare_for_submission(self, folder):
+    def prepare_for_submission(self, folder):
         """
         Routine to be called when create the input files and other stuff
 
@@ -120,6 +127,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         :param inputdict: a dictionary with the input nodes, as they would
                 be returned by get_inputs_dict (without the Code!)
         """
+        self.prepare_inputs()
 
         local_copy_list = []
 
@@ -137,7 +145,8 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
                 require_parent = True
                 break
 
-        if self.inputs.parent_calc_folder is None and require_parent:
+        parent_calc_folder = self.inputs.get('parent_calc_folder')
+        if parent_calc_folder is None and require_parent:
             raise InputValidationError(
                 "No parent calculation folder passed"
                 " for restart calculation using reuse/continuation")
@@ -201,8 +210,8 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
 
         # Retrieve by default the .castep file and the bands file
         calcinfo.retrieve_list = []
-        calcinfo.retrieve_list.append(self._SEED_NAME + ".castep")
-        calcinfo.retrieve_list.append(self._SEED_NAME + ".bands")
+        calcinfo.retrieve_list.append(seedname + ".castep")
+        calcinfo.retrieve_list.append(seedname + ".bands")
 
         settings_retrieve_list = self.settings_dict.pop("ADDITIONAL_RETRIEVE_LIST",
                                                    [])

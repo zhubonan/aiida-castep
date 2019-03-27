@@ -44,6 +44,7 @@ def test_inp_gen_param(gen_instance, param_dict):
     gen_instance._prepare_param_file()
     assert gen_instance.param_file == param_dict["PARAM"]
 
+
 def test_inp_gen_cell(gen_instance,
                       STO_calc_inputs):
     """
@@ -54,4 +55,17 @@ def test_inp_gen_cell(gen_instance,
     assert 'symmetry_generate' in gen_instance.cell_file
     assert "POSITIONS_ABS" in gen_instance.cell_file
     assert "LATTICE_CART" in gen_instance.cell_file
-    assert isinstance(gen_instance.cell_file["cell_constraints"], list) 
+    assert isinstance(gen_instance.cell_file["cell_constraints"], list)
+    assert 'C9' in gen_instance.cell_file['SPECIES_POT'][0]
+
+def test_prepare_for_submission(STO_calc_inputs):
+    from aiida_castep.calculations.castep import CastepCalculation
+    from aiida.engine import run_get_node
+    run_get_node(CastepCalculation, **STO_calc_inputs)
+
+@pytest.mark.skip("Not working on aiida side")
+def test_get_builder(aiida_profile, STO_calc_inputs):
+
+    from aiida_castep.calculations.castep import CastepCalculation
+    buider = CastepCalculation.get_builder()
+

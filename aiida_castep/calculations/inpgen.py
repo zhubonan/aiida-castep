@@ -266,15 +266,15 @@ class CastepInputGenerator(object):
         # --------- PSEUDOPOTENTIALS --------
         # Check if we are using UPF pseudos
         # Now only support simple elemental pseudopotentials
-        symbols = set()  # All of the symbols
+        kindname = set()  # All of the kindname
         species_pot_list = []
         pseudos = self.inputs.pseudos
         for kind in self.inputs.structure.kinds:
-            for s in kind.symbols:
-                symbols.add(s)
+            kindname.add(kind.name)
 
-        # Make symbols unique
-        for s in symbols:
+
+        # Make kindname unique
+        for s in kindname:
             ps = pseudos[s]  # Get the pseudopotential object
 
             # If we are dealing with a UpfData object
@@ -287,10 +287,11 @@ class CastepInputGenerator(object):
                 # Add to the copy list
                 self.local_copy_list_to_append.append((ps.uuid, ps.filename,
                                                        ps.filename))
-
             # If we are using OTFG, just add the string property of it
-            if isinstance(ps, OTFGData):
+            elif isinstance(ps, OTFGData):
                 species_pot_list.append("{:5} {}".format(s, ps.string))
+            else:
+                raise InputValidationError('Unkonwn node as pseudo: {}'.format(ps))
 
         self.cell_file["SPECIES_POT"] = species_pot_list
 

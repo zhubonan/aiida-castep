@@ -7,6 +7,7 @@ import shutil
 import pytest
 import os
 from aiida.common.exceptions import NotExistent
+from aiida.common import AttributeDict
 from aiida.manage.fixtures import fixture_manager
 
 
@@ -161,21 +162,20 @@ def builder(aiida_profile):
 
 @pytest.fixture
 def inputs_default():
-    from aiida.engine.processes.ports import PortNamespace
-
-    namespace = PortNamespace()
-    namespace.metadata = PortNamespace()
-    namespace.metadata.label = ""
-    options = PortNamespace()
-    options.use_kpoints = True
-    options.seedname = 'aiida'
-    options.input_filename = 'aiida.cell'
-    options.output_filename = 'aiida.castep'
-    options.symlink_usage = True
-    options.parent_folder_name = 'parent'
-    options.retrieve_list = []
-    namespace.metadata.options = options
-    return namespace
+    options = {
+        'seedname': 'aiida',
+        'input_filename': 'aiida.cell',
+        'output_filename': 'aiida.castep',
+        'symlink_usage': True,
+        'parent_folder_name': 'parent',
+        'retrieve_list': [],
+        'use_kpoints': True,
+        'resources': {'num_machines': 1, 'tot_num_mpiprocs': 1}
+    }
+    inputs = AttributeDict()
+    inputs['metadata'] = AttributeDict()
+    inputs.metadata['options'] = AttributeDict(options)
+    return inputs
 
 @pytest.fixture
 def STO_calc_inputs(aiida_profile,
@@ -183,6 +183,7 @@ def STO_calc_inputs(aiida_profile,
                     inputs_default,
                     OTFG_family_factory,
                     code_echo, imps,
+                    c9,
                     localhost, kpoints_mesh):
     from aiida.engine.processes.ports import PortNamespace
     from aiida.engine.processes.builder import ProcessBuilderNamespace
@@ -199,7 +200,7 @@ def STO_calc_inputs(aiida_profile,
     # pdict["CELL"].pop("block species_pot")
     inputs.parameters = imps.Dict(dict=pdict)
     inputs.structure = STO_structure
-    inputs.pseudos = {"Sr": c9, 'Ti': c9, 'O': c9}
+    inputs.pseudos = AttributeDict({"Sr": c9, 'Ti': c9, 'O': c9})
     inputs.kpoints = kpoints_mesh((3, 3, 3))
     inputs.code = code_echo
 
@@ -211,7 +212,7 @@ def c9(aiida_profile):
     """C9 OTFG"""
     from aiida_castep.data.otfg import OTFGData
     c9 = OTFGData.get_or_create('C9')
-    return c9 
+    return c9[0]
 
 
 @pytest.fixture
