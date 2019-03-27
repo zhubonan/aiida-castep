@@ -6,7 +6,7 @@ import tempfile
 import shutil
 import pytest
 import os
-
+from aiida.common.exceptions import NotExistent
 from aiida.manage.fixtures import fixture_manager
 
 
@@ -67,38 +67,29 @@ def imps(aiida_profile):
     class Imports:
 
         def __init__(self):
+            from aiida.orm import Dict
             from aiida.plugins import CalculationFactory
             from aiida.plugins import DataFactory
             import aiida_castep.data.otfg as otfg
-            Dict = DataFactory("dict")
             for k, v in locals().items():
                 setattr(self, k, v)
 
     return Imports()
 
 
-
 @pytest.fixture
 def localhost(aiida_profile, tmpdir):
-    """Fixture for a local computer called localhost"""
-    # Check whether Aiida uses the new backend interface to create collections.
-    from aiida.manage.fixtures import _GLOBAL_FIXTURE_MANAGER
-    from aiida.common import exceptions
+    """
+    Fixture for a local computer called localhost.
+    This is currently not in the AiiDA fixtures."""
     from aiida.orm import Computer
-    aiida_profile = _GLOBAL_FIXTURE_MANAGER
-    ldir = str(tmpdir)
     try:
-        computer = Computer.objects.get("localhost")
-
-    except exceptions.NotExistent:
-        computer = Computer()
-        computer.set_name("localhost")
-        computer.set_description("localhost")
-        computer.set_workdir(ldir)
-        computer.set_hostname("localhost")
-        computer.set_scheduler_type("direct")
-        computer.set_transport_type("local")
-        computer.store()
+        computer = Computer.objects.get(name='localhost')
+    except NotExistent:
+        computer = Computer(name='localhost', hostname='localhost',
+                            transport_type='local',
+                            scheduler_type='direct',
+                            workdir=tmpdir.strpath).store()
     return computer
 
 
@@ -163,38 +154,65 @@ def OTFG_family_factory(aiida_profile):
 
     return _factory
 
+@pytest.fixture
+def builder(aiida_profile):
+    from aiida_castep.calculations.castep import CastepCalculation
+    return CastepCalculation.get_builder()
 
 @pytest.fixture
-def STO_calculation(aiida_profile, STO_structure,
+def inputs_default():
+    from aiida.engine.processes.ports import PortNamespace
+
+    namespace = PortNamespace()
+    namespace.metadata = PortNamespace()
+    namespace.metadata.label = ""
+    options = PortNamespace()
+    options.use_kpoints = True
+    options.seedname = 'aiida'
+    options.input_filename = 'aiida.cell'
+    options.output_filename = 'aiida.castep'
+    options.symlink_usage = True
+    options.parent_folder_name = 'parent'
+    options.retrieve_list = []
+    namespace.metadata.options = options
+    return namespace
+
+@pytest.fixture
+def STO_calc_inputs(aiida_profile,
+                    STO_structure,
+                    inputs_default,
                     OTFG_family_factory,
                     code_echo, imps,
                     localhost, kpoints_mesh):
+    from aiida.engine.processes.ports import PortNamespace
+    from aiida.engine.processes.builder import ProcessBuilderNamespace
+    from collections import MutableMapping
 
-
-    c = imps.CalculationFactory("castep.castep")()
+    inputs = inputs_default
     pdict = {"PARAM": {
         "task": "singlepoint"
     },
              "CELL": {
-                 "symmetry_generate": True
+                 "symmetry_generate": True,
+                 "cell_constraints": ['0 0 0', '0 0 0']
              }}
     # pdict["CELL"].pop("block species_pot")
-    param = imps.Dict(dict=pdict)
-    c.use_structure(STO_structure)
-    OTFG_family_factory(["C9"], "C9", stop_if_existing=False)
-    c.use_pseudos_from_family("C9")
-    c.use_kpoints(kpoints_mesh((3, 3, 3)))
-    c.use_code(code_echo)
-    c.set_computer(localhost)
-    c.set_resources({"num_machines": 1, "num_mpiprocs_per_machine": 2})
-    c.use_parameters(param)
+    inputs.parameters = imps.Dict(dict=pdict)
+    inputs.structure = STO_structure
+    inputs.pseudos = {"Sr": c9, 'Ti': c9, 'O': c9}
+    inputs.kpoints = kpoints_mesh((3, 3, 3))
+    inputs.code = code_echo
 
-    return c
+    return inputs
 
 
-def test_sto_calc(STO_calculation):
-    STO_calculation.store_all()
-    assert STO_calculation.pk
+@pytest.fixture
+def c9(aiida_profile):
+    """C9 OTFG"""
+    from aiida_castep.data.otfg import OTFGData
+    c9 = OTFGData.get_or_create('C9')
+    return c9 
+
 
 @pytest.fixture
 def STO_structure(aiida_profile, imps):
