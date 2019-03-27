@@ -22,7 +22,7 @@ class ExistingProfileFixtureManager(FixtureManager):
     def create_profile(self):
         """Not actually create the profile but reuse the test profile"""
         test_profile = os.environ.get('AIIDA_TEST_PROFILE', None)
-        if test_profile is None:
+        if not test_profile:
             return super(ExistingProfileFixtureManager, self).create_profile()
 
         from aiida import load_dbenv
@@ -41,7 +41,8 @@ class ExistingProfileFixtureManager(FixtureManager):
         pass
 
     def has_profile_open(self):
-        return self._is_running_on_test_profile
+        return self._is_running_on_test_profile or \
+            super(ExistingProfileFixtureManager, self).has_profile_open()
 
 
 _GLOBAL_FIXTURE_MANAGER = ExistingProfileFixtureManager()
@@ -51,8 +52,6 @@ def fixture_manager():
         if not _GLOBAL_FIXTURE_MANAGER.has_profile_open():
             _GLOBAL_FIXTURE_MANAGER.backend = 'django'
             _GLOBAL_FIXTURE_MANAGER.create_profile()
-            # Check we can run the test
-            check_if_tests_can_run()
         yield _GLOBAL_FIXTURE_MANAGER
     finally:
         _GLOBAL_FIXTURE_MANAGER.reset_db()
