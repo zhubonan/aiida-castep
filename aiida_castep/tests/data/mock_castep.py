@@ -115,7 +115,7 @@ class MockOutput(object):
         """
         Copy existing calculation to the folder
         """
-        print('Selected path:' , rel_path)
+        print('Selected path:', rel_path)
         import shutil
         res_files = (self.base_dir / rel_path).glob('*')
         cwd = Path.cwd()
@@ -144,13 +144,15 @@ class MockOutput(object):
         known_result = reg.get(hash_, None)
         if known_result:
             self.copy_results(known_result)
-            print('Returning results from {}'.format(self.base_dir / known_result))
+            print('Returning results from {}'.format(
+                self.base_dir / known_result))
         else:
             raise RuntimeError('Results not registered')
 
+
 @click.command('mock')
-@click.option('--reg', default=False, is_flag=True,
-              help='Register the calculation')
+@click.option(
+    '--reg', default=False, is_flag=True, help='Register the calculation')
 @click.argument('seed')
 def main(seed, reg):
     runner = MockOutput()
@@ -159,6 +161,6 @@ def main(seed, reg):
     else:
         runner.run(seed)
 
+
 if __name__ == "__main__":
     main()
-

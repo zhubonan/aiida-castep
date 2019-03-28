@@ -68,7 +68,9 @@ class CastepHelper(object):
         # If we did not found a suitable version
         if path is None:
             if self.version is not None:
-                raise RuntimeError("Cannot found help info for requested version {}".format(self.version))
+                raise RuntimeError(
+                    "Cannot found help info for requested version {}".format(
+                        self.version))
             try:
                 path = paths[0]  # No explicitly requested - use the first one
             except IndexError:
@@ -102,11 +104,11 @@ class CastepHelper(object):
                 json.dump(help_dict, fp)
         except OSError:
             try:
-                with("castep_helpinfo.json", "w") as fp:
+                with ("castep_helpinfo.json", "w") as fp:
                     json.dump(help_dict, fp)
                     file_path = os.path.realpath("castep_helpinfo.json")
                     print(("Saving in current path. "
-                      "Please move it to {}".format(file_path)))
+                           "Please move it to {}".format(file_path)))
             except OSError:
                 print("Cannot save the retrieved help information")
                 return
@@ -150,7 +152,8 @@ class CastepHelper(object):
         """Construct a {"PARAM":{}, "CELL":{}} dictionary from a flat dictionary"""
 
         if self.BY_PASS:
-            raise RuntimeError("Cannot construct dictionary - No help info found")
+            raise RuntimeError(
+                "Cannot construct dictionary - No help info found")
 
         hinfo = self.help_dict
 
@@ -172,7 +175,8 @@ class CastepHelper(object):
                 elif kwtype == "PARAM":
                     param_dict.update({key: input_dict[key]})
                 else:
-                    raise RuntimeError("Entry {} does not have key_type value".format(key))
+                    raise RuntimeError(
+                        "Entry {} does not have key_type value".format(key))
 
         out_dict = {"CELL": cell_dict, "PARAM": param_dict}
         return out_dict, not_found
@@ -192,7 +196,8 @@ class CastepHelper(object):
         param_dict = input_dict.pop("PARAM", {})
 
         if input_dict and not auto_fix:
-            raise HelperCheckError("keywords: {} at top level".format(", ".join(input_dict)))
+            raise HelperCheckError("keywords: {} at top level".format(
+                ", ".join(input_dict)))
 
         # Following functions require help info to be defined
         if self.BY_PASS:
@@ -202,7 +207,9 @@ class CastepHelper(object):
         # process what's left
         re_structured, not_found = self._from_flat_dict(input_dict)
         if not_found:
-            raise HelperCheckError("keywords: {} at top level are not recognized".format(", ".join(not_found)))
+            raise HelperCheckError(
+                "keywords: {} at top level are not recognized".format(
+                    ", ".join(not_found)))
 
         # Now construct a dictionary
         cell_dict.update(re_structured["CELL"])
@@ -235,7 +242,8 @@ class CastepHelper(object):
                         input_dict["CELL"].update({key: value})
             else:
                 raise HelperCheckError("keywords: {} are in "
-                                       "the wrong file".format(", ".join([k[0] for k in wrong])))
+                                       "the wrong file".format(", ".join(
+                                           [k[0] for k in wrong])))
 
         # Check incompatible keys
         incomp = check_incompatible(input_dict["PARAM"], incompatible_keys)
@@ -266,8 +274,7 @@ def _get_suggestion(provided_string, allowed_strings):
     """
     import difflib
 
-    similar_kws = difflib.get_close_matches(provided_string,
-                                            allowed_strings)
+    similar_kws = difflib.get_close_matches(provided_string, allowed_strings)
     if len(similar_kws) == 1:
         return "(Maybe you wanted to specify {0}?)".format(similar_kws[0])
     elif len(similar_kws) > 1:

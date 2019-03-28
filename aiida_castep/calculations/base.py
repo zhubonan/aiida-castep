@@ -48,7 +48,10 @@ class BaseCastepInputGenerator(object):
 
     # Additional files that should always be retrieved if they exist
     _internal_retrieve_list = [
-        "*.err", "*.den_fmt", "*-out.cell", "*.pdos_bin",
+        "*.err",
+        "*.den_fmt",
+        "*-out.cell",
+        "*.pdos_bin",
     ]
 
     # in restarts, will not copy but use symlinks
@@ -99,8 +102,10 @@ class BaseCastepInputGenerator(object):
             "parameters": {
                 'valid_types':
                 Dict,
-                'additional_parameter': None,
-                'linkname': 'parameters',
+                'additional_parameter':
+                None,
+                'linkname':
+                'parameters',
                 'docstring':
                 ("Use a node that specifies the input parameters.",
                  "Usually needs to contain PARAM and CELL keys.")
@@ -429,8 +434,7 @@ class BaseCastepInputGenerator(object):
             raise InputValidationError(
                 "No parameters specified for this calculation")
         if not isinstance(parameters, Dict):
-            raise InputValidationError(
-                "parameters is not of type Dict")
+            raise InputValidationError("parameters is not of type Dict")
 
         try:
             structure = inputdict.pop(self.get_linkname('structure'))
@@ -938,7 +942,8 @@ def create_restart_(cin,
 
     # We just keep the existing link
     elif keep_input_model:
-        remote_folder = cin.get_inputs_dict().get(cin.get_linkname("parent_folder"))
+        remote_folder = cin.get_inputs_dict().get(
+            cin.get_linkname("parent_folder"))
     else:
         remote_folder = None
 

@@ -39,7 +39,8 @@ def get_pseudos_from_structure(structure, family_name):
             family = f
 
     if valid_count == 0:
-        raise NotExistent("Cannot find matching group among UspData, UpfData and OTFGData")
+        raise NotExistent(
+            "Cannot find matching group among UspData, UpfData and OTFGData")
 
     # This is necessary?
     if valid_count > 1:
@@ -66,7 +67,8 @@ def get_pseudos_from_structure(structure, family_name):
                 pseudo_list[kind.name] = family_pseudos["LIBRARY"]
 
             except KeyError:
-                raise NotExistent("No pseudo for element {} found in family {}".format(
-                 symbol, family_pseudos))
+                raise NotExistent(
+                    "No pseudo for element {} found in family {}".format(
+                        symbol, family_pseudos))
 
     return pseudo_list

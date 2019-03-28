@@ -145,7 +145,7 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
             },
             "CELL": {
                 "fix_all_cell": "true",
-                "species_pot": ("Ba Ba_00.usp",)
+                "species_pot": ("Ba Ba_00.usp", )
             }
         }
 
@@ -203,7 +203,8 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
 
             # Check existenc of the file
             cell = f.get_abs_path(c._SEED_NAME + ".cell", check_existence=True)
-            param = f.get_abs_path(c._SEED_NAME + ".param", check_existence=True)
+            param = f.get_abs_path(
+                c._SEED_NAME + ".param", check_existence=True)
             print("\n" + "#" * 5 + "CONTENT OF CELL FILE: " + "#" * 5)
 
             # Check and print out the input files
@@ -220,7 +221,6 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
                 print(param_content)
                 self.assertIn("task", param_content)
 
-            
             k.set_kpoints_mesh((2, 2, 2), (0, 0, 0))
             c.use_kpoints(k)
             inputdict = c.get_inputs_dict()
@@ -229,8 +229,6 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
                 cell_content = p.read()
                 print(cell_content)
                 self.assertNotIn("kpoints_mp_offset", cell_content)
-
-
 
     @unittest.skip("Dry run test takes a long time.")
     def test_dryrun(self):
@@ -259,7 +257,6 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
 
 
 class TestRestartGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
-
     @classmethod
     def setUpClass(cls, *args, **kwargs):
         super(TestRestartGeneration, cls).setUpClass(*args, **kwargs)
@@ -298,7 +295,10 @@ class TestRestartGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
         c2_param = c2_inp[c2.get_linkname("parameters")].get_dict()['PARAM']
 
         reuse = c2_param.pop("reuse")
-        self.assertEqual(reuse, os.path.join(c2._restart_copy_to, "{}.check".format(c2._SEED_NAME)))
+        self.assertEqual(
+            reuse,
+            os.path.join(c2._restart_copy_to,
+                         "{}.check".format(c2._SEED_NAME)))
 
         with SandboxFolder() as f:
             print(c2._prepare_for_submission(f, c2_inp))
@@ -336,8 +336,6 @@ class TestRestartGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
 
 
 class TestTSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
-
-
     @classmethod
     def setUpClass(cls, *args, **kwargs):
         super(TestTSCalculation, cls).setUpClass(*args, **kwargs)
@@ -384,7 +382,6 @@ class TestTSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
         # Check mixing libray with acutal entry
         return c
 
-
     def test_input_validation(self):
         """Test input validation"""
 
@@ -413,7 +410,6 @@ class TestTSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
 
 
 class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
-
     @classmethod
     def setUpClass(cls, *args, **kwargs):
         super(TestBSCalculation, cls).setUpClass(*args, **kwargs)
@@ -496,8 +492,7 @@ class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
         new = c.create_restart(ignore_state=True)
         self.assertEqual(type(new), type(c))
         inpname = "{}_kpoints".format(c.kpn_name)
-        self.assertIn(new.get_linkname(inpname),
-                      new.get_inputs_dict())
+        self.assertIn(new.get_linkname(inpname), new.get_inputs_dict())
 
         # Extra kpn is not mandatory
         extra_kpn = c.get_inputs_dict()["bs_kpoints"]
@@ -505,8 +500,7 @@ class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
         self.assertNotIn(extra_kpn, c.get_inputs())
         # This should still succeed
         new = c.create_restart(ignore_state=True)
-        self.assertNotIn(extra_kpn,
-                         new.get_inputs())
+        self.assertNotIn(extra_kpn, new.get_inputs())
 
     def test_bs_kpoints(self):
 
@@ -531,10 +525,10 @@ class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
             with f.open("aiida.cell") as cell:
                 content = cell.read()
         self.assertIn("{:<20}: 2 2 2".format("bs_kpoints_mp_grid"), content)
-        self.assertIn("{:<20}: 0.1 0.1 0.1".format("bs_kpoints_mp_offset"), content)
+        self.assertIn("{:<20}: 0.1 0.1 0.1".format("bs_kpoints_mp_offset"),
+                      content)
 
 
 class TestPot1dCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
-
     def test_load_plugin(self):
         Pot1D = CalculationFactory("castep.pot1d")

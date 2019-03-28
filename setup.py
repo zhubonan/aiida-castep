@@ -7,6 +7,7 @@ from os.path import abspath, dirname, join
 from setuptools import setup, find_packages
 import json
 
+
 def git_version():
     def _minimal_ext_cmd(cmd):
         # construct minimal environment
@@ -19,7 +20,8 @@ def git_version():
         env['LANGUAGE'] = 'C'
         env['LANG'] = 'C'
         env['LC_ALL'] = 'C'
-        out = subprocess.Popen(cmd, stdout=subprocess.PIPE, env=env).communicate()[0]
+        out = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, env=env).communicate()[0]
         return out
 
     try:
@@ -29,6 +31,7 @@ def git_version():
         GIT_REVISION = "Unknown"
 
     return GIT_REVISION
+
 
 if __name__ == '__main__':
     # Provide static information in setup.json
@@ -42,7 +45,7 @@ if __name__ == '__main__':
 #    if GIT_VERSION != "Unkown":
 #        kwargs["version"] = kwargs["version"] + "-" + GIT_VERSION
 
-    # Included the README.md as the long description
+# Included the README.md as the long description
     with open(join(ROOT, 'README.md'), 'r') as f:
         long_desc = f.read()
     setup(
@@ -51,12 +54,9 @@ if __name__ == '__main__':
         long_description_content_type='text/markdown',
         include_package_data=True,
         extras_require={
-            "pre-commit":[
-                "pre-commit==1.11.0",
-                "yapf==0.24.0",
-                "prospector==0.12.11",
+            "pre-commit": [
+                "pre-commit==1.11.0", "yapf==0.24.0", "prospector==0.12.11",
                 "pylint==1.9.3"
             ]
         },
-        **kwargs
-    )
+        **kwargs)

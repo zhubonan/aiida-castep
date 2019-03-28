@@ -10,12 +10,10 @@ from aiida.parsers import ParserFactory
 from aiida.backends.testbase import AiidaTestCase
 from .dbcommon import BaseCalcCase, BaseDataCase
 
-
 FolderData = DataFactory("folder")
 
 
 class TestCastepParser(AiidaTestCase, BaseCalcCase, BaseDataCase):
-
     def setUp(self):
         self.clean_db()
         self.insert_data()
@@ -53,9 +51,13 @@ class TestCastepParser(AiidaTestCase, BaseCalcCase, BaseDataCase):
 
         parser = ParserFactory("castep.castep")(calc)
         retrived_folders = self.get_dummy_outputs()
-        common_keys = ["cells", "positions", "forces", "symbols", "geom_total_energy"]
-        md_keys = ["hamilt_energy", "kinetic_energy",
-                   "velocities", "temperatures", "times"]
+        common_keys = [
+            "cells", "positions", "forces", "symbols", "geom_total_energy"
+        ]
+        md_keys = [
+            "hamilt_energy", "kinetic_energy", "velocities", "temperatures",
+            "times"
+        ]
         geom_keys = ["geom_enthalpy"]
 
         for name, r in retrived_folders.items():
@@ -81,7 +83,8 @@ class TestCastepParser(AiidaTestCase, BaseCalcCase, BaseDataCase):
             self.assertEqual(out_param_dict["unit_energy"], "eV")
             self.assertEqual(calc.inp.structure.label, out_structure.label)
             # Check the length of sites are consistent
-            self.assertEqual(len(out_structure.sites), len(out_traj.get_symbols()))
+            self.assertEqual(
+                len(out_structure.sites), len(out_traj.get_symbols()))
 
             for k in common_keys:
                 self.assertIn(k, out_traj.get_arraynames())
@@ -93,9 +96,11 @@ class TestCastepParser(AiidaTestCase, BaseCalcCase, BaseDataCase):
                 # Check if spins are handled correctly
                 self.assertIn(bands.get_attr('nspins'), [1, 2])
                 if bands.get_attr('nspins') == 1:
-                    self.assertEqual(bands.get_attr('nkpts'), len(bands.get_bands()))
+                    self.assertEqual(
+                        bands.get_attr('nkpts'), len(bands.get_bands()))
                 elif bands.get_attr('nspins') == 2:
-                    self.assertEqual(bands.get_attr('nkpts'), len(bands.get_bands()[0]))
+                    self.assertEqual(
+                        bands.get_attr('nkpts'), len(bands.get_bands()[0]))
 
                 for k in geom_keys:
                     self.assertIn(k, out_traj.get_arraynames())
@@ -106,6 +111,5 @@ class TestCastepParser(AiidaTestCase, BaseCalcCase, BaseDataCase):
 
 
 class TestPot1DParser(AiidaTestCase):
-
     def test_load_plugin(self):
         Pot1dParser = ParserFactory("castep.pot1d")

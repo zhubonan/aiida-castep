@@ -22,13 +22,14 @@ __version__ = calc_parser_version
 # taken from
 #    http://physics.nist.gov/cuu/Archive/1986RMP.pdf
 units_CODATA1986 = {
-    'hbar': 6.5821220E-16,      # eVs
-    'Eh': 27.2113961,           # eV
-    'kB': 8.617385E-5,          # eV/K
-    'a0': 0.529177249,          # A
-    'c': 299792458,             # m/s
-    'e': 1.60217733E-19,        # C
-    'me': 5.485799110E-4}       # u
+    'hbar': 6.5821220E-16,  # eVs
+    'Eh': 27.2113961,  # eV
+    'kB': 8.617385E-5,  # eV/K
+    'a0': 0.529177249,  # A
+    'c': 299792458,  # m/s
+    'e': 1.60217733E-19,  # C
+    'me': 5.485799110E-4
+}  # u
 
 # CODATA2002: default in CASTEP 5.01
 # (-> check in more recent CASTEP in case of numerical discrepancies?!)
@@ -36,30 +37,31 @@ units_CODATA1986 = {
 #    http://physics.nist.gov/cuu/Document/all_2002.pdf
 
 units_CODATA2002 = {
-    'hbar': 6.58211915E-16,     # eVs
-    'Eh': 27.2113845,           # eV
-    'kB': 8.617343E-5,          # eV/K
-    'a0': 0.5291772108,         # A
-    'c': 299792458,             # m/s
-    'e': 1.60217653E-19,        # C
-    'me': 5.4857990945E-4}      # u
+    'hbar': 6.58211915E-16,  # eVs
+    'Eh': 27.2113845,  # eV
+    'kB': 8.617343E-5,  # eV/K
+    'a0': 0.5291772108,  # A
+    'c': 299792458,  # m/s
+    'e': 1.60217653E-19,  # C
+    'me': 5.4857990945E-4
+}  # u
 
 units_CODATA2010 = {
     'c': 299792458,
     'hbar': 6.58211928e-16,  # eV
-    'e': 1.602176565e-19,    # C
-    'Av': 6.02214129e23,     # Avogadro constant
-    'R': 8.3144621,          # Gas constrant
-    'Eh': 27.21138505,       # eV
-    'a0': 0.52917721092,     # A - bohr radius
-    'me': 5.4857990946e-4,    # u
-    'kB': 8.6173324E-5          # eV/K
+    'e': 1.602176565e-19,  # C
+    'Av': 6.02214129e23,  # Avogadro constant
+    'R': 8.3144621,  # Gas constrant
+    'Eh': 27.21138505,  # eV
+    'a0': 0.52917721092,  # A - bohr radius
+    'me': 5.4857990946e-4,  # u
+    'kB': 8.6173324E-5  # eV/K
 }
 
 # (common) derived entries
 for d in (units_CODATA1986, units_CODATA2002, units_CODATA2010):
-    d['t0'] = d['hbar'] / d['Eh']     # s
-    d['Pascal'] = d['e'] * 1E30       # Pa
+    d['t0'] = d['hbar'] / d['Eh']  # s
+    d['Pascal'] = d['e'] * 1E30  # Pa
 units = units_CODATA2010
 
 unit_suffix = "_units"
@@ -71,8 +73,10 @@ INSUFFICENT_TIME_MESSAGE = "CASTEP run terminated due to insufficient run time l
 STOP_REQUESTED_MESSAGE = "CASTEP run terminated due to requested STOP in param file."
 
 
-def parse_raw_ouput(out_lines, input_dict,
-                    parser_opts=None, md_geom_lines=None,
+def parse_raw_ouput(out_lines,
+                    input_dict,
+                    parser_opts=None,
+                    md_geom_lines=None,
                     bands_lines=None):
     """
     Parse an dot_castep file
@@ -147,7 +151,8 @@ def parse_raw_ouput(out_lines, input_dict,
 
         else:  # Run finished but I have still have an error here
             raise CASTEPOutputParsingError(
-                "Error while parsing ouput. Exception message: {}".format(e.message))
+                "Error while parsing ouput. Exception message: {}".format(
+                    e.message))
 
     # Check if any critical messages has been passed
     # If there is any cricial message we should make the run marked as FAILED
@@ -182,9 +187,10 @@ def parse_raw_ouput(out_lines, input_dict,
     parameter_data['warnings'] = all_warnings
 
     # Todo Validation of ouput data
-    return [parameter_data,
-            trajectory_data, structure_data,
-            bands_data, job_successful]
+    return [
+        parameter_data, trajectory_data, structure_data, bands_data,
+        job_successful
+    ]
 
 
 # Re for getting unit
@@ -234,16 +240,20 @@ def parse_castep_text_output(out_lines, input_dict):
 
     # In the format {<keywords in line>:<message to pass>}
     critical_warnings = {
-        "SCF cycles performed but system has not reached the groundstate": SCF_FAILURE_MESSAGE,
-        "NOSTART": "Can not find start of the calculation.",
-        "STOP keyword detected in parameter file. Stop execution.": STOP_REQUESTED_MESSAGE,
-        }
+        "SCF cycles performed but system has not reached the groundstate":
+        SCF_FAILURE_MESSAGE,
+        "NOSTART":
+        "Can not find start of the calculation.",
+        "STOP keyword detected in parameter file. Stop execution.":
+        STOP_REQUESTED_MESSAGE,
+    }
 
     # Warnings that won't result in a calculation in FAILED state
-    minor_warnings = {"Warning": None,
-                     "Geometry optimization failed to converge": GEOM_FAILURE_MESSAGE,
-                     "Insufficient time for another iteration": INSUFFICENT_TIME_MESSAGE}
-
+    minor_warnings = {
+        "Warning": None,
+        "Geometry optimization failed to converge": GEOM_FAILURE_MESSAGE,
+        "Insufficient time for another iteration": INSUFFICENT_TIME_MESSAGE
+    }
 
     # A dictionary witch keys we should check at each line
     all_warnings = dict(critical_warnings)
@@ -302,8 +312,8 @@ def parse_castep_text_output(out_lines, input_dict):
             continue
 
         if "Cell constraints" in line:
-            parsed_data["cell_constraints"] = line.strip().split(":")[
-                1].strip()
+            parsed_data["cell_constraints"] = line.strip().split(
+                ":")[1].strip()
             continue
 
         if "Number of kpoints used" in line:
@@ -366,7 +376,7 @@ def parse_castep_text_output(out_lines, input_dict):
 
         if "Forces *******" in line:
             num_lines = parsed_data["num_ions"] + 10
-            box = body_lines[count: (count + num_lines)]
+            box = body_lines[count:(count + num_lines)]
             i, forces = parse_force_box(box)
 
             if "Constrained" in line:
@@ -380,8 +390,9 @@ def parse_castep_text_output(out_lines, input_dict):
             continue
 
         if any(i in line for i in all_warnings):
-            message = [all_warnings[k] for k in all_warnings_keys
-                       if k in line][0]
+            message = [
+                all_warnings[k] for k in all_warnings_keys if k in line
+            ][0]
             if message is None:
                 # CASTEP often have multiline warnings
                 # Add extra lines for detail
@@ -477,7 +488,6 @@ class Matcher(object):
         self.convfunc = convfunc
         self.name = name
 
-
     def match_pattern(self, line):
         """
         Match pattern
@@ -486,7 +496,7 @@ class Matcher(object):
           and match is a re.MatchObject or None
         """
 
-        match =  self.regex.match(line)
+        match = self.regex.match(line)
         if match:
             value = match.group(1)
             if self.convfunc:
@@ -495,6 +505,7 @@ class Matcher(object):
         else:
             out = None
         return out, match
+
 
 class UnitMatcher(Matcher):
     """
@@ -510,8 +521,9 @@ class UnitMatcher(Matcher):
         if out:
             unit = match.group(2)
             conv = self.convfunc if self.convfunc else float
-            out = (out[0],conv(out[1]), unit)
+            out = (out[0], conv(out[1]), unit)
         return out, match
+
 
 def get_iter_parser():
     """
@@ -521,12 +533,17 @@ def get_iter_parser():
     mfree = UnitMatcher(r'^Final free energy \(E-TS\)' + tail1, "free_energy")
     mtotal = UnitMatcher(r'^Final energy, E' + tail1, "total_energy")
     mtotal2 = UnitMatcher(r'^Final energy' + tail1, "total_energy")
-    mzeroK = UnitMatcher(r'^NB est. 0K energy \(E-0.5TS\)' + tail1, "zero_K_energy")
+    mzeroK = UnitMatcher(r'^NB est. 0K energy \(E-0.5TS\)' + tail1,
+                         "zero_K_energy")
     spin = UnitMatcher(r'^Integrated Spin Density' + tail1, "spin_density")
-    absspin = UnitMatcher(r'^Integrated \|Spin Density\|' + tail1, "abs_spin_density")
-    enthalpy = UnitMatcher(r'^ *\w+: finished iteration +\d+ +with enthalpy' + tail1, "enthalpy")
-    parser = LineParser([mfree, mtotal, mtotal2, mzeroK, spin, absspin, enthalpy])
+    absspin = UnitMatcher(r'^Integrated \|Spin Density\|' + tail1,
+                          "abs_spin_density")
+    enthalpy = UnitMatcher(
+        r'^ *\w+: finished iteration +\d+ +with enthalpy' + tail1, "enthalpy")
+    parser = LineParser(
+        [mfree, mtotal, mtotal2, mzeroK, spin, absspin, enthalpy])
     return parser
+
 
 def parse_geom_text_output(out_lines, input_dict):
     """
@@ -538,12 +555,11 @@ def parse_geom_text_output(out_lines, input_dict):
     :return: key, value of the trajectories of cell, atoms, force etc
     """
     txt = out_lines
-    Hartree = units['Eh'] # eV
-    Bohr = units['a0'] # A
-    kB = units['kB'] # eV/K
-    hBar = units['hbar'] # in eV
+    Hartree = units['Eh']  # eV
+    Bohr = units['a0']  # A
+    kB = units['kB']  # eV/K
+    hBar = units['hbar']  # in eV
     eV = units["e"]  # in J
-
 
     cell_list = []
     species_list = []
@@ -581,11 +597,11 @@ def parse_geom_text_output(out_lines, input_dict):
             except ValueError:
                 continue
         elif '<-- E' in line:
-            energy_list.append(float(sline[0])) # Total energy
-            hamilt_list.append(float(sline[1])) # Hamitonian (MD)
+            energy_list.append(float(sline[0]))  # Total energy
+            hamilt_list.append(float(sline[1]))  # Hamitonian (MD)
             # Kinetic energy is not blank in GEOM OPT runs
             if len(sline) == 5:
-                kinetic_list.append(float(sline[2])) # Kinetic (MD)
+                kinetic_list.append(float(sline[2]))  # Kinetic (MD)
             continue
         elif '<-- h' in line:
             current_cell.append(list(map(float, sline[:3])))
@@ -617,25 +633,27 @@ def parse_geom_text_output(out_lines, input_dict):
     if len(species_list) == 0:
         raise CASTEPOutputParsingError("No data found in geom file")
 
-    out =  dict(cells=np.array(cell_list) * Bohr,
-                positions=np.array(geom_list) * Bohr,
-                forces=np.array(forces_list) * Hartree / Bohr,
-                geom_total_energy=np.array(energy_list) * Hartree,
-                symbols=species_list[0],
-                )
+    out = dict(
+        cells=np.array(cell_list) * Bohr,
+        positions=np.array(geom_list) * Bohr,
+        forces=np.array(forces_list) * Hartree / Bohr,
+        geom_total_energy=np.array(energy_list) * Hartree,
+        symbols=species_list[0],
+    )
 
     # optional lists
     unit_V = Hartree * Bohr / hBar
     unit_K = Hartree / kB  # temperature in K
-    unit_P = Hartree / (Bohr * 1e-10) ** 3 * eV
+    unit_P = Hartree / (Bohr * 1e-10)**3 * eV
     unit_s = hBar / Hartree
-    opt = {"velocities": (velocity_list, unit_V),
-           "temperatures": (temperature_list, unit_K),
-           "pressures": (pressure_list, unit_P),
-           "hamilt_energy": (hamilt_list, Hartree),
-           "times": (time_list, unit_s),
-           "kinetic_energy": (kinetic_list, Hartree)
-           }
+    opt = {
+        "velocities": (velocity_list, unit_V),
+        "temperatures": (temperature_list, unit_K),
+        "pressures": (pressure_list, unit_P),
+        "hamilt_energy": (hamilt_list, Hartree),
+        "times": (time_list, unit_s),
+        "kinetic_energy": (kinetic_list, Hartree)
+    }
     for key, value in opt.items():
         if value[0]:
             out.update({key: np.array(value[0]) * value[1]})
@@ -695,7 +713,7 @@ def parse_stress_box(lines):
             break
 
         match = stress_match.match(line)
-        if  match:
+        if match:
             stress.append([float(match.group(i)) for i in range(2, 5)])
         elif "Pressure" in line:
             lsplit = line.strip().split()
@@ -764,7 +782,7 @@ def parse_dot_bands(bands_lines):
     bands = []
     this_band = []
     this_spin = []
-    for line in bands_lines[i+1:]:
+    for line in bands_lines[i + 1:]:
         if "K-point" in line:
             # We are not at the first kpoints
             if kpoints:
@@ -797,10 +815,11 @@ def parse_dot_bands(bands_lines):
     assert len(bands) == len(kpoints), "Missing bands for certain kpoints"
 
     for n, b in enumerate(bands):
-        assert len(b) == int(
-            nspin), "Missing spins for kpoint {}".format(n + 1)
+        assert len(b) == int(nspin), "Missing spins for kpoint {}".format(n +
+                                                                          1)
         for i, s in enumerate(b):
             assert len(s) == int(neigns), ("Missing eigenvalues "
-                                           "for kpoint {} spin {}".format(n + 1, i + 1))
+                                           "for kpoint {} spin {}".format(
+                                               n + 1, i + 1))
 
     return bands_info, kpoints, bands

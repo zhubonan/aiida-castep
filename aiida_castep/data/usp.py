@@ -54,8 +54,7 @@ def upload_usp_family(folder,
     nfiles = len(files)
 
     try:
-        group = Group.get(label=group_label,
-                          type_string=USPGROUP_TYPE)
+        group = Group.get(label=group_label, type_string=USPGROUP_TYPE)
         group_created = False
     except NotExistent:
         group = Group(

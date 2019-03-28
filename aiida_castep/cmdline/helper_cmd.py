@@ -42,11 +42,12 @@ def helper_cmd():
 
 
 @helper_cmd.command(name="generate")
-@click.option("--castep-excutable", "-e",
-              help="The excutable of CASTEP to be used",
-              default="castep.serial")
-@click.option("--save-as", "-s",
-              help="override default path for saving file")
+@click.option(
+    "--castep-excutable",
+    "-e",
+    help="The excutable of CASTEP to be used",
+    default="castep.serial")
+@click.option("--save-as", "-s", help="override default path for saving file")
 def generate(castep_excutable, save_as):
     """
     Generate help information file.
@@ -55,7 +56,7 @@ def generate(castep_excutable, save_as):
     at the $HOME by default.
     """
     from aiida_castep.calculations.helper.generate import (get_castep_commands,
-    parse_help_string)
+                                                           parse_help_string)
 
     import subprocess as sbp
     import os
@@ -96,11 +97,12 @@ def generate(castep_excutable, save_as):
 
     for key in progress(all_keys):
         lines, k_type, k_level, v_type = parse_help_string(key)
-        full_dict[key.lower()] = dict(help_short=all_keys[key],
-                                      help_full="\n".join(lines),
-                                      key_type=k_type,
-                                      key_level=k_level,
-                                      value_type=v_type)
+        full_dict[key.lower()] = dict(
+            help_short=all_keys[key],
+            help_full="\n".join(lines),
+            key_type=k_type,
+            key_level=k_level,
+            value_type=v_type)
     full_dict["_CASTEP_VERSION"] = version_num
 
     import json

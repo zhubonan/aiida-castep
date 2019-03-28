@@ -12,6 +12,7 @@ except ImportError:
 
 import os
 
+
 @pytest.fixture(scope="class")
 def import_things(aiida_profile, request):
 
@@ -38,10 +39,8 @@ class TestCastepParser(object):
             retrieved[folder] = dict(retrieved=folderdata)
         return retrieved
 
-
     @pytest.mark.skip('Needs to be migrated')
-    def test_parser_retrieved(self, db_test_app,
-                              sto_calculation):
+    def test_parser_retrieved(self, db_test_app, sto_calculation):
         from .utils import get_x2_structure
         from aiida_castep.parsers.castep import CastepParser
 
@@ -49,9 +48,13 @@ class TestCastepParser(object):
 
         parser = CastepParser(calc)
         retrived_folders = self.get_dummy_outputs()
-        common_keys = ["cells", "positions", "forces", "symbols", "geom_total_energy"]
-        md_keys = ["hamilt_energy", "kinetic_energy",
-                   "velocities", "temperatures", "times"]
+        common_keys = [
+            "cells", "positions", "forces", "symbols", "geom_total_energy"
+        ]
+        md_keys = [
+            "hamilt_energy", "kinetic_energy", "velocities", "temperatures",
+            "times"
+        ]
         geom_keys = ["geom_enthalpy"]
 
         for name, r in retrived_folders.items():
@@ -72,8 +75,8 @@ class TestCastepParser(object):
             out_structure = out[parser.get_linkname_outstructure()]
             out_param_dict = out[parser.get_linkname_outparams()].get_dict()
             out_traj = out[parser.get_linkname_outtrajectory()]
-            assert "total_energy" in  out_param_dict
-            assert "unit_energy" in  out_param_dict
+            assert "total_energy" in out_param_dict
+            assert "unit_energy" in out_param_dict
             assert out_param_dict["unit_energy"] == "eV"
             # Check if the label is correctly copied
             assert calc.inp.structure.label == out_structure.label
@@ -104,7 +107,6 @@ class TestCastepParser(object):
 
 
 class TestPot1DParser(object):
-
     @pytest.mark.skip('not re-implemented')
     def test_load_plugin(self):
         from aiida.parsers import ParserFactory

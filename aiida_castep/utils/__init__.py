@@ -2,14 +2,12 @@
 Utility module with useful functions
 """
 
-
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 from copy import copy
 import numpy as np
 from six.moves import zip
-
 
 
 def atoms_to_castep(atoms, index):
@@ -66,13 +64,17 @@ def generate_ionic_fix_cons(atoms, indices, mask=None, count_start=1):
         mask = (1, 1, 1)
     for symbol, i in castep_indices:
         if mask[0]:
-            lines.append("{:<4d} {:<2}    {:<4d} 1 0 0".format(count, symbol, i))
+            lines.append("{:<4d} {:<2}    {:<4d} 1 0 0".format(
+                count, symbol, i))
         if mask[1]:
-            lines.append("{:<4d} {:<2}    {:<4d} 0 1 0".format(count+1, symbol, i))
+            lines.append("{:<4d} {:<2}    {:<4d} 0 1 0".format(
+                count + 1, symbol, i))
         if mask[2]:
-            lines.append("{:<4d} {:<2}    {:<4d} 0 0 1".format(count+2, symbol, i))
+            lines.append("{:<4d} {:<2}    {:<4d} 0 0 1".format(
+                count + 2, symbol, i))
         count += sum(mask)
     return lines, count
+
 
 def generate_rel_fix(atoms, indices, ref_index=0, count_start=1):
     """
@@ -100,18 +102,24 @@ def generate_rel_fix(atoms, indices, ref_index=0, count_start=1):
     symbol_ref, i_ref = castep_indices[ref_index]
     for symbol, i in castep_indices[1:]:
         lines.append("{:<4d} {:<2}    {:<4d} 1 0 0".format(count, symbol, i))
-        lines.append("{:<4d} {:<2}    {:<4d} -1 0 0".format(count, symbol_ref, i_ref))
-        lines.append("{:<4d} {:<2}    {:<4d} 0 1 0".format(count + 1, symbol, i))
-        lines.append("{:<4d} {:<2}    {:<4d} 0 -1 0".format(count + 1, symbol_ref, i_ref))
-        lines.append("{:<4d} {:<2}    {:<4d} 0 0 1".format(count + 2, symbol, i))
-        lines.append("{:<4d} {:<2}    {:<4d} 0 0 -1".format(count + 2, symbol_ref, i_ref))
+        lines.append("{:<4d} {:<2}    {:<4d} -1 0 0".format(
+            count, symbol_ref, i_ref))
+        lines.append("{:<4d} {:<2}    {:<4d} 0 1 0".format(
+            count + 1, symbol, i))
+        lines.append("{:<4d} {:<2}    {:<4d} 0 -1 0".format(
+            count + 1, symbol_ref, i_ref))
+        lines.append("{:<4d} {:<2}    {:<4d} 0 0 1".format(
+            count + 2, symbol, i))
+        lines.append("{:<4d} {:<2}    {:<4d} 0 0 -1".format(
+            count + 2, symbol_ref, i_ref))
 
         count += 3
     return lines, count
 
+
 def castep_to_atoms(atoms, specie, ion):
     """Convert castep like index to ase Atoms index"""
-    return [atom for atom in atoms if atom.symbol == specie][ion-1].index
+    return [atom for atom in atoms if atom.symbol == specie][ion - 1].index
 
 
 def sort_atoms_castep(atoms, copy=True, order=None):
@@ -176,19 +184,23 @@ def reuse_kpoints_grid(grid, lowest_pk=False):
     from aiida.orm.querybuilder import QueryBuilder
     from aiida.orm.nodes.data.array.kpoints import KpointsData
     q = QueryBuilder()
-    q.append(KpointsData, tag="kpoints", filters={"attributes.mesh.0": grid[0],
-                                   "attributes.mesh.1": grid[1],
-                                   "attributes.mesh.2": grid[2]})
+    q.append(
+        KpointsData,
+        tag="kpoints",
+        filters={
+            "attributes.mesh.0": grid[0],
+            "attributes.mesh.1": grid[1],
+            "attributes.mesh.2": grid[2]
+        })
     if lowest_pk:
         order = "asc"
     else:
         order = "desc"
-    q.order_by({"kpoints":[{"id": {"order": order}}]})
+    q.order_by({"kpoints": [{"id": {"order": order}}]})
     return q.first()[0]
 
 
-def traj_to_atoms(traj, combine_ancesters=False,
-                  eng_key="enthalpy"):
+def traj_to_atoms(traj, combine_ancesters=False, eng_key="enthalpy"):
     """
     Generate a list of ASE Atoms given an AiiDA TrajectoryData object
     :param bool combine_ancesters: If true will try to combine trajectory
@@ -213,9 +225,10 @@ def traj_to_atoms(traj, combine_ancesters=False,
         atoms_list = []
         for c in calcs:
             atoms_list.extend(
-                traj_to_atoms(c.out.output_trajectory,
-                              combine_ancesters=False,
-                              eng_key=eng_key))
+                traj_to_atoms(
+                    c.out.output_trajectory,
+                    combine_ancesters=False,
+                    eng_key=eng_key))
         return atoms_list
     forces = traj.get_array("forces")
     symbols = traj.get_array("symbols")
@@ -226,7 +239,7 @@ def traj_to_atoms(traj, combine_ancesters=False,
         eng = None
     cells = traj.get_array("cells")
     atoms_traj = []
-    for c, p , e, f in zip(cells, positions, eng, forces):
+    for c, p, e, f in zip(cells, positions, eng, forces):
         atoms = Atoms(symbols=symbols, cell=c, pbc=True, positions=p)
         calc = SinglePointCalculator(atoms, energy=e, forces=f)
         atoms.set_calculator(calc)
@@ -249,6 +262,7 @@ def get_remote_folder_info(calc, transport):
     transport.chdir(path)
     lsattrs = transport.listdir_withattributes()
     return lsattrs
+
 
 def get_remote_folder_size(calc, transport):
     """
@@ -293,8 +307,8 @@ def take_popn(seed):
 def read_popn(fn):
     """Read population file into pandas dataframe"""
     import pandas as pd
-    table = pd.read_table(fn, sep="\s\s+", header=2,
-                          comment="=", engine="python")
+    table = pd.read_table(
+        fn, sep="\s\s+", header=2, comment="=", engine="python")
     return table
 
 
@@ -323,6 +337,3 @@ def export_calculation(n, output_dir, prefix=None):
         out_path = os.path.join(output_dir, fname)
         shutil.copy(p, out_path)
         print("Copied: {}".format(out_path))
-
-
-

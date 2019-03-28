@@ -5,6 +5,8 @@ from __future__ import absolute_import
 import pytest
 import tempfile
 import shutil
+
+
 @pytest.fixture(scope='session')
 def Path():
     """Load the Path class"""
@@ -31,6 +33,7 @@ def data_path(Path):
     import os
     this_file = Path(__file__)
     return (this_file.parent / 'data').resolve()
+
 
 def test_data_path(data_path):
     """

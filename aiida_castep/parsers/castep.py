@@ -6,8 +6,9 @@ from aiida.plugins import DataFactory
 from aiida.parsers.parser import Parser  # , ParserParamManager
 from aiida_castep.parsers.raw_parser import parse_raw_ouput, units
 from aiida_castep.parsers.raw_parser import __version__ as raw_parser_version
-from aiida_castep.parsers.utils import (structure_from_input, add_last_if_exists,
-                                        desort_structure, get_desort_args)
+from aiida_castep.parsers.utils import (structure_from_input,
+                                        add_last_if_exists, desort_structure,
+                                        get_desort_args)
 from ..common import OUTPUT_LINKNAMES as out_ln
 from .._version import calc_parser_version
 import six
@@ -54,7 +55,6 @@ class CastepParser(Parser):
 
         warnings = []
 
-
         # TODO Enable parser options
         parser_opts = {}
 
@@ -84,21 +84,23 @@ class CastepParser(Parser):
         for suffix in ('.geom', '.md'):
             fname = seedname + suffix
             if fname in filenames:
-                out_md_geom_name_content = (fname,
-                                            output_folder.get_object_content(fname).split('\n'))
+                out_md_geom_name_content = (
+                    fname, output_folder.get_object_content(fname).split('\n'))
                 has_md_geom = True
                 break
 
         # Handling bands
         fname = seedname + '.bands'
         if fname in filenames:
-            out_bands_content = output_folder.get_object_content(fname).split('\n')
+            out_bands_content = output_folder.get_object_content(fname).split(
+                '\n')
         else:
             has_bands = False
             out_bands_content = None
 
         out_file = options['output_filename']
-        out_file_content = output_folder.get_object_content(out_file).split('\n')
+        out_file_content = output_folder.get_object_content(out_file).split(
+            '\n')
 
         ###### CALL THE RAW PASSING FUNCTION TO PARSE DATA #######
         out_dict, trajectory_data, structure_data, bands_data, raw_sucessful\
@@ -109,9 +111,10 @@ class CastepParser(Parser):
                               bands_lines=out_bands_content)
 
         # Append the final value of trajectory_data into out_dict
-        last_value_keys = ["free_energy", "total_energy",
-                           "zero_K_energy", "spin_density",
-                           "abs_spin_density", "enthalpy"]
+        last_value_keys = [
+            "free_energy", "total_energy", "zero_K_energy", "spin_density",
+            "abs_spin_density", "enthalpy"
+        ]
         for key in last_value_keys:
             add_last_if_exists(trajectory_data, key, out_dict)
 
@@ -155,22 +158,25 @@ class CastepParser(Parser):
             if has_md_geom:
                 try:
                     idesort = get_desort_args(input_structure)
-                    positions = np.asarray(trajectory_data["positions"])[:, idesort]
+                    positions = np.asarray(
+                        trajectory_data["positions"])[:, idesort]
                     cells = trajectory_data["cells"]
                     symbols = np.asarray(trajectory_data["symbols"])[idesort]
                     stepids = np.arange(len(positions))
 
                 except KeyError:
-                    out_dict["parser_warning"].append("Cannot "
-                                                      "extract data from .geom file.")
+                    out_dict["parser_warning"].append(
+                        "Cannot "
+                        "extract data from .geom file.")
                     pass
 
                 else:
                     traj = TrajectoryData()
-                    traj.set_trajectory(stepids=np.asarray(stepids),
-                                        cells=np.asarray(cells),
-                                        symbols=np.asarray(symbols),
-                                        positions=np.asarray(positions))
+                    traj.set_trajectory(
+                        stepids=np.asarray(stepids),
+                        cells=np.asarray(cells),
+                        symbols=np.asarray(symbols),
+                        positions=np.asarray(positions))
                     # Save the rest
                     for name, value in six.iteritems(trajectory_data):
                         # Skip saving empty arrays
@@ -229,7 +235,8 @@ class Pot1dParser(Parser):
                 break
 
         # Check for keyword
-        castep_file = output_folder.get_file_content(self._calc._OUTPUT_FILE_NAME)
+        castep_file = output_folder.get_file_content(
+            self._calc._OUTPUT_FILE_NAME)
         if "Finished pot1d" in castep_file:
             successful = True
         else:

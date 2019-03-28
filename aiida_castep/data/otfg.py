@@ -26,8 +26,7 @@ def upload_otfg_family(entries,
 
     # Try to retrieve a group if it exists
     try:
-        group = Group.get(label=group_label,
-                          type_string=OTFGGROUP_TYPE)
+        group = Group.get(label=group_label, type_string=OTFGGROUP_TYPE)
         group_created = False
     except NotExistent:
         group = Group(

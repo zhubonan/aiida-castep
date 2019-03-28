@@ -13,7 +13,7 @@ def dot_proc(iterable):
     """Provide a primitive progress bar"""
     print("Processing keywords")
     m = len(iterable) - 1
-    print("=" * (m//10))
+    print("=" * (m // 10))
     for n, i in enumerate(iterable):
         if n % 10 == 0:
             print(".", end="")
@@ -90,7 +90,7 @@ def parse_help_string(key, excutable="castep.serial"):
             key_level = match.group(1).lower()
 
     cell_lines = lines[2:param_start]
-    param_lines = lines[param_start+2:]
+    param_lines = lines[param_start + 2:]
 
     if len(cell_lines) > len(param_lines):
         help_lines = cell_lines

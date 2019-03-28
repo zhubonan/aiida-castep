@@ -272,7 +272,6 @@ class CastepInputGenerator(object):
         for kind in self.inputs.structure.kinds:
             kindname.add(kind.name)
 
-
         # Make kindname unique
         for s in kindname:
             ps = pseudos[s]  # Get the pseudopotential object
@@ -291,7 +290,8 @@ class CastepInputGenerator(object):
             elif isinstance(ps, OTFGData):
                 species_pot_list.append("{:5} {}".format(s, ps.string))
             else:
-                raise InputValidationError('Unkonwn node as pseudo: {}'.format(ps))
+                raise InputValidationError(
+                    'Unkonwn node as pseudo: {}'.format(ps))
 
         self.cell_file["SPECIES_POT"] = species_pot_list
 

@@ -7,8 +7,8 @@ from aiida_castep.parsers.raw_parser import (
 from ..common import Path
 import os
 
-class TestParsers(unittest.TestCase):
 
+class TestParsers(unittest.TestCase):
     @property
     def data_abs_str(self):
         test_moudule = Path(__file__).parent
@@ -20,7 +20,6 @@ class TestParsers(unittest.TestCase):
         test_moudule = Path(__file__).parent
         data_folder = test_moudule / 'data'
         return data_folder
-
 
     def get_lines(self, path):
         """Get a list of lines from a path"""
@@ -87,8 +86,8 @@ class TestParsers(unittest.TestCase):
         """
         Test the function to parse *.bands file
         """
-        res = parse_dot_bands(self.get_lines(
-            self.data_abs_path / 'Si-geom-stress/aiida.bands'))
+        res = parse_dot_bands(
+            self.get_lines(self.data_abs_path / 'Si-geom-stress/aiida.bands'))
         self.assertEqual(res[0]['nspins'], 1)
         self.assertEqual(res[0]['nkpts'], len(res[1]))
         self.assertEqual(res[0]['neigns'], len(res[2][0][0]))

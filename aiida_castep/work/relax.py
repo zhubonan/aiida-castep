@@ -26,8 +26,8 @@ from aiida.engine import submit
 from aiida.engine import WorkChain, if_, while_, append_
 from aiida.plugins.utils import CalculationFactory
 
-from aiida_castep.parsers.raw_parser import (END_NOT_FOUND_MESSAGE,
- GEOM_FAILURE_MESSAGE, SCF_FAILURE_MESSAGE)
+from aiida_castep.parsers.raw_parser import (
+    END_NOT_FOUND_MESSAGE, GEOM_FAILURE_MESSAGE, SCF_FAILURE_MESSAGE)
 from aiida_castep.data import get_pseudos_from_structure
 
 CastepCalculation = CalculationFactory('castep.castep')
@@ -35,6 +35,7 @@ CastepCalculation = CalculationFactory('castep.castep')
 
 class UnexpectedFailure(RuntimeError):
     pass
+
 
 class CastepRelaxWorkChain(WorkChain):
     """
@@ -55,7 +56,11 @@ class CastepRelaxWorkChain(WorkChain):
         spec.input_group('pseudos', valid_type=Str, required=False)
         spec.input('kpoints', valid_type=KpointsData)
         spec.input('options', valid_type=Dict, required=False)
-        spec.input('final_restart', valid_type=Bool, required=False, default=Bool(False))
+        spec.input(
+            'final_restart',
+            valid_type=Bool,
+            required=False,
+            default=Bool(False))
         spec.input('geom_method', valid_type=Str, default=Str('LBFGS'))
         spec.outline(
             cls.initialise,
@@ -64,11 +69,9 @@ class CastepRelaxWorkChain(WorkChain):
                 cls.run_relax,
                 cls.check_relax,
             ),
-            if_(cls.should_do_final_restart)(
-                cls.run_final_restart,
-            ),
+            if_(cls.should_do_final_restart)(cls.run_final_restart, ),
             cls.process_results,
-            )
+        )
         spec.output('output_structure', valid_type=StructureData)
         spec.output('output_parameters', valid_type=Dict)
         spec.output('remote_folder', valid_type=RemoteData)
@@ -100,13 +103,14 @@ class CastepRelaxWorkChain(WorkChain):
 
         if self.inputs.pseudo_family:
             self.ctx.inputs['pseudo'] = get_pseudos_from_structure(
-                self.inputs.structure, self.inputs.pseudo_family.value
-                )
+                self.inputs.structure, self.inputs.pseudo_family.value)
 
         elif self.inputs.pseudos:
             self.ctx.inputs['pseudo'] = self.inputs.pseudos
         else:
-            self.abort_nowait('No valida pseudo data passed. Both pseudo_family and pseudos are not specified')
+            self.abort_nowait(
+                'No valida pseudo data passed. Both pseudo_family and pseudos are not specified'
+            )
             return
 
         # Check if task:geometryoptimisation is passed
@@ -122,16 +126,18 @@ class CastepRelaxWorkChain(WorkChain):
             param_dict['task'] = 'geometryoptimisation'
         elif param_dict['task'] != 'geometryoptimisation' \
                 and param_dict['task'] != 'geometryoptimization':
-            self.abort_nowait('Wrong task value passed {}'.format(param_dict['task']))
+            self.abort_nowait('Wrong task value passed {}'.format(
+                param_dict['task']))
             return
-
 
         # Add correct geom method
         geom_method = param_dict.get('geom_method', None)
         if geom_method is None:
             param_dict['geom_method'] = self.inputs.geom_method.value
         elif geom_method != self.inputs.geom_method:
-            self.abort_nowait('Inconsistent geom_method passed. In PARAM it is {} but the input is {}'.format(geom_method, self.inputs.geom_method))
+            self.abort_nowait(
+                'Inconsistent geom_method passed. In PARAM it is {} but the input is {}'
+                .format(geom_method, self.inputs.geom_method))
             return
 
         return
@@ -145,7 +151,8 @@ class CastepRelaxWorkChain(WorkChain):
         # Automatic fix
         out = helper.check_dict(self.ctx.inputs['parameters'], auto_fix=True)
         if out != self.ctx.inputs['parameters']:
-            self.report("Auto fixed input parameters. New parameters {}".format(out))
+            self.report(
+                "Auto fixed input parameters. New parameters {}".format(out))
 
         self.ctx.inputs['parameters'] = out
 
@@ -155,7 +162,7 @@ class CastepRelaxWorkChain(WorkChain):
             if check_point == "none":
                 self.report("Warning: checkpointing disabled!")
 
-        opt_strategy  = out['PARAM'].get('opt_strategy')
+        opt_strategy = out['PARAM'].get('opt_strategy')
 
         if not opt_strategy:
             out['PARAM']['opt_strategy'] = "speed"
@@ -192,8 +199,8 @@ class CastepRelaxWorkChain(WorkChain):
         process = CastepCalculation.process()
         calc = submit(process, **inputs)
 
-        self.report('Launching CastepCalculation <{}> iteration #{}'.format(calc.pid, self.ctx.iteration))
-
+        self.report('Launching CastepCalculation <{}> iteration #{}'.format(
+            calc.pid, self.ctx.iteration))
 
         return self.to_context(calcs=append_(calc))
 
@@ -206,18 +213,24 @@ class CastepRelaxWorkChain(WorkChain):
             calc = self.ctx.calcs[-1]
 
         except IndexError:
-            self.abort_nowait('Seems the initial iteration had problems. No calculation had been returned')
+            self.abort_nowait(
+                'Seems the initial iteration had problems. No calculation had been returned'
+            )
             return
 
         # Possible states that we can fix
-        acceptable_states = [calc_states.FINISHED, calc_states.FAILED,
-                             calc_states.SUBMISSIONFAILED ]
+        acceptable_states = [
+            calc_states.FINISHED, calc_states.FAILED,
+            calc_states.SUBMISSIONFAILED
+        ]
 
         # If the calculation is finished
         # What the difference between using get_state() == FINISHED?
         calc_state = calc.get_state()
         if calc.has_finished_ok():
-            self.report('Geometry optimisation succesful after {} WorkChain iterations'.format(self.ctx.iteration))
+            self.report(
+                'Geometry optimisation succesful after {} WorkChain iterations'
+                .format(self.ctx.iteration))
             self.ctx.is_converged = True
 
         elif self.ctx.iteration >= self.ctx.max_iterations:
@@ -227,10 +240,12 @@ class CastepRelaxWorkChain(WorkChain):
             return
 
         elif calc_state not in acceptable_states:
-            self.abort_nowait('Last ran CastepCalculation <{}> state {} cannot be handled'.format(calc.pk, calc.get_state()))
+            self.abort_nowait(
+                'Last ran CastepCalculation <{}> state {} cannot be handled'.
+                format(calc.pk, calc.get_state()))
             return
 
-        elif calc_state in  [calc_states.SUBMISSIONFAILED]:
+        elif calc_state in [calc_states.SUBMISSIONFAILED]:
             self._submission_failure_handler(calc)
             self.ctx.submission_failure = True
 
@@ -248,7 +263,9 @@ class CastepRelaxWorkChain(WorkChain):
                 self.ctx.restart_calc = calc
                 return
             else:
-                self.abort_nowait("Abort due to failure at iteration {} with CastepCalculation <{}> Message: {}".format(self.ctx.iteration, calc.pk, handler_out))
+                self.abort_nowait(
+                    "Abort due to failure at iteration {} with CastepCalculation <{}> Message: {}"
+                    .format(self.ctx.iteration, calc.pk, handler_out))
                 return
 
     def should_do_final_restart(self):
@@ -271,10 +288,14 @@ class CastepRelaxWorkChain(WorkChain):
     def _submission_failure_handler(self, calc):
         """We try again in 60 seconds"""
         if self.ctx.submission_failure:
-            self.abort_nowait('Submission for CastepCalculation <{}> failed twice'.format(calc.pk))
+            self.abort_nowait(
+                'Submission for CastepCalculation <{}> failed twice'.format(
+                    calc.pk))
             return
         else:
-            self.report('Submission for CastepCalculation <{}> failed. Sleep for {} seconds and try again'.format(calc.pk, self.SUBMISSION_RETRY_SECONDS))
+            self.report(
+                'Submission for CastepCalculation <{}> failed. Sleep for {} seconds and try again'
+                .format(calc.pk, self.SUBMISSION_RETRY_SECONDS))
             time.sleep(self.SUBMISSION_RETRY_SECONDS)
 
     def _failure_handler(self, calc):
@@ -282,7 +303,8 @@ class CastepRelaxWorkChain(WorkChain):
         Handle a failed calculation
         """
         try:
-            output_parameters = calc.get_outputs_dict()["output_parameters"].get_dict()
+            output_parameters = calc.get_outputs_dict(
+            )["output_parameters"].get_dict()
         except KeyError:
             raise UnexpectedFailure("No ouput Dict find")
         try:
@@ -299,9 +321,10 @@ class CastepRelaxWorkChain(WorkChain):
             return "CAN RESTART"
 
         # Calculation gets killed
-        if  any([END_NOT_FOUND_MESSAGE in w for w in warnings]):
+        if any([END_NOT_FOUND_MESSAGE in w for w in warnings]):
             try:
-                output_trajectory = calc.get_outputs_dict()["output_trajectory"]
+                output_trajectory = calc.get_outputs_dict(
+                )["output_trajectory"]
                 total_energy = output_trajectory.get_array("total_energy")
             except KeyError:
                 self.report("First SCF not finished")
@@ -309,7 +332,9 @@ class CastepRelaxWorkChain(WorkChain):
             else:
                 # Check if we have valid energies
                 if len(total_energy) > 0:
-                    self.report("Run did not finished after {} iterations".format(len(total_energy)))
+                    self.report(
+                        "Run did not finished after {} iterations".format(
+                            len(total_energy)))
                     return "CAN RESTART"
                 else:
                     return "FIRST SCF UNFINISHED"
@@ -343,7 +368,7 @@ class TwoStepRelax(WorkChain):
             cls.swap_param,
             cls.relax,
             cls.process_results,
-            )
+        )
         spec.output('output_structure', valid_type=StructureData)
         spec.output('output_parameters', valid_type=Dict)
         spec.output('remote_folder', valid_type=RemoteData)
@@ -367,27 +392,32 @@ class TwoStepRelax(WorkChain):
         # Setup pseudo potentials
         if self.inputs.pseudo_family:
             self.ctx.inputs['pseudo'] = get_pseudos_from_structure(
-                self.inputs.structure, self.inputs.pseudo_family.value
-                )
+                self.inputs.structure, self.inputs.pseudo_family.value)
         elif self.inputs.pseudos:
             self.ctx.inputs['pseudo'] = self.inputs.pseudos
         else:
-            self.abort_nowait('No valida pseudo data passed. Both pseudo_family and pseudos are not specified')
+            self.abort_nowait(
+                'No valida pseudo data passed. Both pseudo_family and pseudos are not specified'
+            )
             return
 
         # Check possible mistake in the parameterse dictionary
         v_param_dict = self.inputs.parameters.get_dict()
         v_param_dict["CELL"].pop("fix_all_cell", None)
-        v_param_dict["PARAM"]["geom_method"] = str(self.inputs.var_cell_geom_method)
-        v_param_dict["PARAM"]["geom_max_iter"] = int(self.inputs.var_cell_geom_iter)
-        v_param_dict = CastepCalculation.check_castep_input(v_param_dict, auto_fix=True)
+        v_param_dict["PARAM"]["geom_method"] = str(
+            self.inputs.var_cell_geom_method)
+        v_param_dict["PARAM"]["geom_max_iter"] = int(
+            self.inputs.var_cell_geom_iter)
+        v_param_dict = CastepCalculation.check_castep_input(
+            v_param_dict, auto_fix=True)
 
         f_param_dict = self.inputs.parameters.get_dict()
         f_param_dict["CELL"]["fix_all_cell"] = True
         f_param_dict["CELL"].pop("cell_constraints", None)
-        f_param_dict["PARAM"]["geom_method"] = str(self.inputs.fix_cell_geom_method)
-        f_param_dict = CastepCalculation.check_castep_input(f_param_dict,
-            auto_fix=True)
+        f_param_dict["PARAM"]["geom_method"] = str(
+            self.inputs.fix_cell_geom_method)
+        f_param_dict = CastepCalculation.check_castep_input(
+            f_param_dict, auto_fix=True)
 
         self.ctx.inputs["parameters"] = v_param_dict
 
@@ -401,8 +431,7 @@ class TwoStepRelax(WorkChain):
         Relax with varable cell
         """
         inputs = dict(self.ctx.inputs)
-        inputs["parameters"] = Dict(
-            dict=self.ctx.inputs["parameters"])
+        inputs["parameters"] = Dict(dict=self.ctx.inputs["parameters"])
 
         process = CastepCalculation.process()
         calc = submit(process, **inputs)
@@ -415,7 +444,8 @@ class TwoStepRelax(WorkChain):
         # Swap the parameters for fixed cell optimsiation
         v_calc = self.ctx.calcs[-1]
         self.report("Varcell finished. Swapping parameters")
-        reuse_name = CastepCalculation.get_restart_file_relative_path(self.ctx.inputs["parameters"], False)
+        reuse_name = CastepCalculation.get_restart_file_relative_path(
+            self.ctx.inputs["parameters"], False)
 
         # Reuse the checkfiles
         self.ctx.inputs["parameters"] = self.ctx.fix_cell_param
@@ -423,7 +453,9 @@ class TwoStepRelax(WorkChain):
         self.ctx.inputs["parent_folder"] = self.ctx.calcs[-1].out.remote_folder
         self.ctx.inputs["structure"] = v_calc.out.output_structure
 
-        self.report("Fixed cell parameters swapped. Continue with fixed cell relaxation.")
+        self.report(
+            "Fixed cell parameters swapped. Continue with fixed cell relaxation."
+        )
 
     def process_results(self):
         """

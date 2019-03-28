@@ -1,10 +1,10 @@
-
 from __future__ import absolute_import
 from aiida_castep.calculations.helper import CastepHelper, HelperCheckError
 import unittest
 
 helper = CastepHelper()
 has_info = helper.BY_PASS
+
 
 class TestHelper(unittest.TestCase):
     """class  TestHelper for test CastepHepler"""
@@ -15,7 +15,10 @@ class TestHelper(unittest.TestCase):
 
     @property
     def flat_dict(self):
-        return dict(fix_all_cell="true", cut_off_energy="true", kpoints_mp_grid="0 0 0")
+        return dict(
+            fix_all_cell="true",
+            cut_off_energy="true",
+            kpoints_mp_grid="0 0 0")
 
     @property
     def only_param_dict(self):
@@ -57,7 +60,6 @@ class TestHelper(unittest.TestCase):
         self.assertIn("kpointx_mp_grid", invalid)
         self.assertIn(("snap_to_symmetry", "CELL"), wrong)
 
-
     @unittest.skipIf(has_info, "No helper info found")
     def test_check_dict(self):
         """Test top level check dict function"""
@@ -97,6 +99,7 @@ class TestHelper(unittest.TestCase):
         outdict["PARAM"].update(elec_method="dm")
         with self.assertRaises(HelperCheckError):
             outdict = self.helper.check_dict(outdict, auto_fix=False)
+
 
 if __name__ == "__main__":
     unittest.main()

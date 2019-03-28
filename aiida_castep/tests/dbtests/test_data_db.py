@@ -12,7 +12,6 @@ try:
 except ImportError:
     from pathlib2 import Path
 
-
 from aiida.common import ValidationError
 
 Ti_otfg = "Ti 3|1.8|9|10|11|30U:40:31:32(qc=5.5)"
@@ -38,7 +37,6 @@ def otfg():
 
 @pytest.fixture(scope="module")
 def imps(aiida_profile):
-
     class Imports(object):
         from aiida.plugins import DataFactory
         import aiida_castep.data.otfg as otfg
@@ -122,24 +120,20 @@ def otfg_nodes(aiida_profile, otfgdata):
     return list(otfgs.values())
 
 
-def test_set_up_family_from_string(new_database, imps,
-                                   otfg_nodes, otfgdata):
+def test_set_up_family_from_string(new_database, imps, otfg_nodes, otfgdata):
 
     text_entries = [n.entry for n in otfg_nodes]
-    entry, uploaded = imps.otfg.upload_otfg_family(
-        text_entries[:1],
-        "Test", "Test")
+    entry, uploaded = imps.otfg.upload_otfg_family(text_entries[:1], "Test",
+                                                   "Test")
     assert (entry, uploaded) == (1, 1)
 
     # Creating duplicated family - should fail
     with pytest.raises(ValidationError):
-        entry, uploaded = imps.otfg.upload_otfg_family(
-            text_entries
-            , "Test", "Test")
+        entry, uploaded = imps.otfg.upload_otfg_family(text_entries, "Test",
+                                                       "Test")
 
     entry, uploaded = imps.otfg.upload_otfg_family(
-        text_entries
-        , "Test", "Test", stop_if_existing=False)
+        text_entries, "Test", "Test", stop_if_existing=False)
 
     assert (entry, uploaded) == (3, 2)
 
@@ -153,22 +147,19 @@ def test_set_up_family_from_string(new_database, imps,
 
 def test_set_up_family_from_nodes(new_database, otfg, otfg_nodes, otfgdata):
 
-    entry, uploaded = otfg.upload_otfg_family(otfg_nodes[:1],
-                                              "Test", "Test",
-                                              stop_if_existing=True)
+    entry, uploaded = otfg.upload_otfg_family(
+        otfg_nodes[:1], "Test", "Test", stop_if_existing=True)
 
     groups = otfgdata.get_otfg_groups()
     assert len(groups) == 1
     assert len(groups[0].nodes) == 1
 
     with pytest.raises(ValidationError):
-        entry, uploaded = otfg.upload_otfg_family(otfg_nodes,
-                                                  "Test", "Test",
-                                                  stop_if_existing=True)
+        entry, uploaded = otfg.upload_otfg_family(
+            otfg_nodes, "Test", "Test", stop_if_existing=True)
 
-    entry, uploaded = otfg.upload_otfg_family(otfg_nodes,
-                                                  "Test", "Test",
-                                              stop_if_existing=False)
+    entry, uploaded = otfg.upload_otfg_family(
+        otfg_nodes, "Test", "Test", stop_if_existing=False)
     groups = otfgdata.get_otfg_groups()
     assert len(groups) == 1
     assert len(groups[0].nodes) == 3
@@ -176,9 +167,8 @@ def test_set_up_family_from_nodes(new_database, otfg, otfg_nodes, otfgdata):
     Ce = otfgdata()
     Ce.set_string("Ce BLA")
 
-    entry, uploaded = otfg.upload_otfg_family(otfg_nodes + [Ce],
-                                              "Test", "Test",
-                                              stop_if_existing=False)
+    entry, uploaded = otfg.upload_otfg_family(
+        otfg_nodes + [Ce], "Test", "Test", stop_if_existing=False)
 
     group = otfgdata.get_otfg_group("Test")
 
@@ -187,8 +177,10 @@ def test_set_up_family_from_nodes(new_database, otfg, otfg_nodes, otfgdata):
         assert o.uuid in uuid_in_the_group
 
 
-def test_assign_from_structure(new_database, db_test_app,
-                               ):
+def test_assign_from_structure(
+        new_database,
+        db_test_app,
+):
     """
     Test using get_pseudos_from_structure
     """
@@ -209,7 +201,8 @@ def test_assign_from_structure(new_database, db_test_app,
     with pytest.raises(NotExistent):
         pseudo_list = get_pseudos_from_structure(STO, "STO_O_missing")
 
-    db_test_app.upload_otfg_family([Sr_otfg, Ti_otfg, O_otfg, "C9"], "STO+C9",
+    db_test_app.upload_otfg_family([Sr_otfg, Ti_otfg, O_otfg, "C9"],
+                                   "STO+C9",
                                    stop_if_existing=False)
     STO.append_atom(symbols=["Ce"], position=[0, 0, 0])
     pseudo_list = get_pseudos_from_structure(STO, "STO+C9")
@@ -239,8 +232,8 @@ def test_usp_upload_family(new_database, usp_folder):
     new.write_text(six.text_type("asdfgghhd"))
     # This will raise an exception as the same file is being uploaded
     with pytest.raises(ValueError):
-        upload_usp_family(str(usp_folder), "Test", "Test",
-                          stop_if_existing=True)
+        upload_usp_family(
+            str(usp_folder), "Test", "Test", stop_if_existing=True)
     # This should be OK
     upload_usp_family(str(usp_folder), "Test", "Test", stop_if_existing=False)
 
@@ -259,12 +252,10 @@ def test_usp_get_or_create(new_database, usp_folder):
 
     # Now having two files - should raise an exception
     with pytest.raises(ValueError):
-        node3, create = usp.UspData.get_or_create(fpath,
-                                                  use_first=False)
+        node3, create = usp.UspData.get_or_create(fpath, use_first=False)
 
     # This should work now
-    node4, create = usp.UspData.get_or_create(fpath,
-                                              use_first=True)
+    node4, create = usp.UspData.get_or_create(fpath, use_first=True)
     assert create is False
     assert node4.pk in (node1.pk, node2.pk)
 

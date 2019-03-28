@@ -11,19 +11,20 @@ try:
 except ImportError:
     ase = None
 
+
 @pytest.fixture
 def unsorted_atoms():
-    atoms = ase.Atoms("TiO2",
-                      cell=[5, 5, 5],
-                      positions=[[0, 0, 0], [1, 0, 0], [0, 1, 0]])
+    atoms = ase.Atoms(
+        "TiO2", cell=[5, 5, 5], positions=[[0, 0, 0], [1, 0, 0], [0, 1, 0]])
     return atoms
 
 
 @pytest.fixture
 def sorted_atoms():
-    atoms = ase.Atoms(numbers=[8, 8, 22],
-                      cell=[5, 5, 5],
-                      positions=[[1, 0, 0], [0, 1, 0], [0, 0, 0]])
+    atoms = ase.Atoms(
+        numbers=[8, 8, 22],
+        cell=[5, 5, 5],
+        positions=[[1, 0, 0], [0, 1, 0], [0, 0, 0]])
     return atoms
 
 

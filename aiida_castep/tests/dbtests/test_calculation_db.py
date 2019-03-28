@@ -4,12 +4,15 @@ Tests for calculation module
 from __future__ import absolute_import
 import pytest
 
+
 @pytest.mark.skip('interace not implemented')
 def test_castep_summary(STO_calculation):
     # Test the get_castep_input_summary method
 
-    keys = ["kpoints", "structure", "code", "computer", "resources",
-            "custom_scheduler_commands", "wallclock", "label", "pseudos"]
+    keys = [
+        "kpoints", "structure", "code", "computer", "resources",
+        "custom_scheduler_commands", "wallclock", "label", "pseudos"
+    ]
     out_dict = STO_calculation.get_castep_input_summary()
     for k in keys:
         assert k in out_dict
@@ -28,9 +31,11 @@ def test_update_parameters(STO_calculation):
     """
 
     sto = STO_calculation
-    updates = {"task": "geometryoptimisation",
-               "xc_functional": "pbe",
-               "fix_all_cell": True}
+    updates = {
+        "task": "geometryoptimisation",
+        "xc_functional": "pbe",
+        "fix_all_cell": True
+    }
     sto.update_parameters(**updates)
     dtmp = sto.inp.parameters.get_dict()
     assert dtmp["PARAM"]["task"] == updates["task"]

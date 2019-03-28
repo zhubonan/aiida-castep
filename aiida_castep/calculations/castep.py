@@ -25,7 +25,6 @@ from .datastructure import CellFile, ParamFile
 from .._version import calc_parser_version
 __version__ = calc_parser_version
 
-
 KpointsData = DataFactory("array.kpoints")
 StructureData = DataFactory("structure")
 Dict = DataFactory("dict")
@@ -53,8 +52,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
     _DEFAULTS['input_filename'] = _DEFAULTS['seedname'] + '.cell'
     _DEFAULTS['output_filename'] = _DEFAULTS['seedname'] + '.castep'
 
-    _default_retrieve_list = ["*.err", "*.den_fmt", "*-out.cell",
-                              "*.pdos_bin"]
+    _default_retrieve_list = ["*.err", "*.den_fmt", "*-out.cell", "*.pdos_bin"]
 
     # Some class methods
     retrieve_dict = {
@@ -69,7 +67,6 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         "spectral": [".ome_bin", ".dome_bin"],
     }
 
-
     # NOT CURRENTLY USED
     _acceptable_tasks = [
         "singlepoint",
@@ -77,9 +74,10 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         "geometryoptimisation",
     ]
 
-    _copied_attributes = ["jobresource_param", 
-                          "custom_scheduler_commands", 
-                          "max_wallclock_seconds"]
+    _copied_attributes = [
+        "jobresource_param", "custom_scheduler_commands",
+        "max_wallclock_seconds"
+    ]
 
     @classmethod
     def define(cls, spec):
@@ -91,48 +89,69 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
             port_name = 'metadata.options.' + key
             spec.input(port_name, default=value, valid_type=type(value))
 
-        spec.input('metadata.options.retrieve_list', valid_type=list,
-                   default=cls._default_retrieve_list)
+        spec.input(
+            'metadata.options.retrieve_list',
+            valid_type=list,
+            default=cls._default_retrieve_list)
 
         # Begin defining the input nodes
-        spec.input(inp_ln['structure'], valid_type=orm.StructureData,
-                   help="Defines the input structure")
-        spec.input(inp_ln['settings'], valid_type=orm.Dict, required=False,
-                   help="Use an additional node for sepcial settings")
-        spec.input(inp_ln['parameters'], valid_type=orm.Dict,
-                   help="Use a node that sepcifies the input parameters")
-        spec.input(inp_ln['parent_calc_folder'], valid_type=orm.RemoteData,
-                   help='Use a remote folder as the parent folder. Useful for restarts.',
-                   required=False)
-        spec.input_namespace('pseudos',
-                             valid_type=(UspData, OTFGData, UpfData),
-                             help=("Use nodes for the pseudopotentails of one of"
-                             "the element in the structure. You should pass a"
-                             "a dictionary specifying the pseudpotential node for"
-                             "each kind such as {O: <PsudoNode>}"),
-                             dynamic=True)
-        spec.input(inp_ln['kpoints'],
-                   valid_type=KpointsData, required=False,
-                   help="Use a node defining the kpoints for the calculation")
+        spec.input(
+            inp_ln['structure'],
+            valid_type=orm.StructureData,
+            help="Defines the input structure")
+        spec.input(
+            inp_ln['settings'],
+            valid_type=orm.Dict,
+            required=False,
+            help="Use an additional node for sepcial settings")
+        spec.input(
+            inp_ln['parameters'],
+            valid_type=orm.Dict,
+            help="Use a node that sepcifies the input parameters")
+        spec.input(
+            inp_ln['parent_calc_folder'],
+            valid_type=orm.RemoteData,
+            help=
+            'Use a remote folder as the parent folder. Useful for restarts.',
+            required=False)
+        spec.input_namespace(
+            'pseudos',
+            valid_type=(UspData, OTFGData, UpfData),
+            help=("Use nodes for the pseudopotentails of one of"
+                  "the element in the structure. You should pass a"
+                  "a dictionary specifying the pseudpotential node for"
+                  "each kind such as {O: <PsudoNode>}"),
+            dynamic=True)
+        spec.input(
+            inp_ln['kpoints'],
+            valid_type=KpointsData,
+            required=False,
+            help="Use a node defining the kpoints for the calculation")
 
         # Define the exit codes
-        spec.exit_code(0,
-                       'EXITED_AS_NORMAL',
-                       message='Calculation terminated successfuly')
-        spec.exit_code(100,
-                       'ERROR_NO_RETRIEVED_FOLDER',
-                       message='The retrieved folder data node could not be accessed.')
-        spec.exit_code(101,
-                       'ERROR_NO_OUTPUT_FILE',
-                       message='The output file is not found.')
-        spec.exit_code(1,
-                       'ERROR_CASTEP_ERROR',
-                       message='CASTEP generated error file. See them for details')
+        spec.exit_code(
+            0,
+            'EXITED_AS_NORMAL',
+            message='Calculation terminated successfuly')
+        spec.exit_code(
+            100,
+            'ERROR_NO_RETRIEVED_FOLDER',
+            message='The retrieved folder data node could not be accessed.')
+        spec.exit_code(
+            101,
+            'ERROR_NO_OUTPUT_FILE',
+            message='The output file is not found.')
+        spec.exit_code(
+            1,
+            'ERROR_CASTEP_ERROR',
+            message='CASTEP generated error file. See them for details')
 
         # Define the output nodes
-        spec.output(out_ln['results'], required=True, valid_type=Dict,
-                    help='Parsed results in a dictionary format.')
-
+        spec.output(
+            out_ln['results'],
+            required=True,
+            valid_type=Dict,
+            help='Parsed results in a dictionary format.')
 
         # Define the default inputs, enable CalcJobNode to use .res
         spec.default_output_node = out_ln['results']
@@ -200,8 +219,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
             else:
                 remote_list = remote_copy_list
             remote_list.append(
-                (comp_uuid,
-                 remote_path,
+                (comp_uuid, remote_path,
                  self.inputs.metadata.options.parent_folder_name))
 
         calcinfo = CalcInfo()
@@ -232,13 +250,12 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         calcinfo.retrieve_list.append(seedname + ".castep")
         calcinfo.retrieve_list.append(seedname + ".bands")
 
-        settings_retrieve_list = self.settings_dict.pop("ADDITIONAL_RETRIEVE_LIST",
-                                                   [])
+        settings_retrieve_list = self.settings_dict.pop(
+            "ADDITIONAL_RETRIEVE_LIST", [])
         calcinfo.retrieve_list.extend(settings_retrieve_list)
 
         # If we are doing geometryoptimisation retrieved the geom file and -out.cell file
-        calculation_mode = self.param_file.get(
-            "task", "singlepoint")
+        calculation_mode = self.param_file.get("task", "singlepoint")
 
         # dictionary for task specific file retrieve
         task_extra = self.retrieve_dict.get(calculation_mode.lower(), [])
@@ -265,7 +282,6 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
 
 
 class LegacyMethods(object):
-
     def _get_restart_file_relative_path(self,
                                         param_data_dict,
                                         use_castep_bin=False):
@@ -285,7 +301,6 @@ class LegacyMethods(object):
     def get_pseudos_via_family(cls, structure, family):
         from aiida_castep.data import get_pseudos_from_structure
         return get_pseudos_from_structure(structure, family)
-
 
     def _dryrun_test(self, folder, castep_exe, verbose=True):
         """
@@ -422,7 +437,6 @@ class LegacyMethods(object):
                     elif isinstance(the_pseudo, (UspData, UpfData)):
                         pseudos[kind] = the_pseudo.filename
 
-
         param_dict = in_param.get_dict()
         out_info.update(param_dict)
 
@@ -436,18 +450,24 @@ class LegacyMethods(object):
         out_info["code"] = in_code
         out_info["computer"] = self.get_computer()
         out_info["resources"] = self.get_resources()
-        out_info["custom_scheduler_commands"] = self.get_custom_scheduler_commands()
+        out_info[
+            "custom_scheduler_commands"] = self.get_custom_scheduler_commands(
+            )
         out_info["wallclock"] = self.get_max_wallclock_seconds()
 
         # Show the parent calculation whose RemoteData is linked to the node
         from aiida.orm import CalcJobNode
         if in_remote is not None:
             input_calc = in_remote.get_inputs(node_type=CalcJobNode)
-            assert len(input_calc) < 2, "More than one JobCalculation found, something seriously wrong"
+            assert len(
+                input_calc
+            ) < 2, "More than one JobCalculation found, something seriously wrong"
             if input_calc:
                 input_calc = input_calc[0]
-                out_info["parent_calc"] = {"pk": input_calc.pk,
-                                           "label": input_calc.label}
+                out_info["parent_calc"] = {
+                    "pk": input_calc.pk,
+                    "label": input_calc.label
+                }
             out_info["parent_calc_folder"] = in_remote
 
         if in_settings is not None:
@@ -455,8 +475,6 @@ class LegacyMethods(object):
         out_info["label"] = self.label
         out_info["pseudos"] = pseudos
         return out_info
-
-
 
     # TODO: this needs to be rebult for the process builder perhaps
     # def update_parameters(self, force=False, delete=None, **kwargs):
@@ -471,7 +489,6 @@ class LegacyMethods(object):
     #       This method relies on the help information to check and assign
     #       keywords to PARAM or CELL field of the Dict
     #       (i.e for generating .param and .cell file)
-
 
     #     calc.update_parameters(task="singlepoint")
 
@@ -740,7 +757,8 @@ class CastepExtraKpnCalculation(TaskSpecificCalculation):
         inp_name = "{}_kpoints".format(self.kpn_name)  # Name of the input
         linkname = self.get_linkname(inp_name)  # Name of the link
 
-        out_dict = super(CastepExtraKpnCalculation, self).get_castep_input_summary()
+        out_dict = super(CastepExtraKpnCalculation,
+                         self).get_castep_input_summary()
         out_dict[inp_name] = self.get_inputs_dict().get(linkname)
         return out_dict
 

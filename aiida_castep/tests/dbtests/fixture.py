@@ -46,6 +46,8 @@ class ExistingProfileFixtureManager(FixtureManager):
 
 
 _GLOBAL_FIXTURE_MANAGER = ExistingProfileFixtureManager()
+
+
 @contextmanager
 def fixture_manager():
     try:

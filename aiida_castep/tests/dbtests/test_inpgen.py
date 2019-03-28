@@ -45,8 +45,7 @@ def test_inp_gen_param(gen_instance, param_dict):
     assert gen_instance.param_file == param_dict["PARAM"]
 
 
-def test_inp_gen_cell(gen_instance,
-                      sto_calc_inputs):
+def test_inp_gen_cell(gen_instance, sto_calc_inputs):
     """
     Test generation of the inputs
     """
@@ -71,10 +70,11 @@ def test_submission(new_database, sto_calc_inputs):
 
 
 @pytest.mark.process_execution
-def test_parsing_base(new_database,
-                      db_test_app,
-                      sto_calc_inputs,
-                      ):
+def test_parsing_base(
+        new_database,
+        db_test_app,
+        sto_calc_inputs,
+):
     """
     Test submitting a CastepCalculation
     """
@@ -84,18 +84,20 @@ def test_parsing_base(new_database,
     _, return_node = run_get_node(CastepCalculation, **sto_calc_inputs)
     assert return_node.exit_status == 0
 
-    calc_energy = return_node.outputs.output_parameters.get_dict()['total_energy']
+    calc_energy = return_node.outputs.output_parameters.get_dict(
+    )['total_energy']
     ref = -31.69654969917
     assert calc_energy == ref
+
 
 def run_castep_calc(inputs):
     from aiida_castep.calculations.castep import CastepCalculation
     from aiida.engine import run_get_node
     return run_get_node(CastepCalculation, **inputs)[1]
 
+
 @pytest.mark.process_execution
-def test_parsing_geom(new_database,
-                      h2_calc_inputs):
+def test_parsing_geom(new_database, h2_calc_inputs):
     """
     Test if the geom is parsed correctly
     """
