@@ -28,10 +28,12 @@ def get_backend_str():
     backend_env = os.environ.get('TEST_AIIDA_BACKEND')
     if not backend_env:
         return BACKEND_DJANGO
-    elif  backend_env in (BACKEND_DJANGO, BACKEND_SQLA):
+    elif backend_env in (BACKEND_DJANGO, BACKEND_SQLA):
         return backend_env
 
-    raise ValueError("Unknown backend '{}' read from TEST_AIIDA_BACKEND environment variable".format(backend_env))
+    raise ValueError(
+        "Unknown backend '{}' read from TEST_AIIDA_BACKEND environment variable"
+        .format(backend_env))
 
 
 @pytest.fixture(scope='session')
@@ -63,20 +65,16 @@ def imps(aiida_profile):
 
 
 class Imports:
-
     def __init__(self):
         from aiida.plugins import CalculationFactory
         from aiida.plugins import DataFactory
         import aiida_castep.data.otfg as otfg
         from aiida_castep.data.otfg import OTFGData
-        from aiida.orm import (KpointsData,
-                               StructureData,
-                               BandsData,
-                               Code, Dict, Computer)
+        from aiida.orm import (KpointsData, StructureData, BandsData, Code,
+                               Dict, Computer)
         for k, v in locals().items():
             if k not in ['self']:
                 setattr(self, k, v)
-
 
 
 class CastepTestApp(object):
@@ -95,11 +93,13 @@ class CastepTestApp(object):
         Return a generator for the Computers
         """
         from aiida.orm import Computer
-        defaults = dict(name='localhost', hostname='localhost',
-                        transport_type='local',
-                        enabled_state=True,
-                        scheduler_type='direct',
-                        workdir=str(self._workdir))
+        defaults = dict(
+            name='localhost',
+            hostname='localhost',
+            transport_type='local',
+            enabled_state=True,
+            scheduler_type='direct',
+            workdir=str(self._workdir))
 
         kwargs.update(defaults)
         computer = Computer(**kwargs).store()
@@ -126,8 +126,7 @@ class CastepTestApp(object):
         """Mock calculation, can overide by prepend path"""
         code = self.imp.Code()
         exec_path = this_folder.parent / 'data/mock_castep.py'
-        code.set_remote_computer_exec(
-            (self.localhost, str(exec_path)))
+        code.set_remote_computer_exec((self.localhost, str(exec_path)))
         code.set_input_plugin_name('castep.castep')
         if overide:
             code.set_prepend_text('export MOCK_CALC={}'.format(overide))
@@ -145,8 +144,7 @@ class CastepTestApp(object):
         """Fixture of a code that just echos"""
         from aiida.orm import Code
         code = Code()
-        code.set_remote_computer_exec(
-            (self.localhost, "/bin/echo"))
+        code.set_remote_computer_exec((self.localhost, "/bin/echo"))
         code.set_input_plugin_name("castep.castep")
         code.store()
         return code
@@ -166,8 +164,7 @@ class CastepTestApp(object):
         kpoints_data.set_kpoints_mesh(mesh)
         return kpoints_data
 
-    def get_otfg_family(self, entries, name, desc='test',
-                        **kwargs):
+    def get_otfg_family(self, entries, name, desc='test', **kwargs):
         """Return a factory for upload OTFGS"""
         from aiida_castep.data.otfg import upload_otfg_family
         upload_otfg_family(entries, name, desc, **kwargs)
@@ -179,10 +176,6 @@ class CastepTestApp(object):
     def get_builder(self):
         from aiida_castep.calculations.castep import CastepCalculation
         return CastepCalculation.get_builder()
-
-
-
-
 
 
 @pytest.fixture
@@ -197,6 +190,7 @@ def db_test_app(aiida_profile):
     aiida_profile.reset_db()
     shutil.rmtree(workdir)
 
+
 @pytest.fixture
 def inputs_default():
     options = {
@@ -207,7 +201,10 @@ def inputs_default():
         'parent_folder_name': 'parent',
         'retrieve_list': [],
         'use_kpoints': True,
-        'resources': {'num_machines': 1, 'tot_num_mpiprocs': 1}
+        'resources': {
+            'num_machines': 1,
+            'tot_num_mpiprocs': 1
+        }
     }
     inputs = AttributeDict()
     inputs['metadata'] = AttributeDict()
@@ -216,21 +213,24 @@ def inputs_default():
 
 
 @pytest.fixture
-def sto_calc_inputs(db_test_app,
-                    inputs_default,
-                    ):
+def sto_calc_inputs(
+        db_test_app,
+        inputs_default,
+):
 
     from ..utils import get_sto_structure
     sto_structure = get_sto_structure()
     inputs = inputs_default
 
-    pdict = {"PARAM": {
-        "task": "singlepoint"
-    },
-             "CELL": {
-                 "symmetry_generate": True,
-                 "cell_constraints": ['0 0 0', '0 0 0']
-             }}
+    pdict = {
+        "PARAM": {
+            "task": "singlepoint"
+        },
+        "CELL": {
+            "symmetry_generate": True,
+            "cell_constraints": ['0 0 0', '0 0 0']
+        }
+    }
     # pdict["CELL"].pop("block species_pot")
     inputs.parameters = imps.Dict(dict=pdict)
     inputs.structure = sto_structure
@@ -242,19 +242,22 @@ def sto_calc_inputs(db_test_app,
 
 
 @pytest.fixture
-def h2_calc_inputs(db_test_app,
-                   sto_calc_inputs,
-                   h2_structure,
-                   ):
+def h2_calc_inputs(
+        db_test_app,
+        sto_calc_inputs,
+        h2_structure,
+):
 
     inputs = inputs_default
-    pdict = {"PARAM": {
-        "task": "geometryoptimisation"
-    },
-             "CELL": {
-                 "symmetry_generate": True,
-                 "cell_constraints": ['0 0 0', '0 0 0']
-             }}
+    pdict = {
+        "PARAM": {
+            "task": "geometryoptimisation"
+        },
+        "CELL": {
+            "symmetry_generate": True,
+            "cell_constraints": ['0 0 0', '0 0 0']
+        }
+    }
     # pdict["CELL"].pop("block species_pot")
     inputs.parameters = imps.Dict(dict=pdict)
     inputs.structure = h2_structure
@@ -294,6 +297,7 @@ def test_localhost_fixture(db_test_app):
     localhost.name == "localhost"
     assert localhost.pk is not None
 
+
 def test_code_fixture(db_test_app):
     """
     Test the localhost fixture
@@ -302,6 +306,8 @@ def test_code_fixture(db_test_app):
     assert code_echo.uuid is not None
     code_echo.get_remote_exec_path()
 
+
 def test_remotedata_fixture(db_test_app):
     assert db_test_app.remotedata
-    assert db_test_app.remotedata.get_remote_path() == str(db_test_app._workdir)
+    assert db_test_app.remotedata.get_remote_path() == str(
+        db_test_app._workdir)
