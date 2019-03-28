@@ -1,9 +1,6 @@
 image: 
   name: aiidateam/aiida_core_base:lasest-1.0
   
-services:
-  - postgres:10
-
 before_script:
   - apt-get update
   - apt-get install make
@@ -24,6 +21,9 @@ pytest_tests3:
   script:
     - $HOME/.venv-py3/bin/pip  install pytest
     - su -c '/home/aiida/.local/bin/pytest aiida_castep/tests' aiida
+  services:
+    - postgres:10
+
 
 pytest_tests2:
   variables:
@@ -33,15 +33,15 @@ pytest_tests2:
     - su -c '/home/aiida/.local/bin/pytest aiida_castep/tests' aiida
 
 
- doc_build2:
-   variables:
-     DB_HOST: "postgres"
-   script:
-     # The profile needs to be there for the building of docs
-     - TEST_AIIDA_BACKEND="django" bash .ci-data/setup_profiles.sh
-     - cd docs
-     - source $HOME/.venv-py2/bin/activate
-     - make
+doc_build2:
+  variables:
+    DB_HOST: "postgres"
+  script:
+    # The profile needs to be there for the building of docs
+    - TEST_AIIDA_BACKEND="django" bash .ci-data/setup_profiles.sh
+    - cd docs
+    - source $HOME/.venv-py2/bin/activate
+    - make
 
 doc_build3:
   variables:
