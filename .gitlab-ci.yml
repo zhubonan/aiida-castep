@@ -10,8 +10,8 @@ before_script:
   - export HOME=/home/aiida
   - export PATH=$HOME/.local/bin:$PATH
   - pip install sphinx sphinx_rtd_theme
-  - $HOME/.venv-py2/bin/pip --no-cache-dir --no-build-isolation --editable .
-  - $HOME/.venv-py3/bin/pip --no-cache-dir --no-build-isolation --editable .
+  - $HOME/.venv-py2/bin/pip install --no-cache-dir --no-build-isolation --editable .
+  - $HOME/.venv-py3/bin/pip install --no-cache-dir --no-build-isolation --editable .
   - $HOME/.venv-py3/bin/reentry scan -r aiida
   - $HOME/.venv-py2/bin/reentry scan -r aiida
 
@@ -19,7 +19,7 @@ pytest_tests3:
   variables:
     DB_HOST: "postgres"
   script:
-    - $HOME/.venv-py3/bin/pip  install pytest
+    - $HOME/.venv-py3/bin/pip install pytest
     - su -c '/home/aiida/.local/bin/pytest aiida_castep/tests' aiida
   services:
     - postgres:10
@@ -29,7 +29,7 @@ pytest_tests2:
   variables:
     DB_HOST: "postgres"
   script:
-    - $HOME/.venv-py2/bin/pip  install pytest
+    - $HOME/.venv-py2/bin/pip install pytest
     - su -c '/home/aiida/.local/bin/pytest aiida_castep/tests' aiida
 
 
