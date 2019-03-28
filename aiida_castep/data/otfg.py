@@ -31,7 +31,7 @@ def upload_otfg_family(entries,
         group_created = False
     except NotExistent:
         group = Group(
-            name=group_label,
+            label=group_label,
             type_string=OTFGGROUP_TYPE,
         )
         group_created = True

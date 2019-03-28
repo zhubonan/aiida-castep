@@ -59,7 +59,7 @@ def upload_usp_family(folder,
         group_created = False
     except NotExistent:
         group = Group(
-            name=group_label,
+            label=group_label,
             type_string=USPGROUP_TYPE,
         )
         group_created = True

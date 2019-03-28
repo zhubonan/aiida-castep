@@ -27,7 +27,7 @@ def import_things(aiida_profile, request):
     import aiida_castep.data.otfg as otf
     import aiida_castep.data.usp as usp
     from aiida.plugins import DataFactory
-    request.cls.otfg = DataFactory("castep.otfgdata")
+    request.cls.otfg = otf.OTFGData
     request.cls.otf = otf
     request.cls.usp = usp
     request.cls.usp = usp
@@ -109,12 +109,12 @@ class TestOTFGData(BaseDataCase):
     def test_otfg_create(self):
 
         element, setting = self.otf.split_otfg_entry(Ti_otfg)
-        C9 = self.otfg(string="C9")
+        C9 = self.otfg(otfg_entry="C9")
         self.assertEqual(C9.string, "C9")
         self.assertEqual(C9.element, "LIBRARY")
         C9.store()
 
-        Ti = self.otfg(string=setting, element=element)
+        Ti = self.otfg(otfg_entry=Ti_otfg)
         self.assertEqual(Ti.string, setting)
         self.assertEqual(Ti.element, element)
         Ti.store()
@@ -235,7 +235,8 @@ class TestUspData(BaseDataCase):
             sub = f.get_subfolder("pseudo", create=True)
             for element in ["Sr", "Ti", "O"]:
                 fp = io.StringIO(u"foo bla 42")
-                sub.create_file_from_filelike(fp, "{}_00.usp".format(element))
+                sub.create_file_from_filelike(fp, "{}_00.usp".format(element),
+                                              mode='w')
 
             self.usp.upload_usp_family(os.path.join(f.abspath, "pseudo"), "STO", "")
 
@@ -249,7 +250,7 @@ class TestUspData(BaseDataCase):
         name = "{}_00.usp".format(element)
         with SandboxFolder() as f:
             fp = io.StringIO(u"foo bla 42")
-            f.create_file_from_filelike(fp, name)
+            f.create_file_from_filelike(fp, name, mode='w')
             fpath = os.path.join(f.abspath, name)
             node = self.usp.UspData.get_or_create(fpath)[0]
 
@@ -260,7 +261,7 @@ class TestUspData(BaseDataCase):
         name = "Sr_00.usp"
         with SandboxFolder() as f:
             fp = io.StringIO(u"foo bla 42")
-            f.create_file_from_filelike(fp, name)
+            f.create_file_from_filelike(fp, name, mode='w')
             fpath = os.path.join(f.abspath, name)
             node1, create = self.usp.UspData.get_or_create(fpath)
 
@@ -300,11 +301,3 @@ class TestUspData(BaseDataCase):
         with self.assertRaises(NotExistent):
             STO.append_atom(symbols="Ba", position=(1, 1, 1))
             pseudo_list = get_pseudos_from_structure(STO, "STO")
-
-
-if __name__ == "__main__":
-    import unittest
-    from aiida.manage.fixtures import TestRunner, BACKEND_SQLA
-    tests = unittest.defaultTestLoader.discover(".", pattern="dbtestdata_new.py")
-    #TestRunner().run(tests)
-    TestRunner().run(tests, backend=BACKEND_SQLA)

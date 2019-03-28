@@ -46,11 +46,11 @@ def test_inp_gen_param(gen_instance, param_dict):
 
 
 def test_inp_gen_cell(gen_instance,
-                      STO_calc_inputs):
+                      sto_calc_inputs):
     """
     Test generation of the inputs
     """
-    gen_instance.inputs = STO_calc_inputs
+    gen_instance.inputs = sto_calc_inputs
     gen_instance.prepare_inputs()
     assert 'symmetry_generate' in gen_instance.cell_file
     assert "POSITIONS_ABS" in gen_instance.cell_file
@@ -60,27 +60,28 @@ def test_inp_gen_cell(gen_instance,
 
 
 @pytest.mark.process_execution
-def test_submission(new_database, STO_calc_inputs):
+def test_submission(new_database, sto_calc_inputs):
     """
     Test submitting a CastepCalculation
     """
     from aiida_castep.calculations.castep import CastepCalculation
     from aiida.engine import run_get_node
-    _, return_node = run_get_node(CastepCalculation, **STO_calc_inputs)
+    _, return_node = run_get_node(CastepCalculation, **sto_calc_inputs)
     assert return_node.exit_status == 101
 
 
 @pytest.mark.process_execution
 def test_parsing_base(new_database,
-                 STO_calc_inputs,
-                 code_h2_geom):
+                      db_test_app,
+                      sto_calc_inputs,
+                      ):
     """
     Test submitting a CastepCalculation
     """
     from aiida_castep.calculations.castep import CastepCalculation
     from aiida.engine import run_get_node
-    STO_calc_inputs['code'] = code_h2_geom
-    _, return_node = run_get_node(CastepCalculation, **STO_calc_inputs)
+    sto_calc_inputs['code'] = db_test_app.code_h2_geom
+    _, return_node = run_get_node(CastepCalculation, **sto_calc_inputs)
     assert return_node.exit_status == 0
 
     calc_energy = return_node.outputs.output_parameters.get_dict()['total_energy']
@@ -93,8 +94,8 @@ def run_castep_calc(inputs):
     return run_get_node(CastepCalculation, **inputs)[1]
 
 @pytest.mark.process_execution
-def test_parsing_geom(new_database, h2_calc_inputs,
-                      code_h2_geom):
+def test_parsing_geom(new_database,
+                      h2_calc_inputs):
     """
     Test if the geom is parsed correctly
     """
@@ -103,7 +104,7 @@ def test_parsing_geom(new_database, h2_calc_inputs,
 
 
 @pytest.mark.skip("Not working on aiida side")
-def test_get_builder(aiida_profile, STO_calc_inputs):
+def test_get_builder(aiida_profile, sto_calc_inputs):
 
     from aiida_castep.calculations.castep import CastepCalculation
     buider = CastepCalculation.get_builder()

@@ -4,7 +4,7 @@ Tests for calculation module
 from __future__ import absolute_import
 import pytest
 
-
+@pytest.mark.skip('interace not implemented')
 def test_castep_summary(STO_calculation):
     # Test the get_castep_input_summary method
 
@@ -21,6 +21,7 @@ def test_castep_summary(STO_calculation):
         assert k in out_dict
 
 
+@pytest.mark.skip('interace not implemented')
 def test_update_parameters(STO_calculation):
     """
     Test the update_parameters method

@@ -3,6 +3,7 @@ Test parsing data
 """
 from __future__ import print_function
 from __future__ import absolute_import
+import pytest
 
 try:
     from pathlib import Path
@@ -18,9 +19,10 @@ def import_things(aiida_profile, request):
     FolderData = DataFactory("folder")
     for k, v in locals().items():
         setattr(request.cls, k, v)
+
+
 @pytest.mark.usefixtures("import_things", "aiida_profile")
 class TestCastepParser(object):
-
     def get_data_abs_path(self):
         test_moudule = os.path.split(__file__)[0]
         data_folder = os.path.join(test_moudule, "data")
@@ -36,21 +38,14 @@ class TestCastepParser(object):
             retrieved[folder] = dict(retrieved=folderdata)
         return retrieved
 
-    def test_version_consistency(self):
-        """
-        Test that moudule versions are consistent
-        """
-        from aiida_castep.parsers.raw_parser import __version__ as prv
-        from aiida_castep.parsers.castep import __version__ as pcv
-        from aiida_castep.calculations.castep import __version__ as ccv
-        from aiida_castep.calculations.base import __version__ as cbv
-        assert prv == pcv == ccv == cbv
 
-    def test_parser_retrieved(self, code_echo, localhost, STO_calculation):
+    @pytest.mark.skip('Needs to be migrated')
+    def test_parser_retrieved(self, db_test_app,
+                              sto_calculation):
         from .utils import get_x2_structure
         from aiida_castep.parsers.castep import CastepParser
 
-        calc = STO_calculation
+        calc = sto_calculation
 
         parser = CastepParser(calc)
         retrived_folders = self.get_dummy_outputs()
@@ -110,6 +105,7 @@ class TestCastepParser(object):
 
 class TestPot1DParser(object):
 
+    @pytest.mark.skip('not re-implemented')
     def test_load_plugin(self):
         from aiida.parsers import ParserFactory
         Pot1dParser = ParserFactory("castep.pot1d")

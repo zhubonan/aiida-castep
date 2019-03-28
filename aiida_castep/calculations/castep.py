@@ -116,6 +116,9 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
                    help="Use a node defining the kpoints for the calculation")
 
         # Define the exit codes
+        spec.exit_code(0,
+                       'EXITED_AS_NORMAL',
+                       message='Calculation terminated successfuly')
         spec.exit_code(100,
                        'ERROR_NO_RETRIEVED_FOLDER',
                        message='The retrieved folder data node could not be accessed.')

@@ -124,7 +124,7 @@ class CastepTestApp(object):
 
     def code_mock_factory(self, overide=None):
         """Mock calculation, can overide by prepend path"""
-        code = self.imp.Code()
+        code = self.imps.Code()
         exec_path = this_folder.parent / 'data/mock_castep.py'
         code.set_remote_computer_exec((self.localhost, str(exec_path)))
         code.set_input_plugin_name('castep.castep')
@@ -232,7 +232,7 @@ def sto_calc_inputs(
         }
     }
     # pdict["CELL"].pop("block species_pot")
-    inputs.parameters = imps.Dict(dict=pdict)
+    inputs.parameters = db_test_app.imps.Dict(dict=pdict)
     inputs.structure = sto_structure
     c9 = db_test_app.c9_otfg
     inputs.pseudos = AttributeDict({"Sr": c9, 'Ti': c9, 'O': c9})
@@ -243,6 +243,7 @@ def sto_calc_inputs(
 
 @pytest.fixture
 def h2_calc_inputs(
+        inputs_default,
         db_test_app,
         sto_calc_inputs,
         h2_structure,
@@ -259,9 +260,9 @@ def h2_calc_inputs(
         }
     }
     # pdict["CELL"].pop("block species_pot")
-    inputs.parameters = imps.Dict(dict=pdict)
+    inputs.parameters = db_test_app.imps.Dict(dict=pdict)
     inputs.structure = h2_structure
-    inputs.pseudos = AttributeDict({"H": c9})
+    inputs.pseudos = AttributeDict({"H": db_test_app.c9_otfg})
     inputs.kpoints = db_test_app.get_kpoints_mesh((3, 3, 3))
     inputs.code = db_test_app.code_h2_geom
 
@@ -277,8 +278,8 @@ def c9(aiida_profile):
 
 
 @pytest.fixture
-def h2_structure(aiida_profile, imps):
-    StructureData = imps.DataFactory("structure")
+def h2_structure(aiida_profile, db_test_app):
+    StructureData = db_test_app.imps.DataFactory("structure")
     a = 10
 
     cell = ((a, 0., 0.), (0., a, 0.), (0., 0., a))
