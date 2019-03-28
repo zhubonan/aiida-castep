@@ -8,12 +8,7 @@ import pytest
 import os
 from aiida.common.exceptions import NotExistent
 from aiida.common import AttributeDict
-from aiida.manage.fixtures import fixture_manager
-
-try:
-    from pathlib import Path
-except ImportError:
-    from pathlib2 import Path
+from aiida_castep.common import Path
 
 this_folder = Path(__file__).parent
 

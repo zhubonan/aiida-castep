@@ -15,7 +15,7 @@ from aiida.plugins import DataFactory
 from aiida.orm import UpfData
 from aiida.engine import CalcJob
 
-from ..common import INPUT_LINKNAMES, OUTPUT_LINKNAMES
+from ..common import INPUT_LINKNAMES, OUTPUT_LINKNAMES, EXIT_CODES_SPEC
 from .inpgen import CastepInputGenerator
 from ..data.otfg import OTFGData
 from ..data.usp import UspData
@@ -31,6 +31,7 @@ Dict = DataFactory("dict")
 
 inp_ln = INPUT_LINKNAMES
 out_ln = OUTPUT_LINKNAMES
+ecodes = EXIT_CODES_SPEC
 
 # Define the version of the calculation
 
@@ -129,22 +130,8 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
             help="Use a node defining the kpoints for the calculation")
 
         # Define the exit codes
-        spec.exit_code(
-            0,
-            'EXITED_AS_NORMAL',
-            message='Calculation terminated successfuly')
-        spec.exit_code(
-            100,
-            'ERROR_NO_RETRIEVED_FOLDER',
-            message='The retrieved folder data node could not be accessed.')
-        spec.exit_code(
-            101,
-            'ERROR_NO_OUTPUT_FILE',
-            message='The output file is not found.')
-        spec.exit_code(
-            1,
-            'ERROR_CASTEP_ERROR',
-            message='CASTEP generated error file. See them for details')
+        for smsg, (code, msg) in ecodes.items():
+            spec.exit_code(code, smsg, message=msg)
 
         # Define the output nodes
         spec.output(
