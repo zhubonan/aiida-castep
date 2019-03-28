@@ -187,18 +187,19 @@ def test_set_up_family_from_nodes(new_database, otfg, otfg_nodes, otfgdata):
         assert o.uuid in uuid_in_the_group
 
 
-def test_assign_from_structure(new_database, OTFG_family_factory):
+def test_assign_from_structure(new_database, db_test_app,
+                               ):
     """
     Test using get_pseudos_from_structure
     """
 
     from aiida_castep.data import get_pseudos_from_structure
     from aiida.common import NotExistent
-    from ..utils import get_STO_structure
+    from ..utils import get_sto_structure
 
-    OTFG_family_factory([Sr_otfg, Ti_otfg, O_otfg], "STO")
+    db_test_app.upload_otfg_family([Sr_otfg, Ti_otfg, O_otfg], "STO")
 
-    STO = get_STO_structure()
+    STO = get_sto_structure()
 
     pseudo_list = get_pseudos_from_structure(STO, "STO")
     assert pseudo_list["Sr"].entry == OTFG_COLLECTION["Sr"]
@@ -208,8 +209,8 @@ def test_assign_from_structure(new_database, OTFG_family_factory):
     with pytest.raises(NotExistent):
         pseudo_list = get_pseudos_from_structure(STO, "STO_O_missing")
 
-    OTFG_family_factory([Sr_otfg, Ti_otfg, O_otfg, "C9"], "STO+C9",
-                        stop_if_existing=False)
+    db_test_app.upload_otfg_family([Sr_otfg, Ti_otfg, O_otfg, "C9"], "STO+C9",
+                                   stop_if_existing=False)
     STO.append_atom(symbols=["Ce"], position=[0, 0, 0])
     pseudo_list = get_pseudos_from_structure(STO, "STO+C9")
     assert pseudo_list["Sr"].entry == OTFG_COLLECTION["Sr"]

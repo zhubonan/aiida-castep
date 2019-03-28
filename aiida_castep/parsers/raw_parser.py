@@ -764,7 +764,7 @@ def parse_dot_bands(bands_lines):
     bands = []
     this_band = []
     this_spin = []
-    for line in bands_lines:
+    for line in bands_lines[i+1:]:
         if "K-point" in line:
             # We are not at the first kpoints
             if kpoints:

@@ -3,6 +3,7 @@ Store common stuff
 """
 
 # Mapping of the input names
+from __future__ import absolute_import
 INPUT_LINKNAMES = {
     'structure': 'structure',  # Input structure
     'parameters':
@@ -22,3 +23,8 @@ OUTPUT_LINKNAMES = {
     'bands': 'output_bands',  # Bands of the structure
     'array': 'output_array'  # Array of values, for example SCF energies
 }
+
+try:
+    from pathlib import Path
+except ImportError:
+    from pathlib2 import Path

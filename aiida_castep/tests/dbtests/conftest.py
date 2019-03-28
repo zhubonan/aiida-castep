@@ -164,7 +164,7 @@ class CastepTestApp(object):
         kpoints_data.set_kpoints_mesh(mesh)
         return kpoints_data
 
-    def get_otfg_family(self, entries, name, desc='test', **kwargs):
+    def upload_otfg_family(self, entries, name, desc='test', **kwargs):
         """Return a factory for upload OTFGS"""
         from aiida_castep.data.otfg import upload_otfg_family
         upload_otfg_family(entries, name, desc, **kwargs)
