@@ -264,7 +264,7 @@ class OTFGData(Data):
         from aiida.orm import Group
 
         return Group.objects.get(
-            label=group_label, type_string=cls.otfg_family_type_string._value_)
+            label=group_label, type_string=cls.otfg_family_type_string)
 
     @classmethod
     def get_otfg_groups(cls, filter_elements=None, user=None):
@@ -284,7 +284,7 @@ class OTFGData(Data):
         from aiida.orm import User
 
         query = QueryBuilder()
-        filters = {'type_string': {'==': cls.otfg_family_type_string._value_}}
+        filters = {'type_string': {'==': cls.otfg_family_type_string}}
 
         query.append(Group, filters=filters, tag='group', project='*')
 

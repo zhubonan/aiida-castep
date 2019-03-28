@@ -283,7 +283,7 @@ class UspData(SinglefileData):
         from aiida.orm import Group
 
         return Group.objects.get(
-            label=group_label, type_string=cls.uspfamily_type_string._value_)
+            label=group_label, type_string=cls.uspfamily_type_string)
 
     @classmethod
     def get_usp_groups(cls, filter_elements=None, user=None):
