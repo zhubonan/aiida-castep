@@ -8,6 +8,7 @@ from aiida_castep.parsers.raw_parser import parse_raw_ouput, units
 from aiida_castep.parsers.raw_parser import __version__ as raw_parser_version
 from aiida_castep.parsers.utils import (structure_from_input, add_last_if_exists,
                                         desort_structure, get_desort_args)
+from ..common import OUTPUT_LINKNAMES as out_ln
 from .._version import calc_parser_version
 import six
 __version__ = calc_parser_version
@@ -120,7 +121,7 @@ class CastepParser(Parser):
         ######## --- PROCESSING BANDS DATA -- ########
         if has_bands:
             bands_node = bands_to_bandsdata(bands_data)
-            self.out(LINK_NAMES['bands'], bands_node)
+            self.out(out_ln['bands'], bands_node)
 
         ######## --- PROCESSING STRUCTURE DATA --- ########
         try:
@@ -139,7 +140,7 @@ class CastepParser(Parser):
             input_structure = calc_in.inputs.structure
             structure_node = desort_structure(structure_node, input_structure)
             structure_node.label = input_structure.label
-            self.out(LINK_NAMES['structure'], structure_node)
+            self.out(out_ln['structure'], structure_node)
 
         ######### --- PROCESSING TRAJECTORY DATA --- ########
         # If there is anything to save
@@ -175,7 +176,7 @@ class CastepParser(Parser):
                         # Skip saving empty arrays
                         if len(value) > 0:
                             traj.set_array(name, np.asarray(value))
-                    self.out(LINK_NAMES['trajectory'], traj)
+                    self.out(out_ln['trajectory'], traj)
 
             # Otherwise, save data into a ArrayData node
             else:
@@ -184,25 +185,15 @@ class CastepParser(Parser):
                     # Skip saving empty arrays
                     if len(value) > 0:
                         out_array.set_array(name, np.asarray(value))
-                self.out(LINK_NAMES['array'], out_array)
+                self.out(out_ln['array'], out_array)
 
         ######## ---- PROCESSING OUTPUT DATA --- ########
         output_params = Dict(dict=out_dict)
-        self.out(LINK_NAMES['dict'], output_params)
+        self.out(out_ln['results'], output_params)
 
         # If we reached here the calculation is a success
         return
 
-
-# MAPPTING from the created nodes to linknames
-LINK_NAMES = {
-    'dict': 'output_parameters',
-    'structure': 'structure_node',
-    'trajectory': 'output_trajectory',
-    'array': 'output_array',
-    'kpoints': 'output_kpoints',
-    'bands': 'output_bands'
-}
 
 #TODO: NEED TO MIGRATE THIS
 class Pot1dParser(Parser):

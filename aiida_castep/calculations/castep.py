@@ -7,15 +7,15 @@ import warnings
 import six
 from six.moves import zip
 
-from textwrap import TextWrapper
-import aiida
 from aiida.common import InputValidationError, MultipleObjectsError
 from aiida.common.utils import classproperty
 from aiida.common import CalcInfo, CodeInfo
-from aiida.plugins import CalculationFactory, DataFactory
+from aiida.plugins import DataFactory
 
 from aiida.orm import UpfData
 from aiida.engine import CalcJob
+
+from ..common import INPUT_LINKNAMES, OUTPUT_LINKNAMES
 from .inpgen import CastepInputGenerator
 from ..data.otfg import OTFGData
 from ..data.usp import UspData
@@ -29,6 +29,9 @@ __version__ = calc_parser_version
 KpointsData = DataFactory("array.kpoints")
 StructureData = DataFactory("structure")
 Dict = DataFactory("dict")
+
+inp_ln = INPUT_LINKNAMES
+out_ln = OUTPUT_LINKNAMES
 
 # Define the version of the calculation
 
@@ -92,22 +95,24 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
                    default=cls._default_retrieve_list)
 
         # Begin defining the input nodes
-        spec.input('structure', valid_type=orm.StructureData,
+        spec.input(inp_ln['structure'], valid_type=orm.StructureData,
                    help="Defines the input structure")
-        spec.input('settings', valid_type=orm.Dict, required=False,
+        spec.input(inp_ln['settings'], valid_type=orm.Dict, required=False,
                    help="Use an additional node for sepcial settings")
-        spec.input('parameters', valid_type=orm.Dict,
+        spec.input(inp_ln['parameters'], valid_type=orm.Dict,
                    help="Use a node that sepcifies the input parameters")
-        spec.input('parent_calc_folder', valid_type=orm.RemoteData,
+        spec.input(inp_ln['parent_calc_folder'], valid_type=orm.RemoteData,
                    help='Use a remote folder as the parent folder. Useful for restarts.',
                    required=False)
-        spec.input_namespace('pseudos', valid_type=(UspData, OTFGData, UpfData),
+        spec.input_namespace('pseudos',
+                             valid_type=(UspData, OTFGData, UpfData),
                              help=("Use nodes for the pseudopotentails of one of"
                              "the element in the structure. You should pass a"
                              "a dictionary specifying the pseudpotential node for"
                              "each kind such as {O: <PsudoNode>}"),
                              dynamic=True)
-        spec.input('kpoints', valid_type=KpointsData, required=False,
+        spec.input(inp_ln['kpoints'],
+                   valid_type=KpointsData, required=False,
                    help="Use a node defining the kpoints for the calculation")
 
         # Define the exit codes
@@ -120,6 +125,15 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         spec.exit_code(1,
                        'ERROR_CASTEP_ERROR',
                        message='CASTEP generated error file. See them for details')
+
+        # Define the output nodes
+        spec.output(out_ln['results'], required=True, valid_type=Dict,
+                    help='Parsed results in a dictionary format.')
+
+
+        # Define the default inputs, enable CalcJobNode to use .res
+        spec.default_output_node = out_ln['results']
+
     def prepare_for_submission(self, folder):
         """
         Routine to be called when create the input files and other stuff
