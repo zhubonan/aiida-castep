@@ -1,5 +1,6 @@
 """
 Module for parsing .castep file
+This module should not rely on any of AiiDA modules
 """
 
 from __future__ import absolute_import
@@ -15,7 +16,7 @@ logger = logging.getLogger("aiida")
 from .._version import calc_parser_version
 __version__ = calc_parser_version
 
-# TODO update CODATA for castep 16.1 and above
+# TODO allow the CODATA sets to be selected
 
 # CODATA1986 (included herein for the sake of completeness)
 # taken from
@@ -70,13 +71,14 @@ INSUFFICENT_TIME_MESSAGE = "CASTEP run terminated due to insufficient run time l
 STOP_REQUESTED_MESSAGE = "CASTEP run terminated due to requested STOP in param file."
 
 
-def parse_raw_ouput(outfile, input_dict,
-                    parser_opts=None, md_geom_file=None,
-                    bands_file=None):
+def parse_raw_ouput(out_lines, input_dict,
+                    parser_opts=None, md_geom_lines=None,
+                    bands_lines=None):
     """
     Parse an dot_castep file
-    :param outfile: path to .castep file
-    :param md_geom_file: path to the .geom file or .md file
+    :param out_lines: A list of lines  handle to the '*.castep' file
+    :param md_geom_lines: (name, lines) A list of lines of the .geom file or .md file
+    :param bands_lines: A list of lines to the .bands file
     :return: A list of:
 
      * out_dict: a dictionary with parsed data.
@@ -95,15 +97,6 @@ def parse_raw_ouput(outfile, input_dict,
     parser_info["warnings"] = []
 
     job_successful = True
-
-    try:
-        with open(outfile, "r") as f:
-            # Store ouput lines in list
-            # OK if the file is not huge
-            out_lines = f.readlines()
-    except IOError:
-        raise CASTEPOutputParsingError(
-            "Failed to open file: {}".format(outfile))
 
     if not out_lines:  # The file is empty
         job_successful = False
@@ -130,19 +123,17 @@ def parse_raw_ouput(outfile, input_dict,
             out_lines, input_dict)
 
         # Use data from geom file if avaliable.
-        if md_geom_file is not None:
-            with open(md_geom_file) as gfile:
-                glines = gfile.readlines()
+        if md_geom_lines is not None:
+            glines = md_geom_lines[1]
             geom_data = parse_geom_text_output(glines, None)
             # For geom file the second energy is the enthalpy while
             # for MD it is the approx hamiltonian (etotal + ek)
-            if "geom" in md_geom_file:
+            if "geom" in md_geom_lines[0]:
                 geom_data["geom_enthalpy"] = geom_data["hamilt_energy"]
             trajectory_data.update(geom_data)
 
-
-        if bands_file is not None:
-            bands_data = parse_dot_bands(bands_file)
+        if bands_lines is not None:
+            bands_data = parse_dot_bands(bands_lines)
         else:
             bands_data = None
 
@@ -713,13 +704,13 @@ def parse_stress_box(lines):
     return i, stress, pressure
 
 
-def parse_dot_bands(file_path):
+def parse_dot_bands(bands_lines):
     """
     Parse an CASTEP bands file
     Extract Kpoints and each bands for each kpoints.
     This is a generic parsing function. Return python builtin types.
 
-    :param str file_path: Path of the file to parse
+    :param list bands_lines: A list of lines to be parsed parse
     :return: A list of bands_info, kpoints and bands:
 
      * bands_info: A dictionary for information of bands.
@@ -731,12 +722,10 @@ def parse_dot_bands(file_path):
 
     Note that the atomic units are used in the bands file
     """
-    fh = open(file_path)
-
     i_finish = None
     cell = []
     bands_info = {}
-    for i, line in enumerate(fh):
+    for i, line in enumerate(bands_lines):
         if not line.strip():
             continue
         if "Number of k-points" in line:
@@ -775,7 +764,7 @@ def parse_dot_bands(file_path):
     bands = []
     this_band = []
     this_spin = []
-    for line in fh:
+    for line in bands_lines:
         if "K-point" in line:
             # We are not at the first kpoints
             if kpoints:
@@ -798,8 +787,6 @@ def parse_dot_bands(file_path):
         if not ls:
             continue
         this_spin.append(float(ls))
-
-    fh.close()
 
     # Save the last set of results
     this_band.append(this_spin)

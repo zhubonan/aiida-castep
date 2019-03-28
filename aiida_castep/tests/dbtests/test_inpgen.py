@@ -58,6 +58,7 @@ def test_inp_gen_cell(gen_instance,
     assert isinstance(gen_instance.cell_file["cell_constraints"], list)
     assert 'C9' in gen_instance.cell_file['SPECIES_POT'][0]
 
+
 @pytest.mark.process_execution
 def test_submission(new_database, STO_calc_inputs):
     """
@@ -67,6 +68,38 @@ def test_submission(new_database, STO_calc_inputs):
     from aiida.engine import run_get_node
     _, return_node = run_get_node(CastepCalculation, **STO_calc_inputs)
     assert return_node.exit_status == 101
+
+
+@pytest.mark.process_execution
+def test_parsing_base(new_database,
+                 STO_calc_inputs,
+                 code_h2_geom):
+    """
+    Test submitting a CastepCalculation
+    """
+    from aiida_castep.calculations.castep import CastepCalculation
+    from aiida.engine import run_get_node
+    STO_calc_inputs['code'] = code_h2_geom
+    _, return_node = run_get_node(CastepCalculation, **STO_calc_inputs)
+    assert return_node.exit_status == 0
+
+    calc_energy = return_node.outputs.output_parameters.get_dict()['total_energy']
+    ref = -31.69654969917
+    assert calc_energy == ref
+
+def run_castep_calc(inputs):
+    from aiida_castep.calculations.castep import CastepCalculation
+    from aiida.engine import run_get_node
+    return run_get_node(CastepCalculation, **inputs)[1]
+
+@pytest.mark.process_execution
+def test_parsing_geom(new_database, h2_calc_inputs,
+                      code_h2_geom):
+    """
+    Test if the geom is parsed correctly
+    """
+    returned = run_castep_calc(h2_calc_inputs)
+    assert 'forces' in returned.outputs.output_trajectory.get_arraynames()
 
 
 @pytest.mark.skip("Not working on aiida side")

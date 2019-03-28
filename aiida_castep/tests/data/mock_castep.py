@@ -120,8 +120,7 @@ class MockOutput(object):
         res_files = (self.base_dir / rel_path).glob('*')
         cwd = Path.cwd()
         for r in res_files:
-            if r.suffix not in ['.param', '.cell']:
-                shutil.copy(str(r), str(cwd))
+            shutil.copy(str(r), str(cwd))
         return
 
     def run(self, seedname):

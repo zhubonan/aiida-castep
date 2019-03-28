@@ -10,6 +10,13 @@ from aiida.common.exceptions import NotExistent
 from aiida.common import AttributeDict
 from aiida.manage.fixtures import fixture_manager
 
+try:
+    from pathlib import Path
+except ImportError:
+    from pathlib2 import Path
+
+this_folder = Path(__file__).parent
+
 
 def get_backend_str():
     """ Return database backend string.
@@ -124,12 +131,24 @@ def code_echo(localhost):
     return code
 
 @pytest.fixture
-def code_copy_h2o(localhost):
-    """Copy the H2 calculation results"""
-    from aiida.orm import Code
-    code = Code()
-    code.set_remote_computer_exec(
-    (localhost, "/bin/cp"))
+def code_mock_factory(localhost):
+    """Mock calculation, can overide by prepend path"""
+    def _code(overide):
+        from aiida.orm import Code
+        code = Code()
+        exec_path = this_folder.parent / 'data/mock_castep.py'
+        code.set_remote_computer_exec(
+        (localhost, str(exec_path)))
+        code.set_input_plugin_name('castep.castep')
+        if overide:
+            code.set_prepend_text('export MOCK_CALC={}'.format(overide))
+        return code
+    return _code
+
+@pytest.fixture
+def code_h2_geom(code_mock_factory):
+    """A Code that always return H2-geom"""
+    return code_mock_factory('H2-geom')
 
 @pytest.fixture()
 def remotedata(localhost, tmpdir):
@@ -228,6 +247,32 @@ def STO_calc_inputs(aiida_profile,
 
     return inputs
 
+@pytest.fixture
+def h2_calc_inputs(aiida_profile,
+                   h2_structure,
+                   inputs_default,
+                   OTFG_family_factory,
+                   code_h2_geom, imps,
+                   c9,
+                   localhost, kpoints_mesh):
+
+    inputs = inputs_default
+    pdict = {"PARAM": {
+        "task": "geometryoptimisation"
+    },
+             "CELL": {
+                 "symmetry_generate": True,
+                 "cell_constraints": ['0 0 0', '0 0 0']
+             }}
+    # pdict["CELL"].pop("block species_pot")
+    inputs.parameters = imps.Dict(dict=pdict)
+    inputs.structure = h2_structure
+    inputs.pseudos = AttributeDict({"H": c9})
+    inputs.kpoints = kpoints_mesh((3, 3, 3))
+    inputs.code = code_h2_geom
+
+    return inputs
+
 
 @pytest.fixture
 def c9(aiida_profile):
@@ -251,6 +296,19 @@ def STO_structure(aiida_profile, imps):
     s.append_atom(position=(a / 2, 0., a / 2), symbols=["O"])
     s.append_atom(position=(0., a / 2, a / 2), symbols=["O"])
     s.label = "STO"
+    return s
+
+
+@pytest.fixture
+def h2_structure(aiida_profile, imps):
+    StructureData = imps.DataFactory("structure")
+    a = 10
+
+    cell = ((a, 0., 0.), (0., a, 0.), (0., 0., a))
+    s = StructureData(cell=cell)
+    s.append_atom(position=(0., 0., 0.), symbols=["H"])
+    s.append_atom(position=(a / 2, a / 2, a / 2), symbols=["H"])
+    s.label = "h2"
     return s
 
 

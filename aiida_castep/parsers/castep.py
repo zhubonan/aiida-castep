@@ -79,38 +79,33 @@ class CastepParser(Parser):
 
         # Trajectory files
         has_md_geom = False
-        if seedname + ".geom" in filenames:
-            out_md_geom_file = os.path.join(
-                output_folder.get_abs_path('.'), seedname + '.geom')
-            has_md_geom = True
-        elif seedname + ".md" in filenames:
-            out_md_geom_file = os.path.join(
-                output_folder.get_abs_path('.'), seedname + '.md')
-            has_md_geom = True
-        else:
-            out_md_geom_file = None
-            has_md_geom = False
+        out_md_geom_name_content = None
+        for suffix in ('.geom', '.md'):
+            fname = seedname + suffix
+            if fname in filenames:
+                out_md_geom_name_content = (fname,
+                                            output_folder.get_object_content(fname).split('\n'))
+                has_md_geom = True
+                break
 
         # Handling bands
-        if seedname + ".bands" in filenames:
-            has_bands = True
-            out_bands_file = os.path.join(output_folder.get_abs_path('.'),
-                                          seedname + '.bands')
+        fname = seedname + '.bands'
+        if fname in filenames:
+            out_bands_content = output_folder.get_object_content(fname).split('\n')
         else:
             has_bands = False
-            out_bands_file = None
+            out_bands_content = None
 
-        out_file = os.path.join(output_folder.get_abs_path(
-            '.'), options['output_filename'])
-
-        # call the raw parsing function
-        parsing_args = [out_file, input_dict,
-                        parser_opts, out_md_geom_file,
-                        out_bands_file]
+        out_file = options['output_filename']
+        out_file_content = output_folder.get_object_content(out_file).split('\n')
 
         ###### CALL THE RAW PASSING FUNCTION TO PARSE DATA #######
         out_dict, trajectory_data, structure_data, bands_data, raw_sucessful\
-            = parse_raw_ouput(*parsing_args)
+            = parse_raw_ouput(out_lines=out_file_content,
+                              input_dict=input_dict,
+                              parser_opts=parser_opts,
+                              md_geom_lines=out_md_geom_name_content,
+                              bands_lines=out_bands_content)
 
         # Append the final value of trajectory_data into out_dict
         last_value_keys = ["free_energy", "total_energy",
@@ -124,8 +119,8 @@ class CastepParser(Parser):
 
         ######## --- PROCESSING BANDS DATA -- ########
         if has_bands:
-            bands = bands_to_bandsdata(bands_data)
-            self.out(LINK_NAMES['bands'], bands)
+            bands_node = bands_to_bandsdata(bands_data)
+            self.out(LINK_NAMES['bands'], bands_node)
 
         ######## --- PROCESSING STRUCTURE DATA --- ########
         try:
@@ -137,14 +132,14 @@ class CastepParser(Parser):
             # No final structure can be used - that is OK
             pass
         else:
-            output_structure = structure_from_input(
+            structure_node = structure_from_input(
                 cell=cell, positions=positions, symbols=symbols)
-            calc_in = self._calc
+            calc_in = self.node
             # Use the output label as the input label
-            input_structure = calc_in.get_inputs_dict()[calc_in.get_linkname("structure")]
-            output_structure = desort_structure(output_structure, input_structure)
-            output_structure.label = input_structure.label
-            self.out(LINK_NAMES['structure'], output_structure)
+            input_structure = calc_in.inputs.structure
+            structure_node = desort_structure(structure_node, input_structure)
+            structure_node.label = input_structure.label
+            self.out(LINK_NAMES['structure'], structure_node)
 
         ######### --- PROCESSING TRAJECTORY DATA --- ########
         # If there is anything to save
@@ -180,7 +175,7 @@ class CastepParser(Parser):
                         # Skip saving empty arrays
                         if len(value) > 0:
                             traj.set_array(name, np.asarray(value))
-                    self.out(LINK_NAMES['trajectory'])
+                    self.out(LINK_NAMES['trajectory'], traj)
 
             # Otherwise, save data into a ArrayData node
             else:
@@ -193,14 +188,16 @@ class CastepParser(Parser):
 
         ######## ---- PROCESSING OUTPUT DATA --- ########
         output_params = Dict(dict=out_dict)
-        self.out(LINK_NAMES['parameters'], output_params)
-        return 0
+        self.out(LINK_NAMES['dict'], output_params)
+
+        # If we reached here the calculation is a success
+        return
 
 
 # MAPPTING from the created nodes to linknames
 LINK_NAMES = {
     'dict': 'output_parameters',
-    'structure': 'output_structure',
+    'structure': 'structure_node',
     'trajectory': 'output_trajectory',
     'array': 'output_array',
     'kpoints': 'output_kpoints',

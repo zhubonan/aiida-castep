@@ -226,11 +226,11 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         # dictionary for task specific file retrieve
         task_extra = self.retrieve_dict.get(calculation_mode.lower(), [])
         for suffix in task_extra:
-            settings_retrieve_list.append(self._SEED_NAME + suffix)
+            settings_retrieve_list.append(seedname + suffix)
 
         # Retrieve output cell file if requested
         if self.param_file.get("write_cell_structure"):
-            settings_retrieve_list.append(self._SEED_NAME + "-out.cell")
+            settings_retrieve_list.append(seedname + "-out.cell")
 
         calcinfo.retrieve_list += settings_retrieve_list
         calcinfo.retrieve_list += self._default_retrieve_list
