@@ -64,32 +64,75 @@ class MockOutput(object):
         all_inp.pop('comment', None)
         all_inp.pop('COMMENT', None)
 
+    @property
+    def _reg_file(self):
+        return self.base_dir / 'registry.json'
+
+    @property
+    def registry(self):
+
+        if not self._reg_file.is_file():
+            return {}
+
+        with open(str(self._reg_file), 'w') as fh:
+            reg = json.load(fh)
+        return reg
+
     def register(self, path):
         """
         Register the hash and path
         """
         hash_ = self.calc_hash(path)
-        try:
-            with open('registry.json') as fh:
-                reg = json.load(fh)
-        except FileNotFoundError:
-            reg = {}
+        if not self._reg_file.is_file():
+            return {}
+
+        with open(str(self._reg_file)) as fh:
+            reg = json.load(fh)
 
         rel_path = path.relative_to(self.base_dir)
         reg[hash_] = str(rel_path)
 
-        with open('registry.json', 'w') as fh:
+        with open(str(self._reg_file), 'w') as fh:
             json.dump(fh, reg)
+
+    def copy_results(self, rel_path):
+        """
+        Copy the results
+        """
+        print('Selected path:' , rel_path)
+        import shutil
+        res_files = (self.base_dir / rel_path).glob('*')
+        cwd = Path.cwd()
+        for r in res_files:
+            if r.suffix not in ['.param', '.cell']:
+                shutil.copy(str(r), str(cwd))
+        return
+
+    def run(self, seedname):
+        """
+        Run the 'Calculation'
+        """
+        import os
+        overide = os.environ.get('MOCK_CALC')
+        if overide:
+            self.copy_results(overide)
+            print('Overiden by MOCK_CALC')
+            print('Returning results from {}'.format(Path(overide).resolve()))
+            return
+
+        hash_ = self.calc_hash(seedname)
+        reg = self.registry
+
+        res_folder = reg.get(hash_, None)
+        if res_folder:
+            self.copy_results(res_folder)
+            print('Returning results from {}'.format(Path(res_folder).resolve()))
+        else:
+            raise RuntimeError('Results not registered')
 
 
 if __name__ == "__main__":
 
     seedname = sys.argv[1]
-    folder = Path(__file__).parent
-    param = castepinput.ParamInput.from_file(seedname + '.param', plain=True)
-    cell = castepinput.CellInput.from_file(seedname + '.cell', plain=True)
-    all_inp = dict(param)
-    all_inp.update(cell)
-    all_inp.pop('comment', None)
-    all_inp.pop('COMMENT', None)
-    print((get_hash(all_inp)))
+    runner = MockOutput()
+    runner.run(seedname)

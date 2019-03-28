@@ -123,6 +123,13 @@ def code_echo(localhost):
     code.store()
     return code
 
+@pytest.fixture
+def code_copy_h2o(localhost):
+    """Copy the H2 calculation results"""
+    from aiida.orm import Code
+    code = Code()
+    code.set_remote_computer_exec(
+    (localhost, "/bin/cp"))
 
 @pytest.fixture()
 def remotedata(localhost, tmpdir):
