@@ -22,8 +22,8 @@ from ..data.usp import UspData
 from .utils import get_castep_ion_line, _lowercase_dict, _uppercase_dict
 from .datastructure import CellFile, ParamFile
 
-from .._version import calc_parser_version
-__version__ = calc_parser_version
+from .._version import CALC_PARSER_VERSION
+__version__ = CALC_PARSER_VERSION
 
 KpointsData = DataFactory("array.kpoints")
 StructureData = DataFactory("structure")

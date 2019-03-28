@@ -22,9 +22,9 @@ from aiida_castep.data import OTFGData, UspData, get_pseudos_from_structure
 
 from .utils import get_castep_ion_line, _lowercase_dict, _uppercase_dict
 
-from .._version import calc_parser_version
+from .._version import CALC_PARSER_VERSION
 
-__version__ = calc_parser_version
+__version__ = CALC_PARSER_VERSION
 
 StructureData = DataFactory("structure")
 Dict = DataFactory("Dict")

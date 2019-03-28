@@ -10,4 +10,4 @@ CHNAGELOG
 0.2.4 -> Sort the bands and parsed kpoints from .bands file using the index given
 """
 
-calc_parser_version = "0.2.4"
+CALC_PARSER_VERSION = "0.2.4"

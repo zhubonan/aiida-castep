@@ -13,8 +13,8 @@ from six.moves import map
 from six.moves import range
 logger = logging.getLogger("aiida")
 
-from .._version import calc_parser_version
-__version__ = calc_parser_version
+from .._version import CALC_PARSER_VERSION
+__version__ = CALC_PARSER_VERSION
 
 # TODO allow the CODATA sets to be selected
 

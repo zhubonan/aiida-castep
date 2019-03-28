@@ -10,9 +10,9 @@ from aiida_castep.parsers.utils import (structure_from_input,
                                         add_last_if_exists, desort_structure,
                                         get_desort_args)
 from ..common import OUTPUT_LINKNAMES as out_ln
-from .._version import calc_parser_version
+from .._version import CALC_PARSER_VERSION
 import six
-__version__ = calc_parser_version
+__version__ = CALC_PARSER_VERSION
 
 Dict = DataFactory("dict")
 BandsData = DataFactory("array.bands")
