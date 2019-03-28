@@ -58,151 +58,144 @@ def new_database(aiida_profile):
 
 
 @pytest.fixture(scope="module")
-def otfgdata():
-    from aiida.plugins import DataFactory
-    return DataFactory("castep.otfgdata")
-
-
-@pytest.fixture(scope="module")
-def otfg():
-    import aiida_castep.data.otfg as otfg
-    return otfg
-
-
-@pytest.fixture(scope="module")
 def imps(aiida_profile):
-
-    class Imports:
-
-        def __init__(self):
-            from aiida.orm import Dict
-            from aiida.plugins import CalculationFactory
-            from aiida.plugins import DataFactory
-            import aiida_castep.data.otfg as otfg
-            for k, v in locals().items():
-                setattr(self, k, v)
-
     return Imports()
 
-@pytest.fixture()
-def computer_generator(aiida_profile, tmpdir):
-    """
-    Return a generator for the Computers
-    """
-    from aiida.orm import Computer
-    defaults = dict(name='localhost', hostname='localhost',
-                    transport_type='local',
-                    enabled_state=True,
-                    scheduler_type='direct',
-                    workdir=tmpdir.strpath)
 
-    def _get_computer(**kwargs):
+class Imports:
+
+    def __init__(self):
+        from aiida.plugins import CalculationFactory
+        from aiida.plugins import DataFactory
+        import aiida_castep.data.otfg as otfg
+        from aiida_castep.data.otfg import OTFGData
+        from aiida.orm import (KpointsData,
+                               StructureData,
+                               BandsData,
+                               Code, Dict, Computer)
+        for k, v in locals().items():
+            if k not in ['self']:
+                setattr(self, k, v)
+
+
+
+class CastepTestApp(object):
+    """
+    A collection of methods to
+    control the test
+    """
+
+    def __init__(self, profile, workdir):
+        self._profile = profile
+        self._workdir = Path(workdir)
+        self.imps = Imports()
+
+    def create_computer(self, **kwargs):
+        """
+        Return a generator for the Computers
+        """
+        from aiida.orm import Computer
+        defaults = dict(name='localhost', hostname='localhost',
+                        transport_type='local',
+                        enabled_state=True,
+                        scheduler_type='direct',
+                        workdir=str(self._workdir))
+
         kwargs.update(defaults)
         computer = Computer(**kwargs).store()
         # Need to configure the computer before using
         # Otherwise there is no AuthInfo
         computer.configure()
         return computer
-    return _get_computer
 
+    def get_or_create_computer(self, **kwargs):
+        """
+        Fixture for a local computer called localhost.
+        This is currently not in the AiiDA fixtures."""
+        try:
+            computer = self.imps.Computer.objects.get(**kwargs)
+        except NotExistent:
+            computer = self.create_computer(**kwargs)
+        return computer
 
-@pytest.fixture()
-def localhost(computer_generator):
-    """
-    Fixture for a local computer called localhost.
-    This is currently not in the AiiDA fixtures."""
-    from aiida.orm import Computer
-    try:
-        computer = Computer.objects.get(name='localhost')
-    except NotExistent:
-        computer = computer_generator(name='localhost')
-    return computer
+    @property
+    def localhost(self):
+        return self.get_or_create_computer(name='localhost')
 
-
-@pytest.fixture()
-def code_echo(localhost):
-    """Fixture of a code that just echos"""
-    from aiida.orm import Code
-    code = Code()
-    code.set_remote_computer_exec(
-        (localhost, "/bin/echo"))
-    code.set_input_plugin_name("castep.castep")
-    code.store()
-    return code
-
-@pytest.fixture
-def code_mock_factory(localhost):
-    """Mock calculation, can overide by prepend path"""
-    def _code(overide):
-        from aiida.orm import Code
-        code = Code()
+    def code_mock_factory(self, overide=None):
+        """Mock calculation, can overide by prepend path"""
+        code = self.imp.Code()
         exec_path = this_folder.parent / 'data/mock_castep.py'
         code.set_remote_computer_exec(
-        (localhost, str(exec_path)))
+            (self.localhost, str(exec_path)))
         code.set_input_plugin_name('castep.castep')
         if overide:
             code.set_prepend_text('export MOCK_CALC={}'.format(overide))
         return code
-    return _code
 
-@pytest.fixture
-def code_h2_geom(code_mock_factory):
-    """A Code that always return H2-geom"""
-    return code_mock_factory('H2-geom')
+    @property
+    def code_h2_geom(self):
+        """A Code that always return H2-geom"""
+        code = self.code_mock_factory('H2-geom')
+        code.store()
+        return code
 
-@pytest.fixture()
-def remotedata(localhost, tmpdir):
-    """Create an remote data"""
-    from aiida.orm import RemoteData
+    @property
+    def code_echo(self):
+        """Fixture of a code that just echos"""
+        from aiida.orm import Code
+        code = Code()
+        code.set_remote_computer_exec(
+            (self.localhost, "/bin/echo"))
+        code.set_input_plugin_name("castep.castep")
+        code.store()
+        return code
 
-    rmd = RemoteData()
-    rmd.set_computer(localhost)
-    rmd.set_remote_path(str(tmpdir))
-    return rmd
+    @property
+    def remotedata(self):
+        """Create an remote data"""
+        from aiida.orm import RemoteData
+        rmd = RemoteData()
+        rmd.computer = self.localhost
+        rmd.set_remote_path(str(self._workdir))
+        return rmd
 
-
-@pytest.fixture
-def kpoints_data(aiida_profile):
-    """
-    Return a factory for kpoints
-    """
-    from aiida.plugins import DataFactory
-    return DataFactory("array.kpoints")()
-
-
-@pytest.fixture
-def kpoints_mesh(kpoints_data):
-    """Factory for kpoints with mesh"""
-    def _kpoints_mesh(mesh, *args, **kwargs):
+    def get_kpoints_mesh(self, mesh):
+        """Factory for kpoints with mesh"""
+        kpoints_data = self.imps.KpointsData()
         kpoints_data.set_kpoints_mesh(mesh)
         return kpoints_data
-    return _kpoints_mesh
+
+    def get_otfg_family(self, entries, name, desc='test',
+                        **kwargs):
+        """Return a factory for upload OTFGS"""
+        from aiida_castep.data.otfg import upload_otfg_family
+        upload_otfg_family(entries, name, desc, **kwargs)
+
+    @property
+    def c9_otfg(self):
+        return self.imps.OTFGData.get_or_create('C9')[0]
+
+    def get_builder(self):
+        from aiida_castep.calculations.castep import CastepCalculation
+        return CastepCalculation.get_builder()
+
+
+
+
 
 
 @pytest.fixture
-def kpoints_list(kpoints_data):
-    """Factory for kpoints with mesh"""
-    def _kpoints_list(klist, *args, **kwargs):
-        kpoints_data.set_kpoints(klist, *args, **kwargs)
-        return kpoints_data
-    return _kpoints_list
+def db_test_app(aiida_profile):
+    """
+    Yield an test app for controlling
+    """
 
-
-@pytest.fixture
-def OTFG_family_factory(aiida_profile):
-    """Return a factory for upload OTFGS"""
-    from aiida_castep.data.otfg import upload_otfg_family
-
-    def _factory(otfg_entries, name, desc="TEST", **kwargs):
-        upload_otfg_family(otfg_entries, name, desc, **kwargs)
-        return
-
-    return _factory
-
-@pytest.fixture
-def builder(aiida_profile):
-    from aiida_castep.calculations.castep import CastepCalculation
-    return CastepCalculation.get_builder()
+    workdir = tempfile.mkdtemp()
+    app = CastepTestApp(aiida_profile, workdir)
+    yield app
+    aiida_profile.reset_db()
+    shutil.rmtree(workdir)
 
 @pytest.fixture
 def inputs_default():
@@ -221,16 +214,16 @@ def inputs_default():
     inputs.metadata['options'] = AttributeDict(options)
     return inputs
 
-@pytest.fixture
-def STO_calc_inputs(aiida_profile,
-                    STO_structure,
-                    inputs_default,
-                    OTFG_family_factory,
-                    code_echo, imps,
-                    c9,
-                    localhost, kpoints_mesh):
 
+@pytest.fixture
+def sto_calc_inputs(db_test_app,
+                    inputs_default,
+                    ):
+
+    from ..utils import get_sto_structure
+    sto_structure = get_sto_structure()
     inputs = inputs_default
+
     pdict = {"PARAM": {
         "task": "singlepoint"
     },
@@ -240,21 +233,19 @@ def STO_calc_inputs(aiida_profile,
              }}
     # pdict["CELL"].pop("block species_pot")
     inputs.parameters = imps.Dict(dict=pdict)
-    inputs.structure = STO_structure
+    inputs.structure = sto_structure
+    c9 = db_test_app.c9_otfg
     inputs.pseudos = AttributeDict({"Sr": c9, 'Ti': c9, 'O': c9})
-    inputs.kpoints = kpoints_mesh((3, 3, 3))
-    inputs.code = code_echo
-
+    inputs.kpoints = db_test_app.get_kpoints_mesh((3, 3, 3))
+    inputs.code = db_test_app.code_echo
     return inputs
 
+
 @pytest.fixture
-def h2_calc_inputs(aiida_profile,
+def h2_calc_inputs(db_test_app,
+                   sto_calc_inputs,
                    h2_structure,
-                   inputs_default,
-                   OTFG_family_factory,
-                   code_h2_geom, imps,
-                   c9,
-                   localhost, kpoints_mesh):
+                   ):
 
     inputs = inputs_default
     pdict = {"PARAM": {
@@ -268,8 +259,8 @@ def h2_calc_inputs(aiida_profile,
     inputs.parameters = imps.Dict(dict=pdict)
     inputs.structure = h2_structure
     inputs.pseudos = AttributeDict({"H": c9})
-    inputs.kpoints = kpoints_mesh((3, 3, 3))
-    inputs.code = code_h2_geom
+    inputs.kpoints = db_test_app.get_kpoints_mesh((3, 3, 3))
+    inputs.code = db_test_app.code_h2_geom
 
     return inputs
 
@@ -280,23 +271,6 @@ def c9(aiida_profile):
     from aiida_castep.data.otfg import OTFGData
     c9 = OTFGData.get_or_create('C9')
     return c9[0]
-
-
-@pytest.fixture
-def STO_structure(aiida_profile, imps):
-    """Return a STO structure"""
-    StructureData = imps.DataFactory("structure")
-    a = 3.905
-
-    cell = ((a, 0., 0.), (0., a, 0.), (0., 0., a))
-    s = StructureData(cell=cell)
-    s.append_atom(position=(0., 0., 0.), symbols=["Sr"])
-    s.append_atom(position=(a / 2, a / 2, a / 2), symbols=["Ti"])
-    s.append_atom(position=(a / 2, a / 2, 0.), symbols=["O"])
-    s.append_atom(position=(a / 2, 0., a / 2), symbols=["O"])
-    s.append_atom(position=(0., a / 2, a / 2), symbols=["O"])
-    s.label = "STO"
-    return s
 
 
 @pytest.fixture
@@ -312,21 +286,22 @@ def h2_structure(aiida_profile, imps):
     return s
 
 
-def test_localhost_fixture(localhost):
+def test_localhost_fixture(db_test_app):
     """
     Test the localhost fixture
     """
+    localhost = db_test_app.localhost
     localhost.name == "localhost"
     assert localhost.pk is not None
 
-
-def test_code_fixture(code_echo):
+def test_code_fixture(db_test_app):
     """
     Test the localhost fixture
     """
-    assert code_echo.pk is not None
+    code_echo = db_test_app.code_echo
+    assert code_echo.uuid is not None
     code_echo.get_remote_exec_path()
 
-
-def test_remotedata_fixture(remotedata):
-    assert remotedata.get_remote_path()
+def test_remotedata_fixture(db_test_app):
+    assert db_test_app.remotedata
+    assert db_test_app.remotedata.get_remote_path() == str(db_test_app._workdir)
