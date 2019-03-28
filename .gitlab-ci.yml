@@ -1,5 +1,5 @@
 image: 
-  name: aiidateam/aiida_core_base:lasest-1.0
+  name: aiidateam/aiida_core_base:latest-1.0
   
 before_script:
   - apt-get update
