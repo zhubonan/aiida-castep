@@ -6,7 +6,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 import click
 import sys
-from aiida.cmdline.commands import data_cmd
+from aiida.cmdline.commands.cmd_data import verdi_data
 from six.moves import map
 from six.moves import zip
 
@@ -35,7 +35,7 @@ def progress(func, *args, **kwargs):
         return tqdm(func, *args, **kwargs)
 
 
-@data_cmd.group('castep-help')
+@verdi_data.group('castep-help')
 def helper_cmd():
     """Commandline interface for controlling helper information"""
     pass
@@ -156,13 +156,18 @@ def list_file():
     List files aviable to use.
     """
 
-    helper = get_helper()
-    tmp = helper.get_help_info_paths()
-    if not tmp:
+    from aiida_castep.calculations.helper import find_help_info
+    paths, versions = find_help_info()
+    if not versions:
         print("No avaliale file detected")
+
     print("Avaliable files:")
-    for fpath, ver in zip(*tmp):
-        print("{} -- version: {}".format(fpath, ver))
+    print("{:<67} | {:^10}".format('Path', 'version'))
+    print("-" * 80)
+    for path, version in zip(paths, versions):
+        if version is None:
+            version = 'NOT_SPECIFIED'
+        print("{:<30} | {:>10}".format(path, version))
 
 
 def get_helper(*args, **kwargs):
