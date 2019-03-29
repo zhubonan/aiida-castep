@@ -265,14 +265,6 @@ def h2_calc_inputs(
 
 
 @pytest.fixture
-def c9(aiida_profile):
-    """C9 OTFG"""
-    from aiida_castep.data.otfg import OTFGData
-    c9 = OTFGData.get_or_create('C9')
-    return c9[0]
-
-
-@pytest.fixture
 def h2_structure(aiida_profile, db_test_app):
     StructureData = db_test_app.imps.DataFactory("structure")
     a = 10
@@ -307,3 +299,76 @@ def test_remotedata_fixture(db_test_app):
     assert db_test_app.remotedata
     assert db_test_app.remotedata.get_remote_path() == str(
         db_test_app._workdir)
+
+
+@pytest.fixture
+def generate_calc_job_node(db_test_app):
+    """
+    Generate CalcJobNode
+    """
+
+    def _generate_calc_job_node(
+            entry_point_name,
+            results_folder,
+            inputs=None,
+            computer=None,
+    ):
+        """
+        Generate a CalcJob node with fake retrieved node in the
+        tests/data
+        """
+        from aiida.common.links import LinkType
+        from aiida.orm import CalcJobNode, FolderData
+        from aiida.plugins import CalculationFactory
+        from aiida.plugins.entry_point import format_entry_point_string
+
+        calc_class = CalculationFactory(entry_point_name)
+        entry_point = format_entry_point_string('aiida.calculations',
+                                                entry_point_name)
+        builder = calc_class.get_builder()
+
+        if not computer:
+            computer = db_test_app.localhost
+        node = CalcJobNode(computer=computer, process_type=entry_point)
+
+        # Monkypatch the inputs
+        if inputs is not None:
+            inputs = AttributeDict(inputs)
+            node.__dict__['inputs'] = inputs
+            inputs.structure.store()
+            node.add_incoming(
+                inputs.structure,
+                link_type=LinkType.INPUT_CALC,
+                link_label='structure')
+
+        options = builder.metadata.options
+        node.set_attribute('input_filename', options.input_filename)
+        node.set_attribute('seedname', options.seedname)
+        node.set_attribute('output_filename', options.output_filename)
+        node.set_attribute('error_filename', 'aiida.err')
+        node.set_option('resources', {
+            'num_machines': 1,
+            'num_mpiprocs_per_machine': 1
+        })
+        node.set_option('max_wallclock_seconds', 1800)
+        node.store()
+
+        filepath = this_folder.parent / 'data' / results_folder
+
+        retrieved = FolderData()
+        retrieved.put_object_from_tree(str(filepath.resolve()))
+        retrieved.add_incoming(
+            node, link_type=LinkType.CREATE, link_label='retrieved')
+        retrieved.store()
+        return node
+
+    return _generate_calc_job_node
+
+
+@pytest.fixture
+def generate_parser():
+    def _generate_parser(entry_point_name):
+        from aiida.plugins import ParserFactory
+        return ParserFactory(entry_point_name)
+
+    return _generate_parser

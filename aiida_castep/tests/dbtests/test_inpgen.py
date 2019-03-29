@@ -69,27 +69,6 @@ def test_submission(new_database, sto_calc_inputs):
     assert return_node.exit_status == 101
 
 
-@pytest.mark.process_execution
-def test_parsing_base(
-        new_database,
-        db_test_app,
-        sto_calc_inputs,
-):
-    """
-    Test submitting a CastepCalculation
-    """
-    from aiida_castep.calculations.castep import CastepCalculation
-    from aiida.engine import run_get_node
-    sto_calc_inputs['code'] = db_test_app.code_h2_geom
-    _, return_node = run_get_node(CastepCalculation, **sto_calc_inputs)
-    assert return_node.exit_status == 0
-
-    calc_energy = return_node.outputs.output_parameters.get_dict(
-    )['total_energy']
-    ref = -31.69654969917
-    assert calc_energy == ref
-
-
 def run_castep_calc(inputs):
     from aiida_castep.calculations.castep import CastepCalculation
     from aiida.engine import run_get_node
@@ -97,12 +76,46 @@ def run_castep_calc(inputs):
 
 
 @pytest.mark.process_execution
-def test_parsing_geom(new_database, h2_calc_inputs):
+def test_parsing_base(
+        new_database,
+        db_test_app,
+        generate_calc_job_node,
+        generate_parser,
+        h2_calc_inputs,
+):
+    """
+    Test submitting a CastepCalculation
+    """
+
+    node = generate_calc_job_node(
+        'castep.castep',
+        'H2-geom',
+        inputs=h2_calc_inputs,
+    )
+    parser = generate_parser('castep.castep')
+    results, return_node = parser.parse_from_node(node, store_provenance=False)
+    assert return_node.exit_status == 0
+
+    calc_energy = results['output_parameters'].get_dict()['total_energy']
+    ref = -31.69654969917
+    assert calc_energy == ref
+
+
+@pytest.mark.process_execution
+def test_parsing_geom(new_database, db_test_app, generate_calc_job_node,
+                      generate_parser, h2_calc_inputs):
     """
     Test if the geom is parsed correctly
     """
-    returned = run_castep_calc(h2_calc_inputs)
-    assert 'forces' in returned.outputs.output_trajectory.get_arraynames()
+    from aiida_castep.calculations.castep import CastepCalculation
+    node = generate_calc_job_node(
+        'castep.castep',
+        'H2-geom',
+        inputs=h2_calc_inputs,
+        computer=db_test_app.localhost)
+    parser = generate_parser('castep.castep')
+    results, _ = parser.parse_from_node(node, store_provenance=False)
+    assert 'forces' in results['output_trajectory'].get_arraynames()
 
 
 @pytest.mark.skip("Not working on aiida side")

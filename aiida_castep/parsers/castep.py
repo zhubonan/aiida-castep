@@ -33,14 +33,7 @@ class CastepParser(Parser):
 
     _setting_key = 'parser_options'
 
-    def __init__(self, calc):
-        """
-        Initialise the instance of CastepParser
-        """
-
-        super(CastepParser, self).__init__(calc)
-
-    def parse(self, retrieved_temporary_folder, **kwargs):
+    def parse(self, **kwargs):
         """
         Receives a dictionary of retrieved nodes.retrieved.
         Top level logic of operation
