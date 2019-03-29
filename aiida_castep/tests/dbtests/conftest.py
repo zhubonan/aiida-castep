@@ -42,7 +42,8 @@ def aiida_profile():
     #     from fixture import fixture_manager
     # else:
     #     from aiida.manage.fixtures import fixture_manager
-    from .fixture import fixture_manager
+    from aiida.manage.fixtures import fixture_manager
+    #from .fixture import fixture_manager
     with fixture_manager() as fixture_mgr:
         yield fixture_mgr
 

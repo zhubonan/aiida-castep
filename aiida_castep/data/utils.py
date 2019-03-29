@@ -35,7 +35,7 @@ def get_usp_element(filepath):
     infer element from usp/recpot filename
     :return element: a string of element name or None if not found
     """
-    re_fn = re.compile("^([a-z]+)[_-].+\.(usp|recpot)$", flags=re.IGNORECASE)
+    re_fn = re.compile(r"^([a-z]+)[_-].+\.(usp|recpot)$", flags=re.IGNORECASE)
     filename = os.path.split(filepath)[1]
     match = re_fn.match(filename)
     if match:
