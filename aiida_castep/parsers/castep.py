@@ -91,11 +91,11 @@ class CastepParser(Parser):
 
         # Handling bands
         fname = seedname + '.bands'
-        if fname in filenames:
+        has_bands = fname in filenames
+        if has_bands:
             out_bands_content = output_folder.get_object_content(fname).split(
                 '\n')
         else:
-            has_bands = False
             out_bands_content = None
 
         out_file = options['output_filename']
@@ -289,5 +289,5 @@ def bands_to_bandsdata(bands_res):
     # This is needs as we need to know the number of electrons
     # and the fermi energy
     for key, value in bands_res[0].items():
-        bands._set_attr(key, value)
+        bands.set_attribute(key, value)
     return bands
