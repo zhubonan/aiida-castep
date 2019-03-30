@@ -80,14 +80,19 @@ def parse_raw_ouput(out_lines,
                     bands_lines=None):
     """
     Parse an dot_castep file
-    :param out_lines: A list of lines  handle to the '*.castep' file
+
+    :param out_lines: A list of lines  handle to the \*.castep file
     :param md_geom_lines: (name, lines) A list of lines of the .geom file or .md file
     :param bands_lines: A list of lines to the .bands file
+
     :return: A list of:
 
      * out_dict: a dictionary with parsed data.
+
      * trajectory_data: dictionary of trajectory data.
+
      * structure data: dictionary of cell, positions and symbols.
+
      * successful: a boolean that is False in case of failed calculations.
 
     2 different keys to check in out_dict: *parser_warning* and *warnings*.
@@ -207,8 +212,7 @@ def parse_castep_text_output(out_lines, input_dict):
     :param out_lines: a list of lines from readlines function
 
     :param input_dict: Control some variables. Currently support
-
-    'n_warning_lines'- number of the lines to include for a general warning.
+      'n_warning_lines'- number of the lines to include for a general warning.
 
     :return: A list of parsed_data, trajectory_data and critical_messages:
 
@@ -728,13 +732,12 @@ def parse_dot_bands(bands_lines):
     Extract Kpoints and each bands for each kpoints.
     This is a generic parsing function. Return python builtin types.
 
-    :param list bands_lines: A list of lines to be parsed parse
+    :param bands_lines: A list of lines to be parsed parse
     :return: A list of bands_info, kpoints and bands:
 
      * bands_info: A dictionary for information of bands.
-
-     * kpoints: A list of kpoints. In the format [kpoint index, coordinats x 3 kpoint weight]
-
+     * kpoints: A list of kpoints. In the format [kpoint index,
+         coordinats x 3 kpoint weight]
      * bands: A list of bands. Each band has a list of actual
        eigenvalues for each spin components. E.g nkpoints, nspins, neigns.
 
