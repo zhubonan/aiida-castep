@@ -83,9 +83,9 @@ pytest_tests2_pinned:
     - sudo -u builder -E bash -c "source venv-py$PY_VERSION/bin/activate; pytest ."
 
 doc_build3:
-   variables:
-     READTHEDOCS: True
-   script:
+  variables:
+    READTHEDOCS: "True"
+  script:
       # The profile needs to be there for the building of docs
       - cd docs
       - make
