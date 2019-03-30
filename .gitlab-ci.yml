@@ -19,7 +19,6 @@ cache:
     - .cache/pip
 
 before_script:
-  - env
   - apt-get update
   - >-
     DEBIAN_FRONTEND=noninteractive apt-get install -y

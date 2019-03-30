@@ -329,12 +329,11 @@ class UspData(SinglefileData):
 
     def _validate(self):
         from aiida.common import ValidationError
-        import aiida.common.utils
 
         super(UspData, self)._validate()
 
         # Check again, in case things changes
-        usp_abspath = self._abs_path
+        usp_abspath = str(self._abs_path)
 
         if not usp_abspath:
             raise ValidationError("No valid usp file was passed")

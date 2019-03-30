@@ -27,7 +27,7 @@ from .._version import CALC_PARSER_VERSION
 __version__ = CALC_PARSER_VERSION
 
 StructureData = DataFactory("structure")
-Dict = DataFactory("Dict")
+Dict = DataFactory("dict")
 KpointsData = DataFactory("array.kpoints")
 UpfData = DataFactory("upf")
 RemoteData = DataFactory("remote")
