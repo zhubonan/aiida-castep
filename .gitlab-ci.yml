@@ -28,8 +28,6 @@ before_script:
     python-pip python3-pip virtualenv rabbitmq-server
   - service rabbitmq-server start
   - updatedb
-  - pip install -U 'pip<19' setuptools wheel
-  - pip3 install -U 'pip<19' setuptools wheel
   # Add a  user set the upper directory as HOME
   - useradd -d "$CI_PROJECT_DIR/../" -g users -M -N builder
   # Install an virtual env
