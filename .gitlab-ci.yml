@@ -1,5 +1,3 @@
-#image: 
-#  name: bonanzhu/aiida_core_base:latest-py3
 image:
   name: phusion/baseimage:0.11
 
@@ -7,9 +5,10 @@ services:
   - postgres:10
 
 variables:
-  AIIDA_DEVELOP_GIT_HASH: develop
-  TEST_AIIDA_BACKEND: django
+  # set to aiida_core that the plugin is last known to work
+  AIIDA_DEVELOP_GIT_HASH: d64bb17cd9688540cc38ab61e0a40abf717d68680
   AIIDA_VERSION: develop
+  TEST_AIIDA_BACKEND: django
   DB_HOST: "postgres"
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
   PY_VERSION: "3"
@@ -45,6 +44,15 @@ pre_commit:
     - pre-commit install; pre-commit run --all-files || ( git status --short; git diff ; exit 1 )
 
 # Install and test under python3
+pytest_tests3_latest:
+  variables:
+    PY_VERSION: "3"
+    AIIDA_DEVELOP_GIT_HASH: develop
+  script:
+    # Acquire ownership of the CI_PROJECT FOLDER
+    - chown -R builder:users ..
+    - sudo -u builder -E bash -c "source venv-py$PY_VERSION/bin/activate; pytest ."
+
 pytest_tests3:
   variables:
     PY_VERSION: "3"
@@ -53,10 +61,10 @@ pytest_tests3:
     - chown -R builder:users ..
     - sudo -u builder -E bash -c "source venv-py$PY_VERSION/bin/activate; pytest ."
 
-pytest_tests3_pinned:
+pytest_tests2_latest:
   variables:
-    PY_VERSION: "3"
-    AIIDA_DEVELOP_GIT_HASH: 64bb17cd9688540cc38ab61e0a40abf717d68680
+    PY_VERSION: "2"
+    AIIDA_DEVELOP_GIT_HASH: develop
   script:
     # Acquire ownership of the CI_PROJECT FOLDER
     - chown -R builder:users ..
@@ -70,15 +78,6 @@ pytest_tests2:
     - chown -R builder:users ..
     - sudo -u builder -E bash -c "source venv-py$PY_VERSION/bin/activate; pytest ."
 
-pytest_tests2_pinned:
-  variables:
-    PY_VERSION: "2"
-    AIIDA_DEVELOP_GIT_HASH: 64bb17cd9688540cc38ab61e0a40abf717d68680
-  script:
-    # Acquire ownership of the CI_PROJECT FOLDER
-    - chown -R builder:users ..
-    - sudo -u builder -E bash -c "source venv-py$PY_VERSION/bin/activate; pytest ."
-
 doc_build3:
   variables:
     READTHEDOCS: "True"
@@ -87,31 +86,11 @@ doc_build3:
       - cd docs
       - make
 
-# doc_build3:
-#   variables:
-#     DB_HOST: "postgres"
-#     READTHEDOCS: True
-#   script:
-#     # The profile needs to be there for the building of docs
-#     - cd docs
-#     - make
-
-# db_tests2:
-#   variables:
-#     DB_HOST: "postgres"
-#   script:
-#     - source $HOME/.venv-py2/bin/activate
-#     - TEST_AIIDA_BACKEND="django" bash .ci-data/setup_profiles.sh
-#     - verdi -p test_django devel tests db.castep
-#     - TEST_AIIDA_BACKEND="sqlalchemy" bash .ci-data/setup_profiles.sh
-#     - verdi -p test_sqlalchemy devel tests db.castep
-
-# db_tests3:
-#   variables:
-#     DB_HOST: "postgres"
-#   script:
-#     - source $HOME/.venv-py3/bin/activate
-#     - TEST_AIIDA_BACKEND="django" bash .ci-data/setup_profiles.sh
-#     - verdi -p test_django devel tests db.castep
-#     - TEST_AIIDA_BACKEND="sqlalchemy" bash .ci-data/setup_profiles.sh
-#     - verdi -p test_sqlalchemy devel tests db.castep
+doc_build2:
+  variables:
+    PY_VERSION: "2"
+    READTHEDOCS: "True"
+  script:
+      # The profile needs to be there for the building of docs
+      - cd docs
+      - make
