@@ -194,11 +194,11 @@ def parse_raw_ouput(out_lines,
 
 
 # Re for getting unit
-unit_re = re.compile("^ output\s+(\w+) unit *: *([^\s]+)")
-time_re = re.compile("^(\w+) time += +([0-9.]+) s$")
+unit_re = re.compile(r"^ output\s+(\w+) unit *: *([^\s]+)")
+time_re = re.compile(r"^(\w+) time += +([0-9.]+) s$")
 parallel_re = re.compile(
-    "^Overall parallel efficiency rating: [\w ]+ \(([0-9]+)%\)")
-version_re = re.compile("CASTEP version ([0-9.]+)")
+    r"^Overall parallel efficiency rating: [\w ]+ \(([0-9]+)%\)")
+version_re = re.compile(r"CASTEP version ([0-9.]+)")
 
 
 def parse_castep_text_output(out_lines, input_dict):

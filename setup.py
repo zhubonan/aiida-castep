@@ -57,6 +57,8 @@ if __name__ == '__main__':
             "pre-commit": [
                 "pre-commit==1.11.0", "yapf==0.24.0", "prospector==0.12.11",
                 "pylint==1.9.3"
-            ]
+            ],
+            "testing": ["pytest", "pgtest==1.2.0"],
+            "docs": ["sphinx", "sphinx_rtd_theme"],
         },
         **kwargs)

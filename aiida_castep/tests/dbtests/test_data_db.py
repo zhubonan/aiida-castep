@@ -216,7 +216,7 @@ def test_assign_from_structure(
 def usp_folder(new_workdir):
     import os
     for fn in ["Sr_00.usp", "Ti-00.usp", "Ce_00.recpot"]:
-        with open(os.path.join(new_workdir, fn), "w") as fh:
+        with open(str(new_workdir / fn), "w") as fh:
             fh.write("Bla " + fn)
     return new_workdir
 

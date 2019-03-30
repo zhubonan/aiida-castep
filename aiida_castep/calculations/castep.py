@@ -192,7 +192,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
             incell.write(self.cell_file.get_string())
 
         with folder.open(param_fn, mode="w") as inparam:
-            inparam.write(self.param_file.get_string())
+            inparam.write(six.u(self.param_file.get_string()))
 
         # IMPLEMENT OPERATIONS FOR RESTART
 

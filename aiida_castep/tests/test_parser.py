@@ -23,7 +23,7 @@ class TestParsers(unittest.TestCase):
 
     def get_lines(self, path):
         """Get a list of lines from a path"""
-        with open(path) as fh:
+        with open(str(path)) as fh:
             lines = fh.readlines()
         return lines
 

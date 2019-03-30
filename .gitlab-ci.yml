@@ -1,76 +1,117 @@
-image: 
-  name: aiidateam/aiida_core_base:latest-1.0
-  
+#image: 
+#  name: bonanzhu/aiida_core_base:latest-py3
+image:
+  name: phusion/baseimage:0.11
+
+services:
+  - postgres:10
+
+variables:
+  AIIDA_DEVELOP_GIT_HASH: develop
+  TEST_AIIDA_BACKEND: django
+  AIIDA_VERSION: develop
+  DB_HOST: "postgres"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  PY_VERSION: "3"
+
+cache:
+  paths:
+    - .cache/pip
+
 before_script:
   - apt-get update
-  - apt-get install make
-  # Disable interactive configuration of tzdata
-  #- DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql-all 
-  #- apt-get install -y mlocate && updatedb
-  - export HOME=/home/aiida
-  - export PATH=$HOME/.local/bin:$PATH
-  - pip install sphinx sphinx_rtd_theme
-  - $HOME/.venv-py2/bin/pip install --no-cache-dir --no-build-isolation --editable .
-  - $HOME/.venv-py3/bin/pip install --no-cache-dir --no-build-isolation --editable .
-  - $HOME/.venv-py3/bin/reentry scan -r aiida
-  - $HOME/.venv-py2/bin/reentry scan -r aiida
+  - >-
+    DEBIAN_FRONTEND=noninteractive apt-get install -y
+    sudo tzdata postgresql-all mlocate git openssh-client postgresql-10
+    postgresql-server-dev-10 python2.7 python3.6
+    python-pip python3-pip virtualenv rabbitmq-server
+  - service rabbitmq-server start
+  - updatedb
+  # Add a  user set the upper directory as HOME
+  - useradd -d "$CI_PROJECT_DIR/../" -g users -M -N builder
+  # Install an virtual env
+  - virtualenv "--python=python$PY_VERSION" "venv-py$PY_VERSION"
+  # Set the HOME to be BUILD directory, essential for reentry to work
+  - export "HOME=$CI_PROJECT_DIR/../"
+  # Install aiida-core
+  - source "venv-py$PY_VERSION/bin/activate"
+  - pip install pip==18.1
+  - if [ "$AIIDA_VERSION" == "develop" ]; then .ci-data/install_aiida_github.sh ; fi 
+  - pip install -e .[testing,docs,pre-commit]
+  - reentry scan -r aiida
 
+pre_commit:
+  script:
+    - pre-commit install; pre-commit run --all-files || ( git status --short; git diff ; exit 1 )
+
+# Install and test under python3
 pytest_tests3:
   variables:
-    DB_HOST: "postgres"
+    PY_VERSION: "3"
   script:
-    - $HOME/.venv-py3/bin/pip install pytest
-    - su -c '/home/aiida/.local/bin/pytest aiida_castep/tests' aiida
-  services:
-    - postgres:10
+    # Acquire ownership of the CI_PROJECT FOLDER
+    - chown -R builder:users ..
+    - sudo -u builder -E bash -c "source venv-py$PY_VERSION/bin/activate; pytest ."
 
+pytest_tests3_pinned:
+  variables:
+    PY_VERSION: "3"
+    AIIDA_DEVELOP_GIT_HASH: 64bb17cd9688540cc38ab61e0a40abf717d68680
+  script:
+    # Acquire ownership of the CI_PROJECT FOLDER
+    - chown -R builder:users ..
+    - sudo -u builder -E bash -c "source venv-py$PY_VERSION/bin/activate; pytest ."
 
 pytest_tests2:
   variables:
-    DB_HOST: "postgres"
+    PY_VERSION: "2"
   script:
-    - $HOME/.venv-py2/bin/pip install pytest
-    - su -c '/home/aiida/.local/bin/pytest aiida_castep/tests' aiida
+    # Acquire ownership of the CI_PROJECT FOLDER
+    - chown -R builder:users ..
+    - sudo -u builder -E bash -c "source venv-py$PY_VERSION/bin/activate; pytest ."
 
-
-doc_build2:
+pytest_tests2_pinned:
   variables:
-    DB_HOST: "postgres"
+    PY_VERSION: "2"
+    AIIDA_DEVELOP_GIT_HASH: 64bb17cd9688540cc38ab61e0a40abf717d68680
   script:
-    # The profile needs to be there for the building of docs
-    - TEST_AIIDA_BACKEND="django" bash .ci-data/setup_profiles.sh
-    - cd docs
-    - source $HOME/.venv-py2/bin/activate
-    - make
+    # Acquire ownership of the CI_PROJECT FOLDER
+    - chown -R builder:users ..
+    - sudo -u builder -E bash -c "source venv-py$PY_VERSION/bin/activate; pytest ."
 
 doc_build3:
   variables:
-    DB_HOST: "postgres"
+    READTHEDOCS: "True"
   script:
-    # The profile needs to be there for the building of docs
-    - TEST_AIIDA_BACKEND="django" bash .ci-data/setup_profiles.sh
-    - cd docs
-    - source $HOME/.venv-py3/bin/activate
-    - make
+      # The profile needs to be there for the building of docs
+      - cd docs
+      - make
 
-db_tests2:
-  variables:
-    DB_HOST: "postgres"
-  script:
-    - source $HOME/.venv-py2/bin/activate
-    - TEST_AIIDA_BACKEND="django" bash .ci-data/setup_profiles.sh
-    - verdi -p test_django devel tests db.castep
-    - TEST_AIIDA_BACKEND="sqlalchemy" bash .ci-data/setup_profiles.sh
-    - verdi -p test_sqlalchemy devel tests db.castep
+# doc_build3:
+#   variables:
+#     DB_HOST: "postgres"
+#     READTHEDOCS: True
+#   script:
+#     # The profile needs to be there for the building of docs
+#     - cd docs
+#     - make
 
-db_tests3:
-  variables:
-    DB_HOST: "postgres"
-  script:
-    - source $HOME/.venv-py3/bin/activate
-    - TEST_AIIDA_BACKEND="django" bash .ci-data/setup_profiles.sh
-    - verdi -p test_django devel tests db.castep
-    - TEST_AIIDA_BACKEND="sqlalchemy" bash .ci-data/setup_profiles.sh
-    - verdi -p test_sqlalchemy devel tests db.castep
+# db_tests2:
+#   variables:
+#     DB_HOST: "postgres"
+#   script:
+#     - source $HOME/.venv-py2/bin/activate
+#     - TEST_AIIDA_BACKEND="django" bash .ci-data/setup_profiles.sh
+#     - verdi -p test_django devel tests db.castep
+#     - TEST_AIIDA_BACKEND="sqlalchemy" bash .ci-data/setup_profiles.sh
+#     - verdi -p test_sqlalchemy devel tests db.castep
 
-    
+# db_tests3:
+#   variables:
+#     DB_HOST: "postgres"
+#   script:
+#     - source $HOME/.venv-py3/bin/activate
+#     - TEST_AIIDA_BACKEND="django" bash .ci-data/setup_profiles.sh
+#     - verdi -p test_django devel tests db.castep
+#     - TEST_AIIDA_BACKEND="sqlalchemy" bash .ci-data/setup_profiles.sh
+#     - verdi -p test_sqlalchemy devel tests db.castep

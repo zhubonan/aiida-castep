@@ -308,7 +308,7 @@ def read_popn(fn):
     """Read population file into pandas dataframe"""
     import pandas as pd
     table = pd.read_table(
-        fn, sep="\s\s+", header=2, comment="=", engine="python")
+        fn, sep=r"\s\s+", header=2, comment="=", engine="python")
     return table
 
 
