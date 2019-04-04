@@ -2,6 +2,7 @@
 cd ..
 git clone https://github.com/aiidateam/aiida_core
 cd aiida_core
-git checkout $AIIDA_DEVELOP_GIT_HASH 
-pip install -e .[docs,pre-commit,testing]
+echo "Checking out: $AIIDA_DEVELOP_GIT_HASH"
+git checkout $AIIDA_DEVELOP_GIT_HASH
+pip install -e .[docs,testing]
 cd -
