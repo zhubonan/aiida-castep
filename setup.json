@@ -23,6 +23,9 @@
         "matplotlib<3"
     ],
     "entry_points": {
+        "console_scripts": [
+            "castep.mock = aiida_castep.utils.mock:main"
+        ],
         "aiida.calculations": [
             "castep.castep = aiida_castep.calculations.castep:CastepCalculation",
             "castep.bs = aiida_castep.calculations.castep:CastepBSCalculation",
