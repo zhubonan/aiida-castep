@@ -20,9 +20,13 @@
         "deepdiff<=3.3.0",
         "ase>=3.0,<4.0",
         "matplotlib",
-        "six>=1.0,<2.0"
+        "six>=1.0,<2.0",
+        "click"
     ],
     "entry_points": {
+        "console_scripts": [
+            "castep.mock = aiida_castep.utils.mock:main"
+        ],
         "aiida.calculations": [
             "castep.castep = aiida_castep.calculations.castep:CastepCalculation",
             "castep.bs = aiida_castep.calculations.castep:CastepBSCalculation",

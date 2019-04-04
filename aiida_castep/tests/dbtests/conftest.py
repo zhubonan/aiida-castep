@@ -121,7 +121,7 @@ class CastepTestApp(object):
     def code_mock_factory(self, overide=None):
         """Mock calculation, can overide by prepend path"""
         code = self.imps.Code()
-        exec_path = this_folder.parent / 'data/mock_castep.py'
+        exec_path = this_folder.parent.parent / 'utils/mock.py'
         code.set_remote_computer_exec((self.localhost, str(exec_path)))
         code.set_input_plugin_name('castep.castep')
         if overide:

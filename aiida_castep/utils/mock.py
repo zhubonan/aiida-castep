@@ -5,13 +5,18 @@ Mock running CASTEP
 
 from __future__ import absolute_import
 from __future__ import print_function
-import castepinput
 import hashlib
-import sys
 import json
-from pathlib import Path
-
+import tempfile
 import click
+import shutil
+
+import castepinput
+from aiida_castep import tests
+from aiida_castep.common import Path
+
+_TEST_BASE_FOLDER = Path(tests.__file__).parent
+_TEST_DATA_FOLDER = _TEST_BASE_FOLDER / 'data'
 
 
 def get_hash(dict_obj):
@@ -53,7 +58,7 @@ class MockOutput(object):
         Initialize the object
         """
         if base_dir is None:
-            self.base_dir = Path(__file__).parent.resolve()
+            self.base_dir = _TEST_DATA_FOLDER
         else:
             self.base_dir = Path(base_dir).resolve()
 
@@ -87,7 +92,33 @@ class MockOutput(object):
             reg = json.load(fh)
         return reg
 
-    def register(self, seedpath):
+    def register_node(self, calcjob, tag=None):
+        """
+        Register the result of a CalcJob node
+        :param calcjob: The CalcJob node to be used
+        :param tag: Tag for the results, used as the folder name
+        """
+
+        # Copy the 'objects' to an temporary directory
+        # Include both the retrieved and the inputs
+        tmpwork = tempfile.mkdtemp()
+        retrieved = calcjob.outputs.retrieved
+        for node in [retrieved, calcjob]:
+            for nm in node.list_object_names():
+                if nm.startswith('.') or \
+                   nm.startswith('_'):
+                    continue
+                with node.open(nm) as fin:
+                    fpath = Path(tmpwork) / nm
+                    fpath.write_text(fin.read())
+
+        seedpath = Path(tmpwork) / calcjob.get_option('seedname')
+        # Register the resutls
+        self.register(seedpath, tag)
+
+        shutil.rmtree(tmpwork)
+
+    def register(self, seedpath, tag=None):
         """
         Register completed calculation. Such calculation must be in the directroy
         tree of the mock_castep.py
@@ -105,9 +136,21 @@ class MockOutput(object):
             reg = {}
 
         # Relative seedpath to the folder
-        rel_path = seedpath.relative_to(self.base_dir).parent
+        try:
+            rel_path = seedpath.relative_to(self.base_dir).parent
+        except ValueError:
+            # It is not placed in the sub folder
+            # Copy manually
+            import shutil
+            if tag is None:
+                # Use the first 8 digits as the name
+                tag = hash_[:8]
+
+            shutil.copytree(str(seedpath.parent), str(self.base_dir / tag))
+            rel_path = tag
         reg[hash_] = str(rel_path)
 
+        # Save the json settings
         with open(str(self._reg_file), 'w') as fh:
             json.dump(reg, fh)
 
@@ -153,11 +196,13 @@ class MockOutput(object):
 @click.command('mock')
 @click.option(
     '--reg', default=False, is_flag=True, help='Register the calculation')
+@click.option(
+    '--tag', help='Tag for the folder when registering results', default=None)
 @click.argument('seed')
-def main(seed, reg):
+def main(seed, reg, tag):
     runner = MockOutput()
     if reg:
-        runner.register(seed)
+        runner.register(seed, tag=tag)
     else:
         runner.run(seed)
 
