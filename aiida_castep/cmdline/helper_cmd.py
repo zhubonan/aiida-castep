@@ -150,13 +150,14 @@ def list_file():
     """
     List files aviable to use.
     """
+    from aiida_castep.calculations.helper import find_help_info
 
-    helper = get_helper()
-    tmp = helper.get_help_info_paths()
+    tmp = find_help_info()
     if not tmp:
         print("No avaliale file detected")
     print("Avaliable files:")
-    map(lambda x: print("{} -- version: {}".format(*x)), zip(*tmp))
+    for path, version in tmp:
+        print("{} -- version: {}".format(path, version))
 
 
 def get_helper(*args, **kwargs):
