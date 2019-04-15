@@ -93,7 +93,6 @@ class CastepTestApp(object):
             name='localhost',
             hostname='localhost',
             transport_type='local',
-            enabled_state=True,
             scheduler_type='direct',
             workdir=str(self._workdir))
 

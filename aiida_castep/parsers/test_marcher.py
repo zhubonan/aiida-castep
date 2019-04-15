@@ -8,9 +8,9 @@ def test_matcher():
     """
     Test the Marcher class
     """
-    m = Matcher("^ +Energy is (\d+)", "energy")
+    m = Matcher(r"^ +Energy is (\d+)", "energy")
     assert m.match_pattern(" Energy is 1234")[0] == ("energy", "1234")
-    m = Matcher("^ +Energy is (\d+)", "energy", int)
+    m = Matcher(r"^ +Energy is (\d+)", "energy", int)
     assert m.match_pattern(" Energy is 1234")[0] == ("energy", 1234)
 
 
@@ -18,10 +18,10 @@ def test_unit_matcher():
     """
     Test the UnitMatcher
     """
-    m = UnitMatcher("^ +Energy is (\d+) +(\w+)", "energy")
+    m = UnitMatcher(r"^ +Energy is (\d+) +(\w+)", "energy")
     assert m.match_pattern(" Energy is 1234 eV")[0] == ("energy", float(1234),
                                                         "eV")
-    m = UnitMatcher("^ +Energy is (\d+) +(\w+)", "energy", int)
+    m = UnitMatcher(r"^ +Energy is (\d+) +(\w+)", "energy", int)
     assert isinstance(m.match_pattern(" Energy is 1234 eV")[0][1], int)
 
 
@@ -29,8 +29,8 @@ def test_line_parser():
     """i
     Test the line parser object
     """
-    m1 = UnitMatcher("^ +Free Energy is (\d+) +(\w+)", "free_energy")
-    m2 = UnitMatcher("^ +Total Energy is (\d+) +(\w+)", "total_energy")
+    m1 = UnitMatcher(r"^ +Free Energy is (\d+) +(\w+)", "free_energy")
+    m2 = UnitMatcher(r"^ +Total Energy is (\d+) +(\w+)", "total_energy")
     line_parser = LineParser([m1, m2])
     res = line_parser.parse(" X Energy is 1234 eV ")
     assert res is None
