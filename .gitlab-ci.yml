@@ -6,7 +6,7 @@ services:
 
 variables:
   # set to aiida_core that the plugin is last known to work
-  AIIDA_DEVELOP_GIT_HASH: 64bb17cd9688540cc38ab61e0a40abf717d68680
+  AIIDA_DEVELOP_GIT_HASH: 1.0.0b2
   AIIDA_VERSION: develop
   TEST_AIIDA_BACKEND: django
   DB_HOST: "postgres"
