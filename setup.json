@@ -10,7 +10,8 @@
     "url": "https://gitlab.com/bz1/aiida-castep",
     "license": "MIT License",
     "classifiers": [
-        "Programming Language :: Python"
+        "Programming Language :: Python :: 2.7",
+        "Framework :: AiiDA"
     ],
     "version": "0.3.2",
     "setup_requires": ["reentry"],
@@ -21,7 +22,7 @@
         "deepdiff<=3.3.0",
         "ase",
         "matplotlib<3",
-        "castepinput"
+        "castepinput==0.1.3"
     ],
     "entry_points": {
         "console_scripts": [
