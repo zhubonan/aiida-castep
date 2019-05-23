@@ -48,13 +48,12 @@ if __name__ == '__main__':
     with open(join(ROOT, 'setup.json'), 'r') as info:
         kwargs = json.load(info)
 
-    version = kwargs['version']
     if ci_version:
         # If this a release, check the consistency
         if is_tagged:
-            assert ci_version == version, 'Inonsistency between versions'
+            assert ci_version == kwargs['version'], 'Inonsistency between versions'
         else:
-            version = ci_version
+            kwargs['version'] = ci_version
 
     # Included the README.md as the long description
     with open(join(ROOT, 'README.md'), 'r') as f:
