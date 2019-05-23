@@ -30,16 +30,31 @@ def git_version():
     return GIT_REVISION
 
 if __name__ == '__main__':
+
+    # Check if in a CI environment
+    is_tagged = False
+    if os.environ.get('CI_COMMIT_TAG'):
+        ci_version = os.environ['CI_COMMIT_TAG']
+        is_tagged = True
+    elif os.environ.get('CI_JOB_ID'):
+        ci_version = os.environ['CI_JOB_ID']
+    else:
+        # Note in CI
+        ci_version = None
+
     # Provide static information in setup.json
     # such that it can be discovered automatically
     ROOT = abspath(dirname(__file__))
     with open(join(ROOT, 'setup.json'), 'r') as info:
         kwargs = json.load(info)
 
-    # Determine if we are install in the git repository
-#    GIT_VERSION = git_version()
-#    if GIT_VERSION != "Unkown":
-#        kwargs["version"] = kwargs["version"] + "-" + GIT_VERSION
+    version = kwargs['version']
+    if ci_version:
+        # If this a release, check the consistency
+        if is_tagged:
+            assert ci_version == version, 'Inonsistency between versions'
+        else:
+            version = ci_version
 
     # Included the README.md as the long description
     with open(join(ROOT, 'README.md'), 'r') as f:
