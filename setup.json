@@ -10,9 +10,10 @@
     "url": "https://gitlab.com/bz1/aiida-castep",
     "license": "MIT License",
     "classifiers": [
-        "Programming Language :: Python"
+        "Programming Language :: Python :: 2.7",
+        "Framework :: AiiDA"
     ],
-    "version": "0.3.1",
+    "version": "0.3.2",
     "setup_requires": ["reentry"],
     "reentry_register": true,
     "install_requires": [
@@ -20,9 +21,13 @@
         "pgtest==1.1.0",
         "deepdiff<=3.3.0",
         "ase",
-        "matplotlib<3"
+        "matplotlib<3",
+        "castepinput==0.1.3"
     ],
     "entry_points": {
+        "console_scripts": [
+            "castep.mock = aiida_castep.utils.mock:main"
+        ],
         "aiida.calculations": [
             "castep.castep = aiida_castep.calculations.castep:CastepCalculation",
             "castep.bs = aiida_castep.calculations.castep:CastepBSCalculation",

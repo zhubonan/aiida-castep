@@ -1,6 +1,6 @@
 """
 Module for generation HELP information using CASTEP
-excutable.
+executable.
 """
 from __future__ import print_function
 import subprocess as sbp
@@ -12,7 +12,7 @@ def dot_proc(iterable):
     """Provide a primitive progress bar"""
     print("Processing keywords")
     m = len(iterable) - 1
-    print("=" * (m//10))
+    print("=" * (m // 10))
     for n, i in enumerate(iterable):
         if n % 10 == 0:
             print(".", end="")
@@ -62,16 +62,16 @@ def get_castep_commands(castep_command="castep.serial", key="all"):
     return cell, param
 
 
-allowed_value_re = re.compile("Allow values: ([^.\n]+)[.\n]")
-default_value_re = re.compile("Default value: ([^.\n]+)[.\n]")
-type_re = re.compile("Type: (\w+)")
-level_re = re.compile("Level: (\w+)")
+allowed_value_re = re.compile(r"Allow values: ([^.\n]+)[.\n]")
+default_value_re = re.compile(r"Default value: ([^.\n]+)[.\n]")
+type_re = re.compile(r"Type: (\w+)")
+level_re = re.compile(r"Level: (\w+)")
 
 
-def parse_help_string(key, excutable="castep.serial"):
+def parse_help_string(key, executable):
     """Capture help string, determine if it is for PARAM or CELL"""
 
-    out = sbp.check_output([excutable, "-h", key])
+    out = sbp.check_output([executable, "-h", key])
     lines = out.split("\n")
     value_type = None
     key_level = None
@@ -89,7 +89,7 @@ def parse_help_string(key, excutable="castep.serial"):
             key_level = match.group(1).lower()
 
     cell_lines = lines[2:param_start]
-    param_lines = lines[param_start+2:]
+    param_lines = lines[param_start + 2:]
 
     if len(cell_lines) > len(param_lines):
         help_lines = cell_lines

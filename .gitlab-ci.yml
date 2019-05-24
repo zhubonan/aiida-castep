@@ -1,6 +1,9 @@
 image: 
   name: bonanzhu/aiida_core_base:0.12.2-dev
-  
+
+stages:
+  - test
+  - deploy
 
 before_script:
     - apt-get update
@@ -11,11 +14,13 @@ before_script:
     - export HOME=/home/aiida
     - export PATH=$HOME/.local/bin:$PATH
     - pip install --upgrade --user pip
-    - pip install sphinx sphinx_rtd_theme
+    - pip install sphinx sphinx_rtd_theme twine
     - pip install --user .
     - reentry scan -r aiida
+    - python setup.py sdist bdist_wheel
 
 pytest_tests:
+  stage: test
   variables:
     DB_HOST: "postgres"
   services:
@@ -25,6 +30,7 @@ pytest_tests:
     - su -c '/home/aiida/.local/bin/pytest aiida_castep/tests' aiida
 
 doc_build:
+  stage: test
   variables:
     DB_HOST: "postgres"
   services:
@@ -36,6 +42,7 @@ doc_build:
     - make
     
 db_tests:
+  stage: test
   variables:
     DB_HOST: "postgres"
   services:
@@ -45,3 +52,23 @@ db_tests:
     - verdi -p test_django devel tests db.castep
     - TEST_AIIDA_BACKEND="sqlalchemy" bash .ci-data/setup_profiles.sh
     - verdi -p test_sqlalchemy devel tests db.castep
+
+stage_production:
+  stage: deploy
+  variables:
+    TWINE_USERNAME: $STAGE_USERNAME
+    TWINE_PASSWORD: $STAGE_PASSWORD
+  script:
+    - twine upload --repository-url $PACKAGR_REPOSITORY_URL dist/*
+  except:
+    - tags
+
+deploy_production:
+  stage: deploy
+  variables:
+    TWINE_USERNAME: $PRODUCTION_USERNAME
+    TWINE_PASSWORD: $PRODUCTION_PASSWORD
+  script:
+    - twine upload dist/*
+  only:
+    - tags

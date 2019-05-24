@@ -6,6 +6,7 @@ TODO: Add function for usp file validation and parsing
 
 import re
 import os
+import warnings
 from aiida.orm import DataFactory
 from aiida.common.utils import classproperty
 
@@ -13,7 +14,8 @@ USPGROUP_TYPE = "data.castep.usp.family"
 SinglefileData = DataFactory("singlefile")
 
 # Extract element from filename
-re_fn = re.compile("^([a-z]+)_\w+\.(usp|recpot)$", flags=re.IGNORECASE)
+re_fn = re.compile("^([a-z]+)[_-].+\.(usp|recpot)$",
+                   flags=re.IGNORECASE)
 
 
 def upload_usp_family(folder,
@@ -139,7 +141,8 @@ class UspData(SinglefileData):
     """
 
     @classmethod
-    def get_or_create(cls, filename, use_first=False, store_usp=True):
+    def get_or_create(cls, filename, element=None,
+                      use_first=False, store_usp=True):
         """
         Same ase init. Check md5 in the db, it is found return a UspData.
         Otherwise will store the data into the db
@@ -151,6 +154,7 @@ class UspData(SinglefileData):
         import os
 
         # Convert the filename to an absolute path
+        filename = str(filename)
         if filename != os.path.abspath(filename):
             raise ValueError("filename must be an absolute path")
         md5 = aiida.common.utils.md5_file(filename)
@@ -158,13 +162,16 @@ class UspData(SinglefileData):
         # Check if we have got the file already
         pseudos = cls.from_md5(md5)
         if len(pseudos) == 0:
-            # Not stored
+            # No existing pseudopotential file is in the database
+            instance = cls()
+            instance.set_file(filename)
+            # If we there is an element given then I set it
+            if element is not None:
+                instance.set_element(element)
+            # Store the usp if requested
             if store_usp is True:
-                instance = cls(file=filename).store()
-                return (instance, True)
-            else:
-                instance = cls(file=filename)
-                return (instance, True)
+                instance.store()
+            return (instance, True)
         else:
             if len(pseudos) > 1:
                 if use_first:
@@ -205,22 +212,37 @@ class UspData(SinglefileData):
 
     def set_file(self, filename):
         """Added file but also check data"""
-        from aiida.common.exceptions import ParsingError
         import aiida.common.utils
+
+        # Convert to string in case a Path object is passed
+        filename = str(filename)
 
         try:
             element = get_usp_element(filename)
         except KeyError:
-            raise ParsingError(
-                "Cannot extract element form the usp/recpot file"
-                " {}; Cannot store into database."
-                .format(self.filename))
+            element = None
+        else:
+            # Only set the element if it is not there
+            if self.element is None:
+                if element is not None:
+                    self.set_element(element)
+                else:
+                    warnings.warn(
+                        "Cannot extract element form the usp/recpot file {}."
+                        "Please set it manually.".format(filename))
+            else:
+                # The element is already set, no need to process further
+                pass
+
         md5sum = aiida.common.utils.md5_file(filename)
-
         super(UspData, self).set_file(filename)
-
-        self._set_attr('element', str(element))  # For unicode/ascii ?
         self._set_attr('md5', md5sum)
+
+    def set_element(self, element):
+        """
+        Set the element
+        """
+        self._set_attr('element', element)
 
     @property
     def element(self):
@@ -292,34 +314,28 @@ class UspData(SinglefileData):
         if not usp_abspath:
             raise ValidationError("No valid usp file was passed")
 
-        element = get_usp_element(usp_abspath)
+        parsed_element = get_usp_element(usp_abspath)
         md5 = aiida.common.utils.md5_file(usp_abspath)
+        attr_element = self.element
 
-        if element is None:
+        if attr_element is None:
             raise ValidationError(
-                "Cannot infer element."
-                "File should be in the format '<element>_<label>.usp'."
+                "No element is set"
             )
 
-        try:
-            attr_element = self.get_attr('element')
-        except AttributeError:
-            raise ValidationError("attribute 'element' not set.")
-
-        try:
-            attr_md5 = self.get_attr('md5')
-        except AttributeError:
+        attr_md5 = self.get_attr('md5', None)
+        if self.md5sum is None:
             raise ValidationError("attribute 'md5' not set.")
 
         if md5 != attr_md5:
             raise ValidationError(
                 "Mismatch between store md5 and actual md5 value")
 
-        # Check matching of data and actual file
-        if attr_element != element:
+        # Warn if the parsed elemnt (if any) is not matching the attribute
+        if attr_element != parsed_element and parsed_element is not None:
             raise ValidationError("Attribute 'element' says '{}' but '{}' was "
-                                  "parsed instead.".format(
-                                      attr_element, element))
+                                  "parsed from file name instead.".format(
+                                      attr_element, parsed_element))
 
 
 def get_usp_element(filepath):
