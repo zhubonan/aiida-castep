@@ -44,7 +44,7 @@ class BaseCastepInputGenerator(object):
 
     # Additional files that should always be retrieved if they exist
     _internal_retrieve_list = [
-        "*.err", "*.den_fmt", "*-out.cell", "*.pdos_bin",
+        "*.err", "*.den_fmt", "*-out.cell", "*.pdos_bin", '*.elf', '*.elf_fmt',
     ]
 
     # in restarts, will not copy but use symlinks

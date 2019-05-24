@@ -43,6 +43,7 @@ The primiary drive of this is to allow unconverged but cleanly finished calculat
 * Fixed a bug when generating help information
 * Fixed listfile command for the helper 
 * Enhanced the uspdata module to allow manualy set the element of the potential
+* Added the ELF and formatted ELF files to the default retrieve list
 
 
 1.0.0a(WIP)
