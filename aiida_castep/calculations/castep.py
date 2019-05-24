@@ -53,7 +53,9 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
     _DEFAULTS['input_filename'] = _DEFAULTS['seedname'] + '.cell'
     _DEFAULTS['output_filename'] = _DEFAULTS['seedname'] + '.castep'
 
-    _default_retrieve_list = ["*.err", "*.den_fmt", "*-out.cell", "*.pdos_bin"]
+    _default_retrieve_list = [
+        "*.err", "*.den_fmt", "*.elf_fmt", "*-out.cell", "*.pdos_bin"
+    ]
 
     # Some class methods
     retrieve_dict = {
