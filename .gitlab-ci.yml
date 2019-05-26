@@ -1,6 +1,11 @@
 image:
   name: phusion/baseimage:0.11
 
+stages:
+  - build
+  - test
+  - deploy
+
 services:
   - postgres:10
 
@@ -40,11 +45,13 @@ before_script:
   - reentry scan -r aiida
 
 pre_commit:
+  stage: build
   script:
     - pre-commit install; pre-commit run --all-files || ( git status --short; git diff ; exit 1 )
 
 # Install and test under python3
 pytest_tests3_latest:
+  stage: test
   variables:
     PY_VERSION: "3"
     AIIDA_DEVELOP_GIT_HASH: develop
@@ -54,6 +61,7 @@ pytest_tests3_latest:
     - sudo -u builder -E bash -c "source venv-py$PY_VERSION/bin/activate; pytest ."
 
 pytest_tests3:
+  stage: test
   variables:
     PY_VERSION: "3"
   script:
@@ -62,6 +70,7 @@ pytest_tests3:
     - sudo -u builder -E bash -c "source venv-py$PY_VERSION/bin/activate; pytest ."
 
 pytest_tests2_latest:
+  stage: test
   variables:
     PY_VERSION: "2"
     AIIDA_DEVELOP_GIT_HASH: develop
@@ -71,6 +80,7 @@ pytest_tests2_latest:
     - sudo -u builder -E bash -c "source venv-py$PY_VERSION/bin/activate; pytest ."
 
 pytest_tests2:
+  stage: test
   variables:
     PY_VERSION: "2"
   script:
@@ -79,6 +89,7 @@ pytest_tests2:
     - sudo -u builder -E bash -c "source venv-py$PY_VERSION/bin/activate; pytest ."
 
 doc_build3:
+  stage: test
   variables:
     READTHEDOCS: "True"
   script:
@@ -87,6 +98,7 @@ doc_build3:
       - make
 
 doc_build2:
+  stage: test
   variables:
     PY_VERSION: "2"
     READTHEDOCS: "True"
@@ -94,3 +106,29 @@ doc_build2:
       # The profile needs to be there for the building of docs
       - cd docs
       - make
+
+stage_production:
+  stage: deploy
+  variables:
+    TWINE_USERNAME: $STAGE_USERNAME
+    TWINE_PASSWORD: $STAGE_PASSWORD
+  script:
+    - python setup.py sdist
+    - pip install twine
+    - twine check dist/*
+    - twine upload --repository-url $PACKAGR_REPOSITORY_URL dist/*
+  except:
+    - tags
+
+deploy_production:
+  stage: deploy
+  variables:
+    TWINE_USERNAME: $PRODUCTION_USERNAME
+    TWINE_PASSWORD: $PRODUCTION_PASSWORD
+  script:
+    - python setup.py sdist
+    - pip install twine
+    - twine check dist/*
+    - twine upload dist/*
+  only:
+    - tags
