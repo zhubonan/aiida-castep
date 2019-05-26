@@ -69,6 +69,38 @@ def test_submission(new_database, sto_calc_inputs):
     assert return_node.exit_status == 101
 
 
+def test_submit_test(new_database, sto_calc_inputs):
+    """
+    Test the ``submit_test`` method
+    """
+    from aiida_castep.calculations.castep import CastepCalculation
+    res = CastepCalculation.submit_test(**sto_calc_inputs)
+    fcontent = res[1].get_content_list()
+    assert 'aiida.cell' in fcontent
+    assert 'aiida.param' in fcontent
+
+
+def test_submit_test_function(new_database, sto_calc_inputs):
+    """
+    Test the ``submit_test`` method
+    """
+    from aiida_castep.calculations.castep import CastepCalculation, submit_test
+
+    # Test with process class and inputs
+    res = submit_test(CastepCalculation, inputs=sto_calc_inputs)
+    fcontent = res[1].get_content_list()
+    assert 'aiida.cell' in fcontent
+    assert 'aiida.param' in fcontent
+
+    # Test with builder
+    builder = CastepCalculation.get_builder()
+    builder._data = sto_calc_inputs
+    res = submit_test(builder)
+    fcontent = res[1].get_content_list()
+    assert 'aiida.cell' in fcontent
+    assert 'aiida.param' in fcontent
+
+
 def run_castep_calc(inputs):
     from aiida_castep.calculations.castep import CastepCalculation
     from aiida.engine import run_get_node

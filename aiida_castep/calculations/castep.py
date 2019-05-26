@@ -11,6 +11,7 @@ from aiida.common import InputValidationError, MultipleObjectsError
 from aiida.common.utils import classproperty
 from aiida.common import CalcInfo, CodeInfo
 from aiida.plugins import DataFactory
+from aiida.engine import ProcessBuilder
 
 from aiida.orm import UpfData
 from aiida.engine import CalcJob
@@ -21,6 +22,7 @@ from ..data.otfg import OTFGData
 from ..data.usp import UspData
 from .utils import get_castep_ion_line, _lowercase_dict, _uppercase_dict
 from .datastructure import CellFile, ParamFile
+from .tools import castep_input_summary
 
 from .._version import CALC_PARSER_VERSION
 __version__ = CALC_PARSER_VERSION
@@ -269,6 +271,82 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
                     ",".join(list(self.settings_dict.keys()))))
 
         return calcinfo
+
+    # Attach the input summary method
+    @staticmethod
+    def get_castep_input_summary(builder):
+        """Summarize the input for a builder"""
+        return castep_input_summary(builder)
+
+    @classmethod
+    def submit_test(cls, *args, **kwargs):
+        """Test submission with a builder of inputs"""
+        if args and isinstance(args[0], ProcessBuilder):
+            return submit_test(args[0], inputs=kwargs)
+        else:
+            return submit_test(cls, inputs=kwargs)
+
+    @staticmethod
+    def _dryrun_test(self, builder, castep_exe, verbose=True):
+        """
+        Do a dryrun test in a folder with prepared inputs
+        """
+
+        from fnmatch import fnmatch
+
+        def _print(inp):
+            if verbose:
+                print(inp)
+
+        # Do a dryrun
+        from subprocess import call, check_output
+        try:
+            output = check_output([castep_exe, "-v"]).decode()
+        except OSError:
+            _print("CASTEP executable '{}' is not found".format(castep_exe))
+            return
+
+        # Now start dryrun
+        _print("Running with {}".format(
+            check_output(["which", castep_exe]).decode()))
+        _print(output)
+
+        _print("Starting dryrun...")
+        call([castep_exe, "--dryrun", self._SEED_NAME], cwd=folder.abspath)
+
+        # Check if any *err files
+        contents = folder.get_content_list()
+        for n in contents:
+            if fnmatch(n, "*.err"):
+                with folder.open(n) as fh:
+                    _print("Error found in {}:\n".format(n))
+                    _print(fh.read())
+                raise InputValidationError("Error found during dryrun")
+
+        # Gather information from the dryrun file
+        import re
+        dryrun_results = {}
+        with folder.open(self._DEFAULT_OUTPUT_FILE) as fh:
+            for line in fh:
+                mth = re.match(r"\s*k-Points For SCF Sampling:\s+(\d+)\s*",
+                               line)
+                if mth:
+                    dryrun_results["num_kpoints"] = int(mth.group(1))
+                    _print("Number of k-points: {}".format(mth.group(1)))
+                    mth = None
+                    continue
+                mth = re.match(
+                    r"\| Approx\. total storage required"
+                    r" per process\s+([0-9.]+)\sMB\s+([0-9.]+)", line)
+                if mth:
+                    dryrun_results["memory_MB"] = (float(mth.group(1)))
+                    dryrun_results["disk_MB"] = (float(mth.group(2)))
+                    _print("RAM: {} MB, DISK: {} MB".format(
+                        mth.group(1), mth.group(2)))
+                    mth = None
+                    continue
+
+        return folder, dryrun_results
 
 
 class LegacyMethods(object):
@@ -822,3 +900,28 @@ class CastepOpticsCalclulation(CastepExtraKpnCalculation):
     TASK = "OPTICS"
     _acceptable_tasks = [TASK]
     KPN_NAME = "OPTICS"
+
+
+def submit_test(process_class, inputs=None):
+    """This essentially test the submition"""
+    from aiida.engine.utils import instantiate_process
+    from aiida.manage.manager import get_manager
+    from aiida.common.folders import SandboxFolder
+
+    # In any case, we do not want to store the provenance
+    upd = {'store_provenance': False, 'dry_run': True}
+    if not inputs:
+        inputs = {'metadata': upd}
+    else:
+        if 'metadata' in inputs:
+            inputs['metadata'].update(upd)
+        else:
+            inputs['metadata'] = upd
+
+    folder = SandboxFolder(sandbox_in_repo=False)
+    manager = get_manager()
+    runner = manager.get_runner()
+    process = instantiate_process(runner, process_class, **inputs)
+
+    calc_info = process.prepare_for_submission(folder)
+    return calc_info, folder, process
