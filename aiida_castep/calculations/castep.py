@@ -12,6 +12,7 @@ from aiida.common.utils import classproperty
 from aiida.common import CalcInfo, CodeInfo
 from aiida.plugins import DataFactory
 from aiida.engine import ProcessBuilder
+from aiida.orm.nodes.data.base import to_aiida_type
 
 from aiida.orm import UpfData
 from aiida.engine import CalcJob
@@ -107,11 +108,13 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         spec.input(
             inp_ln['settings'],
             valid_type=orm.Dict,
+            serializer=to_aiida_type,
             required=False,
             help="Use an additional node for sepcial settings")
         spec.input(
             inp_ln['parameters'],
             valid_type=orm.Dict,
+            serializer=to_aiida_type,
             help="Use a node that sepcifies the input parameters")
         spec.input(
             inp_ln['parent_calc_folder'],
@@ -286,13 +289,19 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         else:
             return submit_test(cls, inputs=kwargs)
 
-    @staticmethod
-    def _dryrun_test(self, builder, castep_exe, verbose=True):
+    @classmethod
+    def dryrun_test(cls, inputs, castep_exe='castep.serial', verbose=True):
         """
-        Do a dryrun test in a folder with prepared inputs
+        Do a dryrun test in a folder with prepared builder or inputs
         """
 
         from fnmatch import fnmatch
+        if isinstance(inputs, ProcessBuilder):
+            inputs = dict(inputs)
+
+        res = cls.submit_test(**inputs)
+        folder = res[1]
+        cinfo = res[0]
 
         def _print(inp):
             if verbose:
@@ -312,7 +321,9 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         _print(output)
 
         _print("Starting dryrun...")
-        call([castep_exe, "--dryrun", self._SEED_NAME], cwd=folder.abspath)
+        call(
+            [castep_exe, "--dryrun"] + cinfo.cmdline_params,
+            cwd=folder.abspath)
 
         # Check if any *err files
         contents = folder.get_content_list()
@@ -326,7 +337,8 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         # Gather information from the dryrun file
         import re
         dryrun_results = {}
-        with folder.open(self._DEFAULT_OUTPUT_FILE) as fh:
+        out_file = cinfo.cmdline_params[0] + '.castep'
+        with folder.open(out_file) as fh:
             for line in fh:
                 mth = re.match(r"\s*k-Points For SCF Sampling:\s+(\d+)\s*",
                                line)
@@ -908,15 +920,19 @@ def submit_test(process_class, inputs=None):
     from aiida.manage.manager import get_manager
     from aiida.common.folders import SandboxFolder
 
-    # In any case, we do not want to store the provenance
+    if isinstance(process_class, ProcessBuilder):
+        inputs = dict(process_class)
+        process_class = process_class._process_class
+
     upd = {'store_provenance': False, 'dry_run': True}
-    if not inputs:
-        inputs = {'metadata': upd}
+    # Create copy so the original ones are not affected
+    inputs = dict(inputs)
+    if 'metadata' in inputs:
+        inputs['metadata'] = dict(inputs['metadata'])
+        inputs['metadata'].update(upd)
     else:
-        if 'metadata' in inputs:
-            inputs['metadata'].update(upd)
-        else:
-            inputs['metadata'] = upd
+        inputs['metadata'] = upd
+    # In any case, we do not want to store the provenance
 
     folder = SandboxFolder(sandbox_in_repo=False)
     manager = get_manager()
