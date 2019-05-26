@@ -14,27 +14,27 @@ def calcjobnode(sto_calc_inputs, generate_calc_job_node):
     return calcjobnode
 
 
-def test_castep_summary_builder(sto_calc_inputs):
+def test_castep_summary_builder(sto_calc_inps_or_builder):
     # Test the get_castep_input_summary method
     from aiida_castep.calculations.tools import castep_input_summary
-    from aiida_castep.calculations.castep import CastepCalculation
-
-    builder = CastepCalculation.get_builder()
-    builder._data = sto_calc_inputs
 
     keys = [
         "kpoints", "structure", "code", "computer", "resources",
         "custom_scheduler_commands", "wallclock", "label", "pseudos"
     ]
-    out_dict = castep_input_summary(builder)
+    out_dict = castep_input_summary(sto_calc_inps_or_builder)
     for k in keys:
         assert k in out_dict
 
 
-@pytest.mark.skip('Fixuture missing')
-def test_castep_summary_calcjob(calcjobnode):
+def test_castep_summary_calcjob(sto_calc_inputs, generate_calc_job_node):
     """Test the summary method works for CalcJobNode"""
     from aiida_castep.calculations.tools import castep_input_summary
+    from tempfile import mkdtemp
+    calcjobnode = generate_calc_job_node(
+        entry_point_name='castep.castep',
+        results_folder=mkdtemp(),
+        inputs=sto_calc_inputs)
     out_dict = castep_input_summary(calcjobnode)
 
     keys = [
@@ -45,34 +45,25 @@ def test_castep_summary_calcjob(calcjobnode):
         assert k in out_dict
 
 
-@pytest.mark.skip('interace not implemented')
-def test_update_parameters(STO_calculation):
-    """
-    Test the update_parameters method
-    """
+def test_param_update(sto_calc_inps_or_builder):
+    """Test the param update function, it should work for both
+    inputs dictionary and builders"""
+    from aiida_castep.calculations.tools import update_parameters
+    from aiida_castep.common import INPUT_LINKNAMES
 
-    sto = STO_calculation
-    updates = {
-        "task": "geometryoptimisation",
-        "xc_functional": "pbe",
-        "fix_all_cell": True
-    }
-    sto.update_parameters(**updates)
-    dtmp = sto.inp.parameters.get_dict()
-    assert dtmp["PARAM"]["task"] == updates["task"]
-    assert dtmp["PARAM"]["xc_functional"] == updates["xc_functional"]
-    assert dtmp["CELL"]["fix_all_cell"] == updates["fix_all_cell"]
+    inputs = sto_calc_inps_or_builder
+    out = update_parameters(inputs, xc_functional='scan')
 
-    sto.update_parameters(delete=["task"])
-    assert "task" not in dtmp["PARAM"]
+    assert out is inputs
+    assert inputs[INPUT_LINKNAMES['parameters']].get_dict(
+    )['PARAM']['xc_functional'] == 'scan'
 
-    sto.inp.parameters.store()
+    # Test deletion
+    out = update_parameters(inputs, delete=['xc_functional'])
+    assert 'xc_functional' not in inputs[
+        INPUT_LINKNAMES['parameters']].get_dict()['PARAM']
+
+    # Test assestion of stored node
+    inputs[INPUT_LINKNAMES['parameters']].store()
     with pytest.raises(RuntimeError):
-        sto.update_parameters(delete=["task"])
-
-    # Unlink the parameters
-    sto._remove_link_from(sto.get_linkname("parameters"))
-    # This should still work, a new input Dict is created
-    sto.update_parameters(**updates)
-    assert sto.get_linkname("parameters") in \
-        sto.get_inputs_dict()
+        out = update_parameters(inputs, xc_functional='scan')

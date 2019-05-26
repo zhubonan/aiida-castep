@@ -237,6 +237,30 @@ def sto_calc_inputs(
 
 
 @pytest.fixture
+def sto_calc_builder(sto_calc_inputs):
+    return inps_or_builder(sto_calc_inputs, 1)
+
+
+@pytest.fixture(params=[0, 1])
+def sto_calc_inps_or_builder(request, sto_calc_inputs):
+    """Fixture that returns raw input dictionary or builder"""
+    return inps_or_builder(sto_calc_inputs, request.param)
+
+
+def inps_or_builder(inps, num):
+    """Helper function to convert inputs to builder or do nothing"""
+    if num == 0:
+        return inps
+    elif num == 1:
+        from aiida_castep.calculations.castep import CastepCalculation
+        builder = CastepCalculation.get_builder()
+        builder.update(inps)
+        return builder
+    else:
+        raise RuntimeError('Not implemented')
+
+
+@pytest.fixture
 def h2_calc_inputs(
         inputs_default,
         db_test_app,
@@ -306,6 +330,7 @@ def generate_calc_job_node(db_test_app):
     """
     Generate CalcJobNode
     """
+    from aiida.orm import Node
 
     def _generate_calc_job_node(
             entry_point_name,
@@ -335,11 +360,13 @@ def generate_calc_job_node(db_test_app):
         if inputs is not None:
             inputs = AttributeDict(inputs)
             node.__dict__['inputs'] = inputs
-            inputs.structure.store()
-            node.add_incoming(
-                inputs.structure,
-                link_type=LinkType.INPUT_CALC,
-                link_label='structure')
+            # Add direct inputs, pseudos are omitted
+            for k, v in inputs.items():
+                if isinstance(v, Node):
+                    if not v.is_stored:
+                        v.store()
+                    node.add_incoming(
+                        v, link_type=LinkType.INPUT_CALC, link_label=k)
 
         options = builder.metadata.options
         node.set_attribute('input_filename', options.input_filename)

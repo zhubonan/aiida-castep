@@ -4,19 +4,21 @@ Tools for calculations
 from __future__ import absolute_import
 from __future__ import print_function
 import six
+import warnings
 
 from aiida.tools import CalculationTools
 from aiida.common import InputValidationError
-from aiida.orm import CalcJobNode
+from aiida.orm import CalcJobNode, Dict
 from aiida.common.links import LinkType
 from aiida.plugins import DataFactory
 from aiida.engine import CalcJob, ProcessBuilder
 
 from aiida_castep.common import INPUT_LINKNAMES, OUTPUT_LINKNAMES
+from six.moves import zip
 
 
 class CastepCalcTools(CalculationTools):
-    def _check_restart(self, verbose=True):
+    def check_restart(self, verbose=True):
         """
         Check the existence of restart file if requested
         """
@@ -137,7 +139,7 @@ def castep_input_summary(calc):
     Convenient fuction for getting a summary of the
     input of this calculation
 
-    :param calc: A CalcJobNode or ProcessBuilder
+    :param calc: A CalcJobNode or ProcessBuilder or a nested input dictionary
     :returns: A dictionary
     """
 
@@ -149,7 +151,11 @@ def castep_input_summary(calc):
         is_node = True
     elif isinstance(calc, ProcessBuilder):
         inp_dict = calc._data
-        options = calc.metadata.options
+        options = calc.metadata.get('options', {})
+        is_node = False
+    elif isinstance(calc, dict):
+        inp_dict = calc
+        options = calc['metadata'].get('options', {})
         is_node = False
 
     def get_node(label):
@@ -203,3 +209,76 @@ def castep_input_summary(calc):
     out_info["label"] = calc.label if is_node else options.get('label')
     out_info["pseudos"] = pseudos
     return out_info
+
+
+def update_parameters(inputs, force=False, delete=None, **kwargs):
+    """
+    Convenient function to update the parameters of the calculation.
+    Will atomiatically set the PARAM or CELL field in unstored
+    ParaemterData linked to the calculation.
+    If no ``Dict`` is linked to the calculation, a new node will be
+    created.
+
+    ..note:
+      This method relies on the help information to check and assign
+      keywords to PARAM or CELL field of the Dict
+      (i.e for generating .param and .cell file)
+
+    calc.update_parameters(task="singlepoint")
+
+    :param force: flag to force the update even if the Dict node is stored.
+    :param delete: A list of the keywords to be deleted.
+    """
+    param_node = inputs.get(INPUT_LINKNAMES['parameters'])
+
+    # Create the node if none is found
+    if param_node is None:
+        warnings.warn("No existing Dict node found, creating a new one.")
+        param_node = Dict(dict={"CELL": {}, "PARAM": {}})
+        inputs[INPUT_LINKNAMES['parameters']] = param_node
+
+    if isinstance(param_node, Dict) and param_node.is_stored:
+        if force:
+            # Create a new node if the existing node is stored
+            param_node = Dict(dict=param_node.get_dict())
+            inputs[INPUT_LINKNAMES['parameters']] = param_node
+        else:
+            raise RuntimeError("The input Dict<{}> is already stored".format(
+                param_node.pk))
+
+    # If the `node` is just a plain dict, we keep it that way
+    if isinstance(param_node, Dict):
+        param_dict = param_node.get_dict()
+        py_dict = False
+    else:
+        param_dict = param_node
+        py_dict = True
+
+    # Update the dictionary
+    from .helper import HelperCheckError, CastepHelper
+    helper = CastepHelper()
+    dict_update, not_found = helper._from_flat_dict(kwargs)
+    if not_found:
+        suggest = [helper.get_suggestion(i) for i in not_found]
+        error_string = "Following keys are invalid -- "
+        for error_key, sug in zip(not_found, suggest):
+            error_string += "{}: {}; ".format(error_key, sug)
+        raise HelperCheckError(error_string)
+    else:
+        param_dict["PARAM"].update(dict_update["PARAM"])
+        param_dict["CELL"].update(dict_update["CELL"])
+
+    # Delete any keys as requested
+    if delete:
+        for key in delete:
+            tmp1 = param_dict["PARAM"].pop(key, None)
+            tmp2 = param_dict["CELL"].pop(key, None)
+            if (tmp1 is None) and (tmp2 is None):
+                raise RuntimeError("Key {} not found".format(key))
+
+    # Apply the change to the node
+    if py_dict:
+        inputs[INPUT_LINKNAMES['parameters']] = param_dict
+    else:
+        param_node.set_dict(param_dict)
+    return inputs
