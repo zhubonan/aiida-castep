@@ -5,21 +5,42 @@ from __future__ import absolute_import
 import pytest
 
 
-@pytest.mark.skip('interace not implemented')
-def test_castep_summary(STO_calculation):
+@pytest.fixture
+def calcjobnode(sto_calc_inputs, generate_calc_job_node):
+    """Create a fake calcjob node"""
+    calcjobnode = generate_calc_job_node(
+        'castep.castep', 'H2-geom', inputs=sto_calc_inputs)
+
+    return calcjobnode
+
+
+def test_castep_summary_builder(sto_calc_inputs):
     # Test the get_castep_input_summary method
+    from aiida_castep.calculations.tools import castep_input_summary
+    from aiida_castep.calculations.castep import CastepCalculation
+
+    builder = CastepCalculation.get_builder()
+    builder._data = sto_calc_inputs
 
     keys = [
         "kpoints", "structure", "code", "computer", "resources",
         "custom_scheduler_commands", "wallclock", "label", "pseudos"
     ]
-    out_dict = STO_calculation.get_castep_input_summary()
+    out_dict = castep_input_summary(builder)
     for k in keys:
         assert k in out_dict
 
-    # Store the node, this should not change anything
-    STO_calculation.store_all()
-    out_dict = STO_calculation.get_castep_input_summary()
+
+@pytest.mark.skip('Fixuture missing')
+def test_castep_summary_calcjob(calcjobnode):
+    """Test the summary method works for CalcJobNode"""
+    from aiida_castep.calculations.tools import castep_input_summary
+    out_dict = castep_input_summary(calcjobnode)
+
+    keys = [
+        "kpoints", "structure", "code", "computer", "resources",
+        "custom_scheduler_commands", "wallclock", "label", "pseudos"
+    ]
     for k in keys:
         assert k in out_dict
 

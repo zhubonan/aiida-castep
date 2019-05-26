@@ -142,6 +142,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
             valid_type=Dict,
             help='Parsed results in a dictionary format.')
 
+        spec.outputs.dynamic = True
         # Define the default inputs, enable CalcJobNode to use .res
         spec.default_output_node = out_ln['results']
 
