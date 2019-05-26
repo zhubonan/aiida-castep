@@ -210,23 +210,24 @@ def traj_to_atoms(traj, combine_ancesters=False, eng_key="enthalpy"):
     """
     from ase import Atoms
     from ase.calculators.singlepoint import SinglePointCalculator
-    from aiida.orm import QueryBuilder, Node, CalcJob
+    from aiida.orm import QueryBuilder, Node, CalcJobNode
+    from aiida_castep.common import OUTPUT_LINKNAMES
 
-    # If a JobCalculation is passed, select its output trajectory
-    if isinstance(traj, JobCalculation):
-        traj = traj.out.output_trajectory
+    # If a CalcJobNode is passed, select its output trajectory
+    if isinstance(traj, CalcJobNode):
+        traj = traj.outputs.__getattr__(OUTPUT_LINKNAMES['trajectory'])
     # Combine trajectory from ancesters
     if combine_ancesters is True:
         q = QueryBuilder()
         q.append(Node, filters={"uuid": traj.uuid})
-        q.append(JobCalculation, tag="ans", ancestor_of=Node)
+        q.append(CalcJobNode, tag="ans", ancestor_of=Node)
         q.order_by({"ans": "id"})
         calcs = [_[0] for _ in q.iterall()]
         atoms_list = []
         for c in calcs:
             atoms_list.extend(
                 traj_to_atoms(
-                    c.out.output_trajectory,
+                    c.outputs.__getattr__(OUTPUT_LINKNAMES['trajectory']),
                     combine_ancesters=False,
                     eng_key=eng_key))
         return atoms_list
@@ -247,18 +248,9 @@ def traj_to_atoms(traj, combine_ancesters=False, eng_key="enthalpy"):
     return atoms_traj
 
 
-def get_transport(calc):
-    """
-    Get a transport for the calculation node
-    """
-    from aiida.backends.utils import get_authinfo
-    authinfo = get_authinfo(calc.get_computer())
-    return authinfo.get_transport()
-
-
 def get_remote_folder_info(calc, transport):
     """Get the information of the remote folder of a calculation"""
-    path = calc.out.remote_folder.get_remote_path()
+    path = calc.outputs.remote_folder.get_remote_path()
     transport.chdir(path)
     lsattrs = transport.listdir_withattributes()
     return lsattrs
@@ -294,7 +286,7 @@ def take_popn(seed):
 
             # record information
             if rec is True:
-                if line.strip() is "":
+                if line.strip() == "":
                     rec = False
                     record.seek(0)
                     popns.append(record)
@@ -316,24 +308,40 @@ def export_calculation(n, output_dir, prefix=None):
     """
     Export one calculation a a directory
     """
-    import os
-    import shutil
-    from glob import glob
-    paths = glob(os.path.join(n.out.retrieved.get_abs_path(), "path/*"))
+    from functools import partial
+    from aiida.orm.utils.repository import FileType
+    try:
+        from pathlib import Path
+    except ImportError:
+        from pathlib2 import Path
+
+    output_dir = Path(output_dir)
+    output_dir.mkdir(exist_ok=True)
+
+    def bwrite(node, outpath):
+        """Write the objects stored under a node to a certain path"""
+        for objname in node.list_object_names():
+            if node.get_object(objname).type != FileType.FILE:
+                continue
+            with node.open(objname, mode='rb') as fsource:
+                if prefix:
+                    name, suffix = objname.split('.')
+                    outname = prefix + '.' + suffix
+                else:
+                    outname = objname
+                fpath = str(outpath / outname)
+                with open(fpath, 'wb') as fout:
+                    readlength = 1024 * 512  # 1MB
+                    while True:
+                        buf = fsource.read(readlength)
+                        if buf:
+                            fout.write(buf)
+                        else:
+                            break
 
     #inputs
-    input_path = os.path.join(n.get_abs_path(), "raw_input/*")
-    paths.extend(glob(input_path))
+    bwrite(n, output_dir)
 
-    # Create the directory if necessary
-    if not os.path.isdir(output_dir):
-        os.mkdir(output_dir)
-
-    # Copy the files
-    for p in paths:
-        fname = os.path.split(p)[1]
-        if prefix and not fname.startswith("_"):
-            fname = fname.replace("aiida", prefix)
-        out_path = os.path.join(output_dir, fname)
-        shutil.copy(p, out_path)
-        print("Copied: {}".format(out_path))
+    # outputs
+    retrieved = n.outputs.retrieved
+    bwrite(retrieved, output_dir)
