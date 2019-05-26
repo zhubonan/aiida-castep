@@ -91,6 +91,9 @@ def test_submit_test_function(new_database, sto_calc_inputs):
     fcontent = res[1].get_content_list()
     assert 'aiida.cell' in fcontent
     assert 'aiida.param' in fcontent
+    # Nothing should change for the nested dic
+    assert sto_calc_inputs['metadata'].get('dry_run') is not True
+    assert sto_calc_inputs['metadata'].get('store_provenance') is not False
 
     # Test with builder
     builder = CastepCalculation.get_builder()
@@ -100,6 +103,10 @@ def test_submit_test_function(new_database, sto_calc_inputs):
     assert 'aiida.cell' in fcontent
     assert 'aiida.param' in fcontent
 
+    # Nothing should change in the process builder
+    assert builder.metadata.get('dry_run') is not True
+    assert builder.metadata.get('store_provenance') is not False
+
 
 def run_castep_calc(inputs):
     from aiida_castep.calculations.castep import CastepCalculation
@@ -107,8 +114,10 @@ def run_castep_calc(inputs):
     return run_get_node(CastepCalculation, **inputs)[1]
 
 
-@pytest.mark.skip("Not working on aiida side")
-def test_get_builder(aiida_profile, sto_calc_inputs):
-
+def test_dict2builder(aiida_profile, sto_calc_inputs):
+    """Test that we can use nested dict input for builder"""
     from aiida_castep.calculations.castep import CastepCalculation
-    buider = CastepCalculation.get_builder()
+    builder = CastepCalculation.get_builder()
+    builder._data = sto_calc_inputs
+    from aiida.engine import run_get_node
+    run_get_node(builder)
