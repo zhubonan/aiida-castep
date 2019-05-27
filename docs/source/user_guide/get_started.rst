@@ -20,14 +20,21 @@ Please refer to their documentation to install ``aiida_core`` and all the depend
 The easiest way to try out this plugin is perhaps to use `Quantum Mobile`_ - a virtual machines based on Ubuntu Linux and shipped with AiiDA installed and ready to use.
 
 .. note::
-   At the moment, ``aiida-castep`` only works with ``aiida_core`` version 0.12.x.
-   Please make sure the right version is installed. 
+   The latest version (1.0.x) of ``aiida-castep`` only works with ``aiida_core`` version 1.0.x.
+   Please make sure the right version is installed. Also, you are most likely to need to work
+   within a virtual environment (including conda environments).
 
-First, clone the repository::
+To install from the Python Package Index (PyPI)::
+
+ pip install aiida-castep
+
+This will install the latest package released with its dependencies.
+
+Alternatively, to clone the repository from the repository::
 
  git clone git@gitlab.com:bz1/aiida-castep.git
 
-Then use pip to install the plugin::
+Then pip can be used to install the plugin::
 
  pip install -e <path_to_this_plugin>
 
@@ -35,40 +42,53 @@ This way the entrypoints can be properly registered to allow ``aiida_core`` disc
 The optional ``-e`` flag makes the installation editable.
 If ``aiida_core`` is not installed, it will be installed as a dependency.
 
-Alternatively, this plugin can be installed from the PyPI directly::
-
- pip install aiida-castep
-
 Finally, to allow AiiDA to discover the plugin, run::
 
  reentry scan -r aiida
 
 You should be able to see several calculations registered as ``castep.<name>`` using AiiDA's command-line interface::
 
- verdi calculation plugin
+ verdi plugin list aiida.calculations
+
+the results should look like::
+
+ Registered entry points for aiida.calculations:
+  * arithmetic.add
+  * castep.bs
+  * castep.castep
+  * castep.pot1d
+  * castep.spec
+  * castep.ts
+  * templatereplacer
 
 
 Generate CASTEP help information
 --------------------------------
 
-This plugin will check for mistakes in parameters supplied to CASTEP before writing
-input files.
-A dictionary containing all keywords and where they should be is used internally.
-It is stored as ``$HOME/.castep_help_info_<version>.json`` and loaded at runtime.
-To generate this file, use command::
+This plugin will check for mistakes in parameters supplied to CASTEP and automatically
+write the keyword-value pair to the correct input file.
+A dictionary containing all keywords and where they should be is used internally and stored
+as a json file on the disk.
+Although a pre-generated file is included, you may want generate one for the lastest
+version of CASTEP.
+The json file should be stored as ``$HOME/.castep_help_info_<version>.json``.
+
+To generate the file, use command::
 
  verdi data castep-help generate
 
 By default, ``castep.serial`` executable will be used of it is available in ``PATH``..
 This can be overridden using optional argument ``-e <path_to_executable>``.
+
 For details, refer to the internal help using the ``--help`` flag.
 Stored help information can be accessed using this interface as well,
 imitating the behavior of ``castep.serial -h`` and ``castep.serial -s``.
 
 .. note::
-   The CASTEP executable is not required for using this plugin other than generating the help dictionary.
+   The CASTEP executable is not a perquisite other than for generating the help dictionary.
    But if you do have one on the local computer,
-   dryrun tests can done locally to get information such as number of k-points and memory usages.
+   dryrun tests can done locally to further test the inputs and retrieved number of k-points
+   required and estimate memory usage.
 
 
 Test the plugin
@@ -81,27 +101,33 @@ Tests for the plugin is written using ``pytest`` so all you need to do is type::
 from the project's root directory.
 
 .. note::
-   To make sure all dependencies are installed, try (re)install ``aiida_core`` with ``pip install aiida_core[testing]``.
+   Of course this needs ``pytest`` to be installed. This can be done by ``pip install aiida-castep[testing]``.
+   You may also need to (re)install aiida with ``pip install aiida_core[testing]``.
 
 
 Using the plugin
 ----------------
 
+Within the AiiDA framework a calculation is performed by playing a ``CalcJob`` process.
+A number of nodes are passed to the process as the input.
+The provenance of the calculation is stored as a ``CalcJobNode`` which links to the input and output nodes.
+
 For a typical CASTEP calculation, like most density functional theory calculations, needs the following inputs:
 
-* A ``ParameterData`` node with ``PARAM`` and ``CELL`` fields. Each fields is a dictionary define the keys goes into the *param* and *cell* files.
+* A ``Dict`` node with ``PARAM`` and ``CELL`` fields. Each fields is a dictionary define the keys goes into the *param* and *cell* files.
 
-* A ``KpointsData`` node defines the kpoints. Supports explicit kpoints and kpoints grid.
+* A ``KpointsData`` node defines the kpoints. Both explicit kpoints and kpoints grid are supported.
 
 * A ``StructureData`` node define the atomic structure for calculation.
 
 * Nodes that defines the pseudo potential. An shortcut ``use_pseudos_from_family`` function
-  may be called to simplify the process once the ``StructureData`` node has been defined.
-  Supported node type: ``OtfgData``, ``UspData``, ``UpfData``.
+  may be called to simplify the process once the structure is known.
+  The pseudopotentials can be any combination of ``OtfgData``, ``UspData``, ``UpfData`` nodes.
 
 * An optional ``ParameterData`` node with link name ``settings`` can be supplied to defines extra properties such as initial spins and use of symbolic link in restart calculations.
 
-The ``use_xxxxx`` methods are used to link nodes. Once inputs are defined, ``submit_test`` method can be invoked to test generating the inputs. Note this may require some attributes of the calculation node to be defined depending on the scheduler and computer.
+The simply the process, a ``ProcessBuilder`` instance can be used to define the inputs under interactive python shell.
+Finally, the calculation can be submitted by the ``aiida.engine.submit`` or the ``aiida.engine.run_get_node`` function.
 
 
 Generated input files
@@ -112,12 +138,12 @@ This includes the generation time, AiiDA user, pk, uuid, label and description o
 All keywords are written in lower case.
 In addition, the following keys are set automatically:
 
-* *iprint* is set to 1, otherwise parsing is not supported.
+* *iprint* is set to 1, otherwise parsing may not be fully supported.
 
 * If not set explicitly, *comment* will be set as the label of the calculation node to keep things tracked.
 
 * *run_time* will be set to 95% of the requested wall-time by default unless it will be less than 3600 seconds.
-  This is to ensure that check files can be written at the end of run.
-  To completely disable control set it to *0* explicitly in ``ParameterData`` node.
+  This is to avoid running out of time while writing the checkpoint file.
+  To completely disable time limit control, set it to *0* explicitly in ``ParameterData`` node.
 
-* Consistency of spins are checked. Keyword *spin* in ``<seed>.param`` will be set automatically if not already defined using the initial spins set for ``<seed>.cell`` file.
+* Consistency of spins are checked.  Keyword *spin* in ``<seed>.param`` will be set automatically, if not already defined, using the initial spins set for ``<seed>.cell`` file.
