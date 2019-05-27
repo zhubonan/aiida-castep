@@ -95,7 +95,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         # Initialise interal params, saved as metadata.options
         for key, value in cls._DEFAULTS.items():
             port_name = 'metadata.options.' + key
-            spec.input(port_name, default=value, valid_type=type(value))
+            spec.input(port_name, default=value)
 
         spec.input(
             'metadata.options.retrieve_list',
