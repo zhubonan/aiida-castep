@@ -16,6 +16,11 @@ from aiida.engine import CalcJob, ProcessBuilder
 from aiida_castep.common import INPUT_LINKNAMES, OUTPUT_LINKNAMES
 from six.moves import zip
 
+__all__ = [
+    'CastepCalcTools', 'create_restart', 'castep_input_summary',
+    'update_parameters', 'use_pseudos_from_family'
+]
+
 
 class CastepCalcTools(CalculationTools):
     def check_restart(self, verbose=True):
@@ -86,31 +91,30 @@ class CastepCalcTools(CalculationTools):
 
         return res
 
+    def create_restart(self,
+                       ignore_state=False,
+                       restart_mode='restart',
+                       use_output_structure=False,
+                       **kwargs):
+        if self._node.exit_status != 0 and not ignore_state:
+            raise RuntimeError(
+                'exit_status is not 0. Set ignore_state to ignore')
 
-# TODO: Migrate this to the new interface
-# def duplicate(self):
-#     """
-#     Duplicate this calculation return an new, unstore calculation with
-#     the same attributes but no links attached. label and descriptions
-#     are also copied.
-#     """
-#     new = type(self._node)()
+        builder = create_restart(
+            self._node.get_builder_restart(),
+            calcjob=self._node,
+            restart_mode=restart_mode,
+            **kwargs)
 
-#     attrs = self.get_attributes()
-#     if attrs:
-#         for k, v in attrs.items():
-#             if k not in self._updatable_attributes:
-#                 new.set_attribute(k, v)
+        if use_output_structure is True:
+            builder[
+                INPUT_LINKNAMES['structure']] = self._node.outputs.__getattr__(
+                    OUTPUT_LINKNAMES['structure'])
 
-#     new.label = self._node.label
-#     new.description = self._node.description
-#     # Set the computer as well
-#     new.set_computer(self.get_computer())
-
-#     return new
+        return builder
 
 
-def use_pseudos_from_family(builder, structure, family_name):
+def use_pseudos_from_family(builder, family_name):
     """
     Set the pseudos port namespace for a builder using pseudo family name
     :note: The structure must already be set in the builder.
@@ -274,7 +278,7 @@ def update_parameters(inputs, force=False, delete=None, **kwargs):
             tmp1 = param_dict["PARAM"].pop(key, None)
             tmp2 = param_dict["CELL"].pop(key, None)
             if (tmp1 is None) and (tmp2 is None):
-                raise RuntimeError("Key {} not found".format(key))
+                warnings.warn("Key '{}' not found".format(key))
 
     # Apply the change to the node
     if py_dict:
@@ -282,3 +286,65 @@ def update_parameters(inputs, force=False, delete=None, **kwargs):
     else:
         param_node.set_dict(param_dict)
     return inputs
+
+
+def create_restart(inputs,
+                   entry_point='castep.castep',
+                   calcjob=None,
+                   param_update=None,
+                   param_delete=None,
+                   restart_mode='restart',
+                   use_castep_bin=False,
+                   parent_folder=None,
+                   reuse=False):
+    """
+    Function to create a restart for a calculation.
+    :param inputs: A builder or nested dictionary
+    :param entry_point: Name of the entry points
+    :param param_update: Update the parameters
+    :param param_delete: A list of parameters to be deleted
+    :param restart_mode: Mode of the restart, 'continuation' or 'restart'
+    :param use_castep_bin: Use hte 'castep_bin' file instead of check
+    :param parent_folder: Remote folder to be used for restart
+    :param reuse: Use the reuse mode
+    """
+    from aiida.plugins import CalculationFactory
+    from aiida.engine import ProcessBuilder
+
+    # Create the builder, in any case
+    if isinstance(inputs, dict):
+        processclass = CalculationFactory(entry_point)
+        builder = processclass.get_builder()
+    elif isinstance(inputs, ProcessBuilder):
+        builder = inputs._process_class.get_builder()
+
+    builder._update(inputs)
+
+    # Update list
+    update = {}
+    delete = []
+
+    # Set the restart tag
+    suffix = '.check' if not use_castep_bin else '.castep_bin'
+    if restart_mode == 'continuation':
+        update['continuation'] = 'parent/' + builder.metadata.seedname + suffix
+        delete.append('reuse')
+    elif restart_mode == 'restart' and reuse:
+        update['reuse'] = 'parent/' + builder.metadata.seedname + suffix
+        delete.append('continuation')
+    else:
+        delete.extend(['continuation', 'reuse'])
+
+    if param_update:
+        update.update(param_update)
+    if param_delete:
+        delete.extend(param_delete)
+
+    new_builder = update_parameters(
+        builder, force=True, delete=delete, **update)
+
+    # Set the parent folder
+    if parent_folder is not None:
+        new_builder[INPUT_LINKNAMES['parent_calc_folder']] = parent_folder
+
+    return new_builder

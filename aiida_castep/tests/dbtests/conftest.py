@@ -168,9 +168,23 @@ class CastepTestApp(object):
     def c9_otfg(self):
         return self.imps.OTFGData.get_or_create('C9')[0]
 
+    @property
+    def create_group(self):
+        from aiida_castep.data.otfg import upload_otfg_family
+        upload_otfg_family
+
     def get_builder(self):
         from aiida_castep.calculations.castep import CastepCalculation
         return CastepCalculation.get_builder()
+
+
+@pytest.fixture
+def create_otfg_group(db_test_app):
+    def _create(otfgs, group_name):
+        from aiida_castep.data.otfg import upload_otfg_family
+        upload_otfg_family(otfgs, group_name, 'TEST', stop_if_existing=False)
+
+    return _create
 
 
 @pytest.fixture
@@ -254,7 +268,7 @@ def inps_or_builder(inps, num):
     elif num == 1:
         from aiida_castep.calculations.castep import CastepCalculation
         builder = CastepCalculation.get_builder()
-        builder.update(inps)
+        builder._update(inps)
         return builder
     else:
         raise RuntimeError('Not implemented')
@@ -337,6 +351,7 @@ def generate_calc_job_node(db_test_app):
             results_folder,
             inputs=None,
             computer=None,
+            outputs=None,
     ):
         """
         Generate a CalcJob node with fake retrieved node in the
@@ -387,6 +402,14 @@ def generate_calc_job_node(db_test_app):
         retrieved.add_incoming(
             node, link_type=LinkType.CREATE, link_label='retrieved')
         retrieved.store()
+
+        if outputs is not None:
+            for label, out_node in outputs.items():
+                out_node.add_incoming(
+                    node, link_type=LinkType.CREATE, link_label=label)
+                if not out_node.is_stored:
+                    out_node.store()
+
         return node
 
     return _generate_calc_job_node

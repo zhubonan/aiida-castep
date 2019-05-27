@@ -23,7 +23,7 @@ from ..data.otfg import OTFGData
 from ..data.usp import UspData
 from .utils import get_castep_ion_line, _lowercase_dict, _uppercase_dict
 from .datastructure import CellFile, ParamFile
-from .tools import castep_input_summary, update_parameters
+from .tools import castep_input_summary, update_parameters, use_pseudos_from_family
 
 from .._version import CALC_PARSER_VERSION
 __version__ = CALC_PARSER_VERSION
@@ -37,6 +37,8 @@ out_ln = OUTPUT_LINKNAMES
 ecodes = EXIT_CODES_SPEC
 
 # Define the version of the calculation
+
+__all__ = ['CastepCalculation', 'submit_test']
 
 
 class CastepCalculation(CalcJob, CastepInputGenerator):
@@ -364,6 +366,10 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
     def update_paraemters(inputs, *args, **kwargs):
         """Update the paramters for a given input dictionary/builder"""
         return update_parameters(inputs, *args, **kwargs)
+
+    @staticmethod
+    def use_pseudos_from_family(inputs, family_name):
+        use_pseudos_from_family(inputs, family_name)
 
 
 class Pot1dCalculation(CastepCalculation):

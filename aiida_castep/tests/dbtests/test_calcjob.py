@@ -117,7 +117,7 @@ def run_castep_calc(inputs):
 def test_dict2builder(aiida_profile, sto_calc_inputs):
     """Test that we can use nested dict input for builder"""
     from aiida_castep.calculations.castep import CastepCalculation
-    builder = CastepCalculation.get_builder()
-    builder._data = sto_calc_inputs
     from aiida.engine import run_get_node
+    builder = CastepCalculation.get_builder()
+    builder._update(sto_calc_inputs)
     run_get_node(builder)
