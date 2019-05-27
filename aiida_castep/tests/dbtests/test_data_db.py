@@ -7,11 +7,7 @@ Use pytest
 from __future__ import absolute_import
 import pytest
 import six
-try:
-    from pathlib import Path
-except ImportError:
-    from pathlib2 import Path
-
+from aiida_castep.common import Path
 from aiida.common import ValidationError
 
 Ti_otfg = "Ti 3|1.8|9|10|11|30U:40:31:32(qc=5.5)"

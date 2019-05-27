@@ -12,7 +12,9 @@ INPUT_LINKNAMES = {
     'pseudo': 'pseudo',  # Input pseudopotential, namespace
     'settings': 'settings',  # Extra settings for CASTEP
     'parent_calc_folder':
-    'parent_calc_folder'  # Remote folder point to the parent calculation
+    'parent_calc_folder',  # Remote folder point to the parent calculation
+    'prod_structure':
+    'product_structure'  # Product structure in transition state search
 }
 
 OUTPUT_LINKNAMES = {
@@ -32,7 +34,7 @@ except ImportError:
 EXIT_CODES_SPEC = {
     'EXITED_AS_NORMAL': (0, 'Calculation terminated gracefully, end found'),
     'ERROR_CASTEP_ERROR':
-    (1, 'CASTEP generate error files. Check them for details'),
-    'ERROR_NO_RETRIEVE_FOLDER': (100, 'No retrieve folder is found'),
+    (100, 'CASTEP generate error files. Check them for details'),
+    'ERROR_NO_RETRIEVE_FOLDER': (102, 'No retrieve folder is found'),
     'ERROR_NO_OUTPUT_FILE': (101, 'No output .castep files i found'),
 }
