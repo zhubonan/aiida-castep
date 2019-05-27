@@ -197,10 +197,10 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         param_fn = seedname + ".param"
 
         with folder.open(cell_fn, mode='w') as incell:
-            incell.write(six.u(self.cell_file.get_string()))
+            incell.write(six.text_type(self.cell_file.get_string()))
 
         with folder.open(param_fn, mode="w") as inparam:
-            inparam.write(six.u(self.param_file.get_string()))
+            inparam.write(six.text_type(self.param_file.get_string()))
 
         # IMPLEMENT OPERATIONS FOR RESTART
 
