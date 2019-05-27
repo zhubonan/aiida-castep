@@ -7,12 +7,15 @@ This section introduces some tips and tricks for using the plugin.
 Creating restarts of calculations
 ---------------------------------
 
-You can create restarts easily using the ``create_restart`` method of ``CastepCalculation``.
-This is not limited to the case where the calculation failed or the geometry optimisation
+You can create restarts easily using the ``create_restart`` method attached to the ``tools`` of
+the ``CalcJobNode`` created.
+The function can also be applied to builder or input dictionary to created a copy with
+some alterations.
+Hence, the usage is not limited to the case where the calculation failed or the geometry optimisation
 does not converged within the iteration limit. For example, you may just want to create
 a series of calculation with slightly different parameters, which can be
-achieved using the ``param_update`` and ``param_delete`` keywords with ``ignore_state=True``.
-For more detail, please see the docstring of :py:func:`aiida_castep.calculations.base.create_restart_`.
+achieved using the ``param_update`` and ``param_delete`` keywords.
+For more detail, please see the docstring of :py:func:`aiida_castep.calculations.tools.create_restart`.
 
 
 Creating pseudopotential families
