@@ -14,6 +14,8 @@ from ..data.otfg import OTFGData
 from ..data.usp import UspData
 from six.moves import zip
 
+from aiida_castep.common import INPUT_LINKNAMES as in_ln
+
 
 class CastepInputGenerator(object):
     """
@@ -90,7 +92,7 @@ class CastepInputGenerator(object):
             self.cell_file = CellFile()
 
         self.local_copy_list_to_append = []
-        param_dict = self.inputs.parameters.get_dict()
+        param_dict = self.inputs[in_ln['parameters']].get_dict()
         settings_node = self.inputs.get('settings', None)
         settings_dict = settings_node.get_dict() if settings_node else {}
 
@@ -136,23 +138,23 @@ class CastepInputGenerator(object):
         """
 
         cell_vector_list = []
-        for vector in self.inputs.structure.cell:
+        for vector in self.inputs[in_ln['structure']].cell:
             cell_vector_list.append(("{0:18.10f} {1:18.10f} "
                                      "{2:18.10f}".format(*vector)))
 
         self.cell_file["LATTICE_CART"] = cell_vector_list
 
         # --------- ATOMIC POSITIONS---------
-        # for kind in self.inputs.structure.kinds:
+        # for kind in self.inputs[in_ln['structure']].kinds:
         atomic_position_list = []
         mixture_count = 0
         # deal with initial spins
         spin_list = self.settings_dict.pop("SPINS", None)
         label_list = self.settings_dict.pop("LABELS", None)
 
-        for i, site in enumerate(self.inputs.structure.sites):
+        for i, site in enumerate(self.inputs[in_ln['structure']].sites):
             # get  the kind of the site
-            kind = self.inputs.structure.get_kind(site.kind_name)
+            kind = self.inputs[in_ln['structure']].get_kind(site.kind_name)
 
             # Position is always needed
             pos = site.position
@@ -269,7 +271,7 @@ class CastepInputGenerator(object):
         kindname = set()  # All of the kindname
         species_pot_list = []
         pseudos = self.inputs.pseudos
-        for kind in self.inputs.structure.kinds:
+        for kind in self.inputs[in_ln['structure']].kinds:
             kindname.add(kind.name)
 
         # Make kindname unique
