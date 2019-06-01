@@ -54,6 +54,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         'parent_folder_name': 'parent',
         'parser_name': 'castep.castep',
         'use_kpoints': True,
+        'withmpi': True,
     }
     _DEFAULTS['input_filename'] = _DEFAULTS['seedname'] + '.cell'
     _DEFAULTS['output_filename'] = _DEFAULTS['seedname'] + '.castep'

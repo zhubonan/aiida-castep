@@ -12,7 +12,6 @@ ln_name = OUTPUT_LINKNAMES
 folders = ["H2-geom", "O2-geom-spin", "Si-geom-stress", "N2-md"]
 
 
-@pytest.mark.process_execution
 def test_parsing_base(
         new_database,
         db_test_app,
@@ -38,7 +37,46 @@ def test_parsing_base(
     assert calc_energy == ref
 
 
-@pytest.mark.process_execution
+def test_parse_warnings(
+        new_database,
+        db_test_app,
+        generate_calc_job_node,
+        generate_parser,
+        h2_calc_inputs,
+):
+    """
+    Test basic parsing
+    """
+    from aiida_castep.common import EXIT_CODES_SPEC as CODES
+
+    node = generate_calc_job_node(
+        'castep.castep',
+        'H2-geom',
+        inputs=h2_calc_inputs,
+    )
+    parser = generate_parser('castep.castep')
+
+    folder = node.outputs.retrieved
+    content_orig = folder.get_object_content('aiida.castep').split('\n')
+    content = content_orig[:-20]
+    content.append('Insufficient time for another iteration')
+    with node.outputs.retrieved.open('aiida.castep', 'w') as fh:
+        fh.write('\n'.join(content))
+    results, return_node = parser.parse_from_node(node, store_provenance=False)
+    assert return_node.exit_status == CODES['ERROR_TIMELIMIT_REACHED'][0]
+
+    content.append(
+        'SCF cycles performed but system has not reached the groundstate')
+    with node.outputs.retrieved.open('aiida.castep', 'w') as fh:
+        fh.write('\n'.join(content))
+    results, return_node = parser.parse_from_node(node, store_provenance=False)
+    assert return_node.exit_status == CODES['ERROR_SCF_NOT_CONVERGED'][0]
+
+    node.outputs.retrieved.delete_object('aiida.castep', force=True)
+    results, return_node = parser.parse_from_node(node, store_provenance=False)
+    assert return_node.exit_status == CODES['ERROR_NO_OUTPUT_FILE'][0]
+
+
 def test_parsing_geom(new_database, db_test_app, generate_calc_job_node,
                       generate_parser, h2_calc_inputs):
     """

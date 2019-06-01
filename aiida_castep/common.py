@@ -4,6 +4,12 @@ Store common stuff
 
 # Mapping of the input names
 from __future__ import absolute_import
+from collections import OrderedDict
+try:
+    from pathlib import Path
+except ImportError:
+    from pathlib2 import Path
+
 INPUT_LINKNAMES = {
     'structure': 'structure',  # Input structure
     'parameters':
@@ -26,15 +32,30 @@ OUTPUT_LINKNAMES = {
     'array': 'output_array'  # Array of values, for example SCF energies
 }
 
-try:
-    from pathlib import Path
-except ImportError:
-    from pathlib2 import Path
+# We define an ordered dictionary of the error codes
+# The error are in the order of decending priority, the error with
+# the highest priority is used as the return code
 
-EXIT_CODES_SPEC = {
-    'EXITED_AS_NORMAL': (0, 'Calculation terminated gracefully, end found'),
-    'ERROR_CASTEP_ERROR':
-    (100, 'CASTEP generate error files. Check them for details'),
-    'ERROR_NO_RETRIEVE_FOLDER': (102, 'No retrieve folder is found'),
-    'ERROR_NO_OUTPUT_FILE': (101, 'No output .castep files i found'),
-}
+EXIT_CODES_SPEC = OrderedDict((
+    ('CALC_FINISHED', (0, 'Calculation terminated gracefully, end found')),
+    ('ERROR_SCF_NOT_CONVERGED', (101,
+                                 'SCF Cycles failed to reach convergence')),
+    ('ERROR_STOP_REQUESTED',
+     (103,
+      'Stopped execuation due to detection of \'stop \' keyword in param file.'
+      )),
+    ('ERROR_TIMELIMIT_REACHED',
+     (107, 'Calculation self-terminated due to time limit')),
+    ('ERROR_NO_END_OF_CALCULATION', (105, 'Cannot find the end of calculation')
+     ),  # Indicated by the lack of summary time
+    # Errors with missing files
+    ('ERROR_CASTEP_ERROR',
+     (104, 'CASTEP generate error files. Check them for details')),
+    ('ERROR_NO_OUTPUT_FILE', (106, 'No output .castep files found')),
+    ('ERROR_NO_RETRIEVE_FOLDER', (108, 'No retrieve folder is found')),
+    ('UNKOWN_ERROR', (200, 'UNKOWN ERROR')),
+))
+
+# exit code dictionary with the numerical code as the keys
+EXIT_CODE_NUMS = OrderedDict(
+    (v[0], (k, v[1])) for k, v in EXIT_CODES_SPEC.items())

@@ -66,7 +66,7 @@ def test_submission(new_database, sto_calc_inputs):
     from aiida_castep.calculations.castep import CastepCalculation
     from aiida.engine import run_get_node
     _, return_node = run_get_node(CastepCalculation, **sto_calc_inputs)
-    assert return_node.exit_status == 101
+    assert return_node.exit_status == 106
 
 
 def test_submit_test(new_database, sto_calc_inputs):

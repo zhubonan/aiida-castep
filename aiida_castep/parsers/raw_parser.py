@@ -7,6 +7,7 @@ from __future__ import absolute_import
 import re
 import numpy as np
 from aiida_castep.parsers.utils import CASTEPOutputParsingError
+from aiida_castep.common import EXIT_CODES_SPEC
 
 import logging
 from six.moves import map
@@ -66,11 +67,11 @@ units = units_CODATA2010
 
 unit_suffix = "_units"
 
-SCF_FAILURE_MESSAGE = "SCF cycles failed to converge"
+SCF_FAILURE_ERROR = "ERROR_SCF_NOT_CONVERGED"
 GEOM_FAILURE_MESSAGE = "Maximum geometry optimization cycle has been reached"
-END_NOT_FOUND_MESSAGE = "CASTEP run did not reach the end of execution."
-INSUFFICENT_TIME_MESSAGE = "CASTEP run terminated due to insufficient run time left."
-STOP_REQUESTED_MESSAGE = "CASTEP run terminated due to requested STOP in param file."
+END_NOT_FOUND_ERROR = "ERROR_NO_END_OF_CALCULATION"
+INSUFFICENT_TIME_ERROR = "ERROR_TIMELIMIT_REACHED"
+STOP_REQUESTED_ERROR = "ERROR_STOP_REQUESTED"
 
 
 def parse_raw_ouput(out_lines,
@@ -93,7 +94,7 @@ def parse_raw_ouput(out_lines,
 
      * structure data: dictionary of cell, positions and symbols.
 
-     * successful: a boolean that is False in case of failed calculations.
+     * exit code: exit code indicating potential problems of the run
 
     2 different keys to check in out_dict: *parser_warning* and *warnings*.
     """
@@ -105,11 +106,7 @@ def parse_raw_ouput(out_lines,
         parser_version)
     parser_info["warnings"] = []
 
-    job_successful = True
-
-    if not out_lines:  # The file is empty
-        job_successful = False
-
+    exit_code = 'UNKOWN_ERROR'
     finished_run = False
 
     # Use Total time as a mark for completed run
@@ -121,12 +118,7 @@ def parse_raw_ouput(out_lines,
             break
 
     # Warn if the run is not finished
-    if not finished_run:
-        warning = END_NOT_FOUND_MESSAGE
-        parser_info["warnings"].append(warning)
-        job_successful = False
 
-    # Parse the data and store
     try:
         out_data, trajectory_data, critical_messages = parse_castep_text_output(
             out_lines, input_dict)
@@ -159,12 +151,17 @@ def parse_raw_ouput(out_lines,
                 "Error while parsing ouput. Exception message: {}".format(
                     e.message))
 
-    # Check if any critical messages has been passed
-    # If there is any cricial message we should make the run marked as FAILED
-    for w in out_data["warnings"]:
-        if w in critical_messages:
-            job_successful = False
-            break
+    # Return the most 'specific' error. For example one calculation
+    # may not terminate correctly due unconverged SCF.
+    # In this case, we set the exit code to SCF unconverged.
+    if finished_run:
+        exit_code = 'CALC_FINISHED'
+    else:
+        exit_code = 'ERROR_NO_END_OF_CALCULATION'
+        for code in EXIT_CODES_SPEC:
+            if code in out_data["warnings"]:
+                exit_code = code
+                break
 
     # Construct a structure data from the last frame
     try:
@@ -193,8 +190,7 @@ def parse_raw_ouput(out_lines,
 
     # Todo Validation of ouput data
     return [
-        parameter_data, trajectory_data, structure_data, bands_data,
-        job_successful
+        parameter_data, trajectory_data, structure_data, bands_data, exit_code
     ]
 
 
@@ -242,21 +238,21 @@ def parse_castep_text_output(out_lines, input_dict):
     # Not all is needed. But we parse as much as we can here
     trajectory_data = defaultdict(list)
 
-    # In the format {<keywords in line>:<message to pass>}
+    # For the warnings I use dictionary in the format of
+    # format {<keywords in line>:<message to pass>}, the message to pass
+    # is save in the dictionary and used to set the exit code
     critical_warnings = {
         "SCF cycles performed but system has not reached the groundstate":
-        SCF_FAILURE_MESSAGE,
-        "NOSTART":
-        "Can not find start of the calculation.",
+        SCF_FAILURE_ERROR,
         "STOP keyword detected in parameter file. Stop execution.":
-        STOP_REQUESTED_MESSAGE,
+        STOP_REQUESTED_ERROR,
+        "Insufficient time for another iteration": INSUFFICENT_TIME_ERROR,
     }
 
     # Warnings that won't result in a calculation in FAILED state
     minor_warnings = {
         "Warning": None,
         "Geometry optimization failed to converge": GEOM_FAILURE_MESSAGE,
-        "Insufficient time for another iteration": INSUFFICENT_TIME_MESSAGE
     }
 
     # A dictionary witch keys we should check at each line
@@ -328,11 +324,6 @@ def parse_castep_text_output(out_lines, input_dict):
             body_start = i
             break
 
-    # If we don't find a start of body then there is something wrong
-    if body_start is None:
-        parsed_data["warnings"].append(critical_warnings["NOSTART"])
-        return parsed_data, {}, list(critical_warnings.values())
-
     parsed_data.update(pseudo_pots=pseudo_files)
 
     def append_value_and_unit(line, name):
@@ -393,19 +384,17 @@ def parse_castep_text_output(out_lines, input_dict):
             skip = i
             continue
 
-        if any(i in line for i in all_warnings):
-            message = [
-                all_warnings[k] for k in all_warnings_keys if k in line
-            ][0]
-            if message is None:
-                # CASTEP often have multiline warnings
-                # Add extra lines for detail
-                message = body_lines[count:count + n_warning_lines]
-                message = "\n".join(message)
-            parsed_data["warnings"].append(message)
+        for warn_key in all_warnings:
+            if warn_key in line:
+                message = all_warnings[warn_key]
+                if message is None:
+                    message = body_lines[count:count + n_warning_lines]
+                    message = "\n".join(message)
+                parsed_data["warnings"].append(message)
 
+    # Parse the end a few lines
+    for line in body_lines[-50:]:
         time_line = time_re.match(line)
-
         # Save information about time usage
         if time_line:
             time_name = time_line.group(1).lower() + "_time"
@@ -413,9 +402,17 @@ def parse_castep_text_output(out_lines, input_dict):
             continue
 
         para_line = parallel_re.match(line)
-
         if para_line:
             parsed_data["parallel_efficiency"] = int(para_line.group(1))
+            continue
+
+        for warn_key in all_warnings:
+            if warn_key in line:
+                message = all_warnings[warn_key]
+                if message is None:
+                    message = body_lines[count:count + n_warning_lines]
+                    message = "\n".join(message)
+                parsed_data["warnings"].append(message)
 
     #### END OF LINE BY LINE PARSING ITERATION ####
 

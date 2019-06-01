@@ -96,7 +96,7 @@ class CastepParser(Parser):
             '\n')
 
         ###### CALL THE RAW PASSING FUNCTION TO PARSE DATA #######
-        out_dict, trajectory_data, structure_data, bands_data, raw_sucessful\
+        out_dict, trajectory_data, structure_data, bands_data, exit_code\
             = parse_raw_ouput(out_lines=out_file_content,
                               input_dict=input_dict,
                               parser_opts=parser_opts,
@@ -190,8 +190,8 @@ class CastepParser(Parser):
         output_params = Dict(dict=out_dict)
         self.out(out_ln['results'], output_params)
 
-        # If we reached here the calculation is a success
-        return
+        # Return the exit code
+        return self.exit_codes.__getattr__(exit_code)
 
 
 #TODO: NEED TO MIGRATE THIS

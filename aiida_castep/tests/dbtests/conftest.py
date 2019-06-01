@@ -396,7 +396,6 @@ def generate_calc_job_node(db_test_app):
         node.store()
 
         filepath = this_folder.parent / 'data' / results_folder
-
         retrieved = FolderData()
         retrieved.put_object_from_tree(str(filepath.resolve()))
         retrieved.add_incoming(
