@@ -74,124 +74,125 @@ INSUFFICENT_TIME_ERROR = "ERROR_TIMELIMIT_REACHED"
 STOP_REQUESTED_ERROR = "ERROR_STOP_REQUESTED"
 
 
-def parse_raw_ouput(out_lines,
-                    input_dict,
-                    parser_opts=None,
-                    md_geom_lines=None,
-                    bands_lines=None):
-    """
-    Parse an dot_castep file
+class RawParser(object):
+    """An raw parser object to parse the output of CASTEP"""
 
-    :param out_lines: A list of lines  handle to the \*.castep file
-    :param md_geom_lines: (name, lines) A list of lines of the .geom file or .md file
-    :param bands_lines: A list of lines to the .bands file
+    def __init__(self, out_lines, input_dict, md_geom_info, bands_lines,
+                 **parser_opts):
+        """Instantiate the parser by passing list of the lines"""
 
-    :return: A list of:
+        self.dot_castep_lines = out_lines
+        self.input_dict = input_dict
+        self.md_geom_info = md_geom_info
+        self.bands_lines = self.bands_lines
+        self.parser_opts = parser_opts
 
-     * out_dict: a dictionary with parsed data.
+    def parse(self):
 
-     * trajectory_data: dictionary of trajectory data.
+        parser_version = __version__
+        parser_info = {}
+        parser_info["parser_warnings"] = []
+        parser_info["parser_info"] = "AiiDA CASTEP basic Parser v{}".format(
+            parser_version)
+        parser_info["warnings"] = []
 
-     * structure data: dictionary of cell, positions and symbols.
+        exit_code = 'UNKOWN_ERROR'
+        finished_run = False
 
-     * exit code: exit code indicating potential problems of the run
-
-    2 different keys to check in out_dict: *parser_warning* and *warnings*.
-    """
-
-    parser_version = __version__
-    parser_info = {}
-    parser_info["parser_warnings"] = []
-    parser_info["parser_info"] = "AiiDA CASTEP basic Parser v{}".format(
-        parser_version)
-    parser_info["warnings"] = []
-
-    exit_code = 'UNKOWN_ERROR'
-    finished_run = False
-
-    # Use Total time as a mark for completed run
-    for i, line in enumerate(out_lines[-20:]):
-        # Check only the last 20 lines
-        # Otherwise unfinished restarts may be seen as finished
-        if "Total time" in line:
-            finished_run = True
-            break
-
-    # Warn if the run is not finished
-
-    try:
-        out_data, trajectory_data, critical_messages = parse_castep_text_output(
-            out_lines, input_dict)
-
-        # Use data from geom file if avaliable.
-        if md_geom_lines is not None:
-            glines = md_geom_lines[1]
-            geom_data = parse_geom_text_output(glines, None)
-            # For geom file the second energy is the enthalpy while
-            # for MD it is the approx hamiltonian (etotal + ek)
-            if "geom" in md_geom_lines[0]:
-                geom_data["geom_enthalpy"] = geom_data["hamilt_energy"]
-            trajectory_data.update(geom_data)
-
-        if bands_lines is not None:
-            bands_data = parse_dot_bands(bands_lines)
-        else:
-            bands_data = None
-
-    except CASTEPOutputParsingError as e:
-        if not finished_run:
-            parser_info["parser_warnings"].append(
-                "Error while parsing the output file")
-            out_data = {}
-            trajectory_data = {}
-            critical_messages = []
-
-        else:  # Run finished but I have still have an error here
-            raise CASTEPOutputParsingError(
-                "Error while parsing ouput. Exception message: {}".format(
-                    e.message))
-
-    # Return the most 'specific' error. For example one calculation
-    # may not terminate correctly due unconverged SCF.
-    # In this case, we set the exit code to SCF unconverged.
-    if finished_run:
-        exit_code = 'CALC_FINISHED'
-    else:
-        exit_code = 'ERROR_NO_END_OF_CALCULATION'
-        for code in EXIT_CODES_SPEC:
-            if code in out_data["warnings"]:
-                exit_code = code
+        # Use Total time as a mark for completed run
+        for i, line in enumerate(self.dot_castep_lines[-20:]):
+            # Check only the last 20 lines
+            # Otherwise unfinished restarts may be seen as finished
+            if "Total time" in line:
+                finished_run = True
                 break
 
-    # Construct a structure data from the last frame
-    try:
-        last_cell = trajectory_data["cells"][-1]
-        last_positions = trajectory_data["positions"][-1]
-        symbols = trajectory_data["symbols"]
+        self.parser_castep_text_output()
 
-    except (KeyError, IndexError):
-        # Cannot find the last geometry data
-        structure_data = {}
-    else:
-        structure_data = dict(
-            cell=last_cell, positions=last_positions, symbols=symbols)
+        # Warn if the run is not finished
+        if self.md_geom_info is not None:
+            glines = self.md_geom_info[1]
+            geom_data = self.parse_geom(glines, None)
+            # For geom file the second energy is the enthalpy while
+            # for MD it is the approx hamiltonian (etotal + ek)
+            if "geom" in self.md_geom_info[0]:
+                geom_data["geom_enthalpy"] = geom_data["hamilt_energy"]
 
-    # Parameter data to be returned, combine both out_data and parser_info
-    parameter_data = dict(out_data)
-    parameter_data.update(parser_info)
+        # Parse the bands file
+        if self.bands_lines is not None:
+            bands_res = self.parse_dot_bands()
 
-    # Combine the warnings
-    all_warnings = out_data["warnings"] + parser_info["warnings"]
+        # Return the most 'specific' error. For example one calculation
+        # may not terminate correctly due unconverged SCF.
+        # In this case, we set the exit code to SCF unconverged.
+        if finished_run:
+            exit_code = 'CALC_FINISHED'
+        else:
+            exit_code = 'ERROR_NO_END_OF_CALCULATION'
+            for code in EXIT_CODES_SPEC:
+                if code in self.warnings:
+                    exit_code = code
+                    break
 
-    # Make the warnings set-like e.g we don't want to repeat messages
-    # Save a bit of the storage space
-    all_warnings = list(set(all_warnings))
-    parameter_data['warnings'] = all_warnings
+        # Construct a structure data from the last frame
+        traj_data = dict(self.dot_castep_traj)
+        self.traj_data = traj_data
+        if self.md_geom_info is not None:
+            # Use the geom file's trajectory instead
+            # some the files are overwritten
+            traj_data = traj_data.update(geom_data)
 
-    # Todo Validation of ouput data
-    return [
-        parameter_data, trajectory_data, structure_data, bands_data, exit_code
-    ]
+        try:
+            last_cell = traj_data["cells"][-1]
+            last_positions = traj_data["positions"][-1]
+            symbols = traj_data["symbols"]
+
+        except (KeyError, IndexError):
+            # Cannot find the last geometry data
+            structure_data = {}
+        else:
+            structure_data = dict(
+                cell=last_cell, positions=last_positions, symbols=symbols)
+
+        # A dictionry for the results to be returned
+        results_dict = dict(self.dot_castep_data)
+        results_dict.update(parser_info)
+
+        # Combine the warnings
+        all_warnings = results_dict["warnings"] + parser_info["warnings"]
+
+        # Make the warnings set-like e.g we don't want to repeat messages
+        # Save a bit of the storage space
+        all_warnings = list(set(all_warnings))
+        results_dict['warnings'] = all_warnings
+
+        # Todo Validation of ouput data
+        return [results_dict, traj_data, structure_data, bands_res, exit_code]
+
+    def parse_bands(self):
+        """Parse the dot_bands"""
+        bands_info, kpoints, bands = parse_dot_bands(self.bands_lines)
+        self.bands_res = {
+            'bands_info': bands_info,
+            'kpoints': kpoints,
+            'bands': bands
+        }
+        return self.bands_res
+
+    def parse_goem(self):
+        """Parse the geom lines"""
+        self.geom_data = parse_geom_text_output(self.md_geom_info[1], {})
+        return self.geom_data
+
+    def parse_dot_castep(self):
+        """Parse the dot-castep file"""
+        parsed_data, trajectory_data, critical_message = parse_castep_text_output(
+            self.out_lines, {})
+        self.dot_castep_data = parsed_data
+        self.dot_castep_traj = trajectory_data
+        self.dot_castep_critical_message = critical_message
+        self.warnings = parsed_data['warnings']
+        return parsed_data, trajectory_data, critical_message
 
 
 # Re for getting unit
@@ -823,3 +824,123 @@ def parse_dot_bands(bands_lines):
                                                n + 1, i + 1))
 
     return bands_info, kpoints, bands
+
+
+def parse_raw_ouput(out_lines,
+                    input_dict,
+                    parser_opts=None,
+                    md_geom_lines=None,
+                    bands_lines=None):
+    """
+    Parse an dot_castep file
+
+    :param out_lines: A list of lines  handle to the \*.castep file
+    :param md_geom_lines: (name, lines) A list of lines of the .geom file or .md file
+    :param bands_lines: A list of lines to the .bands file
+
+    :return: A list of:
+
+     * out_dict: a dictionary with parsed data.
+
+     * trajectory_data: dictionary of trajectory data.
+
+     * structure data: dictionary of cell, positions and symbols.
+
+     * exit code: exit code indicating potential problems of the run
+
+    2 different keys to check in out_dict: *parser_warning* and *warnings*.
+    """
+
+    parser_version = __version__
+    parser_info = {}
+    parser_info["parser_warnings"] = []
+    parser_info["parser_info"] = "AiiDA CASTEP basic Parser v{}".format(
+        parser_version)
+    parser_info["warnings"] = []
+
+    exit_code = 'UNKOWN_ERROR'
+    finished_run = False
+
+    # Use Total time as a mark for completed run
+    for i, line in enumerate(out_lines[-20:]):
+        # Check only the last 20 lines
+        # Otherwise unfinished restarts may be seen as finished
+        if "Total time" in line:
+            finished_run = True
+            break
+
+    # Warn if the run is not finished
+
+    try:
+        out_data, trajectory_data, critical_messages = parse_castep_text_output(
+            out_lines, input_dict)
+
+        # Use data from geom file if avaliable.
+        if md_geom_lines is not None:
+            glines = md_geom_lines[1]
+            geom_data = parse_geom_text_output(glines, None)
+            # For geom file the second energy is the enthalpy while
+            # for MD it is the approx hamiltonian (etotal + ek)
+            if "geom" in md_geom_lines[0]:
+                geom_data["geom_enthalpy"] = geom_data["hamilt_energy"]
+            trajectory_data.update(geom_data)
+
+        if bands_lines is not None:
+            bands_data = parse_dot_bands(bands_lines)
+        else:
+            bands_data = None
+
+    except CASTEPOutputParsingError as e:
+        if not finished_run:
+            parser_info["parser_warnings"].append(
+                "Error while parsing the output file")
+            out_data = {}
+            trajectory_data = {}
+            critical_messages = []
+
+        else:  # Run finished but I have still have an error here
+            raise CASTEPOutputParsingError(
+                "Error while parsing ouput. Exception message: {}".format(
+                    e.message))
+
+    # Return the most 'specific' error. For example one calculation
+    # may not terminate correctly due unconverged SCF.
+    # In this case, we set the exit code to SCF unconverged.
+    if finished_run:
+        exit_code = 'CALC_FINISHED'
+    else:
+        exit_code = 'ERROR_NO_END_OF_CALCULATION'
+        for code in EXIT_CODES_SPEC:
+            if code in out_data["warnings"]:
+                exit_code = code
+                break
+
+    # Construct a structure data from the last frame
+    try:
+        last_cell = trajectory_data["cells"][-1]
+        last_positions = trajectory_data["positions"][-1]
+        symbols = trajectory_data["symbols"]
+
+    except (KeyError, IndexError):
+        # Cannot find the last geometry data
+        structure_data = {}
+    else:
+        structure_data = dict(
+            cell=last_cell, positions=last_positions, symbols=symbols)
+
+    # Parameter data to be returned, combine both out_data and parser_info
+    parameter_data = dict(out_data)
+    parameter_data.update(parser_info)
+
+    # Combine the warnings
+    all_warnings = out_data["warnings"] + parser_info["warnings"]
+
+    # Make the warnings set-like e.g we don't want to repeat messages
+    # Save a bit of the storage space
+    all_warnings = list(set(all_warnings))
+    parameter_data['warnings'] = all_warnings
+
+    # Todo Validation of ouput data
+    return [
+        parameter_data, trajectory_data, structure_data, bands_data, exit_code
+    ]
