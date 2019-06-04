@@ -114,6 +114,11 @@ class CastepCalcTools(CalculationTools):
                 INPUT_LINKNAMES['structure']] = self._node.outputs.__getattr__(
                     OUTPUT_LINKNAMES['structure'])
 
+        if restart_mode == 'continuation' or kwargs.get('reuse'):
+            builder[INPUT_LINKNAMES[
+                'parent_calc_folder']] = self._node.outputs.__getattr__(
+                    'remote_folder')
+
         return builder
 
 
@@ -335,8 +340,10 @@ def create_restart(inputs,
     elif restart_mode == 'restart' and reuse:
         update['reuse'] = 'parent/' + builder.metadata.seedname + suffix
         delete.append('continuation')
-    else:
+    elif restart_mode is None:
         delete.extend(['continuation', 'reuse'])
+    else:
+        raise RuntimeError('Unknown restart mode: ' + restart_mode)
 
     if param_update:
         update.update(param_update)
