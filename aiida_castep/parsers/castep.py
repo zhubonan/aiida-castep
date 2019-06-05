@@ -9,8 +9,9 @@ from aiida_castep.parsers.raw_parser import __version__ as raw_parser_version
 from aiida_castep.parsers.utils import (structure_from_input,
                                         add_last_if_exists, desort_structure,
                                         get_desort_args)
-from ..common import OUTPUT_LINKNAMES as out_ln
-from .._version import CALC_PARSER_VERSION
+from aiida_castep.common import OUTPUT_LINKNAMES as out_ln
+from aiida_castep.common import EXIT_CODES_SPEC as calc_exit_code
+from aiida_castep._version import CALC_PARSER_VERSION
 import six
 __version__ = CALC_PARSER_VERSION
 
@@ -47,6 +48,7 @@ class CastepParser(Parser):
             return self.exit_codes.ERROR_NO_RETRIEVED_FOLDER
 
         warnings = []
+        exit_code_1 = None
 
         # TODO Enable parser options
         parser_opts = {}
@@ -69,7 +71,7 @@ class CastepParser(Parser):
         # The calculation is failed if there is any err file.
         for f in filenames:
             if ".err" in f:
-                return self.exit_codes.ERROR_CASTEP_ERROR
+                exit_code_1 = 'ERROR_CASTEP_ERROR'
 
         # Trajectory files
         has_md_geom = False
@@ -109,8 +111,16 @@ class CastepParser(Parser):
             md_geom_info=out_md_geom_name_content,
             bands_lines=out_bands_content,
             **parser_opts)
-        out_dict, trajectory_data, structure_data, bands_data, exit_code\
+        out_dict, trajectory_data, structure_data, bands_data, exit_code_2\
             = raw_parser.parse()
+        ranks = {k: n for n, k in enumerate(calc_exit_code)}
+
+        # Combine the exit codes
+        exit_code = None
+        for code in calc_exit_code:
+            if code in (exit_code_2, exit_code_1):
+                exit_code = code
+                break
 
         # Append the final value of trajectory_data into out_dict
         last_value_keys = [

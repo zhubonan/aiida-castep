@@ -173,7 +173,8 @@ class RawParser(object):
         results_dict.update(parser_info)
 
         # Combine the warnings
-        all_warnings = results_dict["warnings"] + parser_info["warnings"]
+        all_warnings = results_dict["warnings"] + parser_info[
+            "warnings"] + self.warnings
 
         # Make the warnings set-like e.g we don't want to repeat messages
         # Save a bit of the storage space
