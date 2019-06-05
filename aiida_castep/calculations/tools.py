@@ -101,10 +101,11 @@ class CastepCalcTools(CalculationTools):
             raise RuntimeError(
                 'exit_status is not 0. Set ignore_state to ignore')
 
-        builder = create_restart(self._node.get_builder_restart(),
-                                 calcjob=self._node,
-                                 restart_mode=restart_mode,
-                                 **kwargs)
+        builder = create_restart(
+            self._node.get_builder_restart(),
+            calcjob=self._node,
+            restart_mode=restart_mode,
+            **kwargs)
 
         # Carry over the label
         builder.metadata.label = self._node.label
@@ -157,8 +158,8 @@ def castep_input_summary(calc):
 
     out_info = {}
     if isinstance(calc, CalcJobNode):
-        inp_dict = calc.get_incoming(link_type=(LinkType.INPUT_CALC,
-                                                LinkType.INPUT_WORK)).nested()
+        inp_dict = calc.get_incoming(
+            link_type=(LinkType.INPUT_CALC, LinkType.INPUT_WORK)).nested()
         options = calc.get_options()
         is_node = True
     elif isinstance(calc, ProcessBuilder):
@@ -342,7 +343,7 @@ def create_restart(inputs,
         delete.append('continuation')
     elif restart_mode is None:
         delete.extend(['continuation', 'reuse'])
-    else:
+    elif restart_mode != 'restart':
         raise RuntimeError('Unknown restart mode: ' + restart_mode)
 
     if param_update:
@@ -350,10 +351,8 @@ def create_restart(inputs,
     if param_delete:
         delete.extend(param_delete)
 
-    new_builder = update_parameters(builder,
-                                    force=True,
-                                    delete=delete,
-                                    **update)
+    new_builder = update_parameters(
+        builder, force=True, delete=delete, **update)
 
     # Set the parent folder
     if parent_folder is not None:

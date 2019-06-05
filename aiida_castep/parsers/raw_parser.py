@@ -84,11 +84,22 @@ class RawParser(object):
         self.dot_castep_lines = out_lines
         self.input_dict = input_dict
         self.md_geom_info = md_geom_info
-        self.bands_lines = self.bands_lines
+        self.bands_lines = bands_lines
         self.parser_opts = parser_opts
 
     def parse(self):
+        """
+        :return: A list of:
+        * out_dict: a dictionary with parsed data.
 
+        * trajectory_data: dictionary of trajectory data.
+
+        * structure data: dictionary of cell, positions and symbols.
+
+        * exit code: exit code indicating potential problems of the run
+
+        2 different keys to check in out_dict: *parser_warning* and *warnings*.
+        """
         parser_version = __version__
         parser_info = {}
         parser_info["parser_warnings"] = []
@@ -107,12 +118,12 @@ class RawParser(object):
                 finished_run = True
                 break
 
-        self.parser_castep_text_output()
+        self.parse_dot_castep()
 
         # Warn if the run is not finished
         if self.md_geom_info is not None:
             glines = self.md_geom_info[1]
-            geom_data = self.parse_geom(glines, None)
+            geom_data = self.parse_geom(glines)
             # For geom file the second energy is the enthalpy while
             # for MD it is the approx hamiltonian (etotal + ek)
             if "geom" in self.md_geom_info[0]:
@@ -121,6 +132,8 @@ class RawParser(object):
         # Parse the bands file
         if self.bands_lines is not None:
             bands_res = self.parse_dot_bands()
+        else:
+            bands_res = None
 
         # Return the most 'specific' error. For example one calculation
         # may not terminate correctly due unconverged SCF.
@@ -135,24 +148,25 @@ class RawParser(object):
                     break
 
         # Construct a structure data from the last frame
-        traj_data = dict(self.dot_castep_traj)
-        self.traj_data = traj_data
-        if self.md_geom_info is not None:
-            # Use the geom file's trajectory instead
-            # some the files are overwritten
-            traj_data = traj_data.update(geom_data)
+        if self.dot_castep_traj:
+            traj_data = dict(self.dot_castep_traj)
+            self.traj_data = traj_data
+            if self.md_geom_info is not None:
+                # Use the geom file's trajectory instead
+                # some the files are overwritten
+                traj_data.update(geom_data)
 
-        try:
-            last_cell = traj_data["cells"][-1]
-            last_positions = traj_data["positions"][-1]
-            symbols = traj_data["symbols"]
+            try:
+                last_cell = traj_data["cells"][-1]
+                last_positions = traj_data["positions"][-1]
+                symbols = traj_data["symbols"]
 
-        except (KeyError, IndexError):
-            # Cannot find the last geometry data
-            structure_data = {}
-        else:
-            structure_data = dict(
-                cell=last_cell, positions=last_positions, symbols=symbols)
+            except (KeyError, IndexError):
+                # Cannot find the last geometry data
+                structure_data = {}
+            else:
+                structure_data = dict(
+                    cell=last_cell, positions=last_positions, symbols=symbols)
 
         # A dictionry for the results to be returned
         results_dict = dict(self.dot_castep_data)
@@ -169,7 +183,7 @@ class RawParser(object):
         # Todo Validation of ouput data
         return [results_dict, traj_data, structure_data, bands_res, exit_code]
 
-    def parse_bands(self):
+    def parse_dot_bands(self):
         """Parse the dot_bands"""
         bands_info, kpoints, bands = parse_dot_bands(self.bands_lines)
         self.bands_res = {
@@ -179,15 +193,17 @@ class RawParser(object):
         }
         return self.bands_res
 
-    def parse_goem(self):
+    def parse_geom(self, glines=None):
         """Parse the geom lines"""
+        if glines is None:
+            glines = self.md_geom_info[1]
         self.geom_data = parse_geom_text_output(self.md_geom_info[1], {})
         return self.geom_data
 
     def parse_dot_castep(self):
         """Parse the dot-castep file"""
         parsed_data, trajectory_data, critical_message = parse_castep_text_output(
-            self.out_lines, {})
+            self.dot_castep_lines, {})
         self.dot_castep_data = parsed_data
         self.dot_castep_traj = trajectory_data
         self.dot_castep_critical_message = critical_message
@@ -730,6 +746,13 @@ def parse_dot_bands(bands_lines):
     Extract Kpoints and each bands for each kpoints.
     This is a generic parsing function. Return python builtin types.
 
+    The problems is the order of the kpoints written is parallelisation
+    dependent and may not be the same as that specified in *kpoints_list*.
+    However, CASTEP does write the index of the kpoints.
+    We reorder the kpoints and the bands to match the original order in
+    the input file.
+
+
     :param bands_lines: A list of lines to be parsed parse
     :return: A list of bands_info, kpoints and bands:
 
@@ -778,7 +801,7 @@ def parse_dot_bands(bands_lines):
             break
     bands_info['cell'] = cell
 
-    # Now parser the body
+    # Now parse the body
     kpoints = []
     bands = []
     this_band = []
@@ -850,6 +873,9 @@ def parse_raw_ouput(out_lines,
 
     2 different keys to check in out_dict: *parser_warning* and *warnings*.
     """
+    from warnings import warn
+
+    warn('This function has been depricated')
 
     parser_version = __version__
     parser_info = {}

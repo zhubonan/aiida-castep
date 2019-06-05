@@ -4,7 +4,7 @@ Parsers for CASTEP
 from __future__ import absolute_import
 from aiida.plugins import DataFactory
 from aiida.parsers.parser import Parser  # , ParserParamManager
-from aiida_castep.parsers.raw_parser import parse_raw_ouput, units
+from aiida_castep.parsers.raw_parser import parse_raw_ouput, units, RawParser
 from aiida_castep.parsers.raw_parser import __version__ as raw_parser_version
 from aiida_castep.parsers.utils import (structure_from_input,
                                         add_last_if_exists, desort_structure,
@@ -96,12 +96,21 @@ class CastepParser(Parser):
             '\n')
 
         ###### CALL THE RAW PASSING FUNCTION TO PARSE DATA #######
+        # out_dict, trajectory_data, structure_data, bands_data, exit_code\
+        #     = parse_raw_ouput(out_lines=out_file_content,
+        #                       input_dict=input_dict,
+        #                       parser_opts=parser_opts,
+        #                       md_geom_lines=out_md_geom_name_content,
+        #                       bands_lines=out_bands_content)
+
+        raw_parser = RawParser(
+            out_lines=out_file_content,
+            input_dict=input_dict,
+            md_geom_info=out_md_geom_name_content,
+            bands_lines=out_bands_content,
+            **parser_opts)
         out_dict, trajectory_data, structure_data, bands_data, exit_code\
-            = parse_raw_ouput(out_lines=out_file_content,
-                              input_dict=input_dict,
-                              parser_opts=parser_opts,
-                              md_geom_lines=out_md_geom_name_content,
-                              bands_lines=out_bands_content)
+            = raw_parser.parse()
 
         # Append the final value of trajectory_data into out_dict
         last_value_keys = [
@@ -116,7 +125,7 @@ class CastepParser(Parser):
 
         ######## --- PROCESSING BANDS DATA -- ########
         if has_bands:
-            bands_node = bands_to_bandsdata(bands_data)
+            bands_node = bands_to_bandsdata(**bands_data)
             self.out(out_ln['bands'], bands_node)
 
         ######## --- PROCESSING STRUCTURE DATA --- ########
@@ -238,21 +247,24 @@ class Pot1dParser(Parser):
         return successful, []
 
 
-def bands_to_bandsdata(bands_res):
+def bands_to_bandsdata(bands_info, kpoints, bands):
     """
     Convert the result of parser_dot_bands into a BandsData object
 
-    :param bands_res: Output from ``parse_dot_bands`` function.
+    :param bands_info: A dictionary of the informations of the bands file.
+      contains field such as eferemi, units, cell
+    :param kpoints: An array of the kpoints of the bands, rows are
+      (kindex, kx, ky, kz, weight)
+    :param bands: The actual bands array
     :return: A BandsData object
     :rtype: ``aiida.orm.bands.data.array.bands.BandsData``
     """
 
     import numpy as np
-    bands = BandsData()
+    bands_node = BandsData()
 
     # Extract the index of the kpoints
-    # kpn_array are rows (kindex, kx, ky, kz, weight)
-    kpn_array = np.array(bands_res[1])
+    kpn_array = np.asarray(kpoints)
     k_index = kpn_array[:, 0]
 
     # We need to restore the order of the kpoints
@@ -262,25 +274,26 @@ def bands_to_bandsdata(bands_res):
 
     _weights = kpn_array[:, -1]
     kpts = kpn_array[:, 1:-1]
-    bands.set_kpoints(kpts, weights=_weights)
+    bands_node.set_kpoints(kpts, weights=_weights)
 
+    # Sort the bands to match the order of the kpoints
+    bands_array = np.asarray(bands)[k_sort]
     # We need to swap the axes from kpt,spin,engs to spin,kpt,engs
-    bands_array = np.array(bands_res[2])[k_sort]  #  Sort the bands
     bands_array = bands_array.swapaxes(0, 1)
 
     # Squeeze the first dimension e.g when there is a single spin
     if bands_array.shape[0] == 1:
         bands_array = bands_array[0]
     bands_array = bands_array * units['Eh']
-    bands_res[0]['efermi'] *= units['Eh']
-    bands_res[0]['units'] = "eV"
+    bands_info['efermi'] *= units['Eh']
+    bands_info['units'] = "eV"
 
-    bands.set_bands(bands_array)
-    bands.set_cell(bands_res[0]['cell'], pbc=(True, True, True))
+    bands_node.set_bands(bands_array)
+    bands_node.set_cell(bands_info['cell'], pbc=(True, True, True))
 
     # Store information from *.bands in the attributes
     # This is needs as we need to know the number of electrons
     # and the fermi energy
-    for key, value in bands_res[0].items():
-        bands.set_attribute(key, value)
-    return bands
+    for key, value in bands_info.items():
+        bands_node.set_attribute(key, value)
+    return bands_node

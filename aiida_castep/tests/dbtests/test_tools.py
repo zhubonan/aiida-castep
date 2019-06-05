@@ -31,7 +31,7 @@ def test_use_pseudos(sto_calc_inps_or_builder, create_otfg_group):
 
 
 def test_castep_summary_builder(sto_calc_inps_or_builder):
-    # Test the get_castep_input_summary method
+    """Test the get_castep_input_summary method"""
     from aiida_castep.calculations.tools import castep_input_summary
 
     keys = [
@@ -86,6 +86,7 @@ def test_param_update(sto_calc_inps_or_builder):
 
 
 def test_create_restart_builder(sto_calc_inputs):
+    """Test creating restart from a builder"""
     from aiida_castep.calculations.tools import create_restart
     new_builder = create_restart(sto_calc_inputs, entry_point='castep.castep')
 
@@ -101,6 +102,7 @@ def test_create_restart_builder(sto_calc_inputs):
 
 
 def test_create_restart_node(calcjobnode):
+    """Test creating a restart from a CalcJobNode"""
 
     with pytest.raises(RuntimeError):
         new_builder = calcjobnode.tools.create_restart(

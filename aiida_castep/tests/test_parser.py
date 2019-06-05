@@ -1,8 +1,9 @@
 from __future__ import absolute_import
 import unittest
 import pytest
-from aiida_castep.parsers.raw_parser import (
-    parse_castep_text_output, parse_geom_text_output, parse_dot_bands)
+from aiida_castep.parsers.raw_parser import (parse_castep_text_output,
+                                             parse_geom_text_output,
+                                             parse_dot_bands, RawParser)
 
 from ..common import Path
 import os
@@ -102,3 +103,11 @@ class TestParsers(unittest.TestCase):
         self.assertIn('symm_pressure', trajectory_data)
         self.assertTrue(trajectory_data['symm_pressure'])
         self.assertTrue(len(trajectory_data['symm_pressure']) > 10)
+
+    def test_parser_class(self):
+        """Test the classfor RawParser"""
+        bands = self.get_lines(
+            self.data_abs_path / 'Si-geom-stress/aiida.bands')
+        parser = RawParser(self.castep_lines, {},
+                           ['aiida.geom', self.geom_lines], bands)
+        res = parser.parse()
