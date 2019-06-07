@@ -43,15 +43,15 @@ TODOS
 * Methods for importing existing calculations 
 * Support for submitting file based CASTEP calculations.
 * At the moment there is no enforcement on the type in `Dict` input node. For example, setting *smearing_width* to 0.1 and "0.1" is equivalent, but they will store differently in the database.
-* Update the plugin to work with AiiDA 1.0.0
-* WorkChain development for automated restart of calculations. (Waiting for AiiDA 1.0.0)
+* WorkChain developments for automated relaxation and bandstructure calculations.
 
 How to test
 -----------
 
-Use `verdi -p <test_profile> devel tests db.castep` to do tests.
-Make sure the plugin is installed and AiiDA is configured before this.  
-Tests are being migrated using the `pytest` interface provided by `aiida_core`.
-To check these tests, type `pytest` while inside the package folder.
-You may have to install additional dependencies, which can be done with
-`pip install aiida_core[testing]`.
+The tests uses the `pytest` framework. First, install with the dependencies
+```
+pip install aiida_core[testing]
+pip install aiida-castep[testing]
+```
+
+Then you can run the command `pytest` from the project directory.
