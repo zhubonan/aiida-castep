@@ -15,7 +15,7 @@
         "Programming Language :: Python :: 3.5",
         "Framework :: AiiDA"
     ],
-    "version": "1.0.0a",
+    "version": "1.0.0b1",
     "setup_requires": ["reentry"],
     "reentry_register": true,
     "install_requires": [

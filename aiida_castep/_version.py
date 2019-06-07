@@ -8,6 +8,9 @@ be increased.This avoids falsely matching nodes via hashes.
 CHNAGELOG
 0.2.3 -> FIX a typo psedu_pots -> pseudo_pots
 0.2.4 -> Sort the bands and parsed kpoints from .bands file using the index given
+
+1.0.0 -> initial version for plugin version 1.0.
+Changed the warning messages to EXIT_CODE style
 """
 
-CALC_PARSER_VERSION = "0.2.4"
+CALC_PARSER_VERSION = "1.0.0"
