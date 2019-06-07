@@ -267,7 +267,8 @@ def parse_castep_text_output(out_lines, input_dict):
         SCF_FAILURE_ERROR,
         "STOP keyword detected in parameter file. Stop execution.":
         STOP_REQUESTED_ERROR,
-        "Insufficient time for another iteration": INSUFFICENT_TIME_ERROR,
+        "Insufficient time for another iteration":
+        INSUFFICENT_TIME_ERROR,
     }
 
     # Warnings that won't result in a calculation in FAILED state
