@@ -147,7 +147,7 @@ class RawParser(object):
                     exit_code = code
                     break
 
-        # Construct a structure data from the last frame
+        # Pick out trajectory data and structure data
         if self.dot_castep_traj:
             traj_data = dict(self.dot_castep_traj)
             self.traj_data = traj_data
@@ -167,6 +167,9 @@ class RawParser(object):
             else:
                 structure_data = dict(
                     cell=last_cell, positions=last_positions, symbols=symbols)
+        else:
+            traj_data = {}
+            structure_data = {}
 
         # A dictionry for the results to be returned
         results_dict = dict(self.dot_castep_data)
