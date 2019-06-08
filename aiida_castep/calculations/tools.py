@@ -83,7 +83,7 @@ class CastepCalcTools(CalculationTools):
             calc2 = the_other_calc
 
         from deepdiff import DeepDiff
-        this_param = self._node.get_castep_input_summary()
+        this_param = castep_input_summary(self._node)
         other_param = castep_input_summary(calc2)
         if reverse is True:
             res = DeepDiff(this_param, other_param)
