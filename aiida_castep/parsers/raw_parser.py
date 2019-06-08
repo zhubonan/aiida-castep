@@ -90,15 +90,16 @@ class RawParser(object):
     def parse(self):
         """
         :return: A list of:
-        * out_dict: a dictionary with parsed data.
 
-        * trajectory_data: dictionary of trajectory data.
+         * out_dict: a dictionary with parsed data.
 
-        * structure data: dictionary of cell, positions and symbols.
+         * trajectory_data: dictionary of trajectory data.
 
-        * exit code: exit code indicating potential problems of the run
+         * structure data: dictionary of cell, positions and symbols.
 
-        2 different keys to check in out_dict: *parser_warning* and *warnings*.
+         * exit_code: exit code indicating potential problems of the run
+           2 different keys to check in out_dict: *parser_warning* and *warnings*.
+
         """
         parser_version = __version__
         parser_info = {}
