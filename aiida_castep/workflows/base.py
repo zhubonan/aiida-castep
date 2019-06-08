@@ -192,43 +192,55 @@ class CastepBaseWorkChain(WorkChain):
             self.inputs.code,
         })
 
-        self.ctx.inputs.metadata = AttributeDict()
-        if 'options' in self.inputs:
-            self.ctx.inputs.metadata.options = self.inputs.options.get_dict()
-        else:
-            self.ctx.inputs.metadata.options = {}
-
-        # Propagate the settings
+        # Propagate the settings to the inputs of the CalcJob
         if 'settings' in self.inputs:
             self.ctx.inputs.settings = self.inputs.settings.get_dict()
         else:
             self.ctx.inputs.settings = {}
 
-        # We are dealing with a plain inputs
+        # Process the options input
+        self.ctx.inputs.metadata = AttributeDict()
+        if 'options' in self.inputs:
+            options = self.inputs.options.get_dict()
+        else:
+            options = {}
+
+        if 'label' in options:
+            self.ctx.inputs.metadata.label = options.pop('label')
+
+        if 'description' in options:
+            self.ctx.inputs.metadata.description = options.pop('description')
+
+        # Deal with the continuations
+        use_bin = options.pop('use_castep_bin', False)
+        if use_bin:
+            restart_suffix = 'castep_bin'
+        else:
+            restart_suffix = 'check'
+
+        seedname = options.get('seedname',
+                               self._calculation_class._DEFAULTS['seedname'])
+
+        self.ctx.inputs.metadata.options = options
+        # In case we are dealing with a plain inputs
         if 'PARAM' not in self.ctx.inputs.parameters \
            and 'CELL' not in self.ctx.inputs.parameters:
             helper = CastepHelper()
             param_dict = helper._from_flat_dict(self.ctx.inputs.parameters)
             self.ctx.inputs.parameters = param_dict
-
-        # Deal with the continuations
-        if self.ctx.inputs.metadata.options.get('use_castep_bin') is True:
-            suffix = 'castep_bin'
-        else:
-            suffix = 'check'
-
         if self.inputs.get('continuation_folder'):
             self.ctx.inputs[
                 inp_ln['parent_calc_folder']] = self.inputs.continuation_folder
             self.ctx.inputs.parameters['PARAM'][
-                'continuation'] = 'parent/aiida.' + suffix
+                'continuation'] = 'parent/{}.{}'.format(
+                    seedname, restart_suffix)
             self.ctx.inputs.parameters['PARAM'].pop('reuse', None)
 
         elif self.inputs.get('reuse_folder'):
             self.ctx.inputs[
                 inp_ln['parent_calc_folder']] = self.inputs.reuse_folder
             self.ctx.inputs.parameters['PARAM'][
-                'reuse'] = 'parent/aiida.' + suffix
+                'reuse'] = 'parent/{}.{}'.format(seedname, restart_suffix)
             self.ctx.inputs.parameters['PARAM'].pop('continuation', None)
 
         # Kpoints
