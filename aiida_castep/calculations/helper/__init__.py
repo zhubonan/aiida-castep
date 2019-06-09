@@ -149,7 +149,9 @@ class CastepHelper(object):
         return invalid_keys, wrong_keys
 
     def _from_flat_dict(self, input_dict):
-        """Construct a {"PARAM":{}, "CELL":{}} dictionary from a flat dictionary"""
+        """
+        Construct a {"PARAM":{}, "CELL":{}} dictionary from a flat dictionary
+        :returns: a list of [out_dict, keys_not_found]"""
 
         if self.BY_PASS:
             raise RuntimeError(

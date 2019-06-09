@@ -208,7 +208,12 @@ class CastepInputGenerator(object):
                 self.param_dict["PARAM"]["spin"] = total_spin
 
         # --------- KPOINTS ---------
-        kpoints = self.inputs.kpoints
+        kpoints = self.inputs.get('kpoints')
+        use_kpoints = self.inputs.metadata.options.use_kpoints
+        if not kpoints and use_kpoints:
+            raise InputValidationError(
+                'Kpoints required but not found in the input')
+
         if self.inputs.metadata.options.use_kpoints:
             try:
                 mesh, offset = kpoints.get_kpoints_mesh()

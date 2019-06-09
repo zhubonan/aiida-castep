@@ -39,7 +39,7 @@ class CastepBaseWorkChain(WorkChain):
 
     _context_pain_dicts = ('parameters', 'settings')
     _calculation_class = CastepCalculation
-    _verbose = True
+    _verbose = False
 
     def __init__(self, *args, **kwargs):
         super(CastepBaseWorkChain, self).__init__(*args, **kwargs)
@@ -106,6 +106,11 @@ class CastepBaseWorkChain(WorkChain):
                   "each kind such as {O: <PsudoNode>}"),
             dynamic=True)
         spec.input(
+            'pseudos_family',
+            valid_type=orm.Str,
+            serializer=to_aiida_type,
+            help='Pseudopotential family to be used')
+        spec.input(
             'kpoints',
             valid_type=KpointsData,
             required=False,
@@ -114,6 +119,7 @@ class CastepBaseWorkChain(WorkChain):
             'kpoints_spacing',
             valid_type=orm.Float,
             required=False,
+            serializer=to_aiida_type,
             help="Kpoint spacing")
         spec.input(
             'options',
@@ -222,12 +228,12 @@ class CastepBaseWorkChain(WorkChain):
                                self._calculation_class._DEFAULTS['seedname'])
 
         self.ctx.inputs.metadata.options = options
-        # In case we are dealing with a plain inputs
-        if 'PARAM' not in self.ctx.inputs.parameters \
-           and 'CELL' not in self.ctx.inputs.parameters:
-            helper = CastepHelper()
-            param_dict = helper._from_flat_dict(self.ctx.inputs.parameters)
-            self.ctx.inputs.parameters = param_dict
+
+        # In case we are dealing with a plain inputs, extend any plain inputs
+        helper = CastepHelper()
+        param_dict = helper.check_dict(self.ctx.inputs.parameters)
+        self.ctx.inputs.parameters = param_dict
+
         if self.inputs.get('continuation_folder'):
             self.ctx.inputs[
                 inp_ln['parent_calc_folder']] = self.inputs.continuation_folder
@@ -247,8 +253,8 @@ class CastepBaseWorkChain(WorkChain):
         if self.inputs.get('kpoints'):
             self.ctx.inputs.kpoints = self.inputs.kpoints
         elif self.inputs.get('kpoints_spacing'):
-            self.ctx.inputs.parameters['CELL']['KPOINTS_MP_SPACING'] = float(
-                self.inputs.kpoints_spacing)
+            self.ctx.inputs.parameters['CELL'][
+                'kpoints_mp_spacing'] = self.inputs.kpoints_spacing.value
         else:
             self.report('No valid kpoint input specified')
             return self.exit_codes.ERROR_INVALID_INPUT_RESOURCES
@@ -256,10 +262,10 @@ class CastepBaseWorkChain(WorkChain):
         # Validate the inputs related to pseudopotentials
         structure = self.inputs.structure
         pseudos = self.inputs.get('pseudos', None)
-        pseudo_family = self.inputs.get('pseudo_family', None)
-        if pseudo_family:
+        pseudos_family = self.inputs.get('pseudos_family', None)
+        if pseudos_family:
             pseudo_dict = get_pseudos_from_structure(structure,
-                                                     str(pseudo_family))
+                                                     pseudos_family.value)
             self.ctx.inputs.pseudos = pseudo_dict
         elif pseudos:
             self.ctx.inputs.pseudos = pseudos
