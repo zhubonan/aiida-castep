@@ -30,7 +30,7 @@ class CastepInputGenerator(object):
         # objects
         self.param_file = ParamFile()
         self.cell_file = CellFile()
-        self.local_copy_list_to_append = []
+        self.local_copy_list_to_append = set()
 
     def _generate_header_lines(self, other_nodes=None):
         """
@@ -91,7 +91,7 @@ class CastepInputGenerator(object):
             self.param_file = ParamFile()
             self.cell_file = CellFile()
 
-        self.local_copy_list_to_append = []
+        self.local_copy_list_to_append = set()
         param_dict = self.inputs[in_ln['parameters']].get_dict()
         settings_node = self.inputs.get('settings', None)
         settings_dict = settings_node.get_dict() if settings_node else {}
@@ -158,12 +158,26 @@ class CastepInputGenerator(object):
 
             # Position is always needed
             pos = site.position
+            mixture = False
             try:
                 name = kind.symbol
             # If we are dealing with mixed atoms
             except ValueError:
                 name = kind.symbols
                 mixture_count += 1
+                mixture = True
+
+            # If the symbol is not the same as the kindname
+            # e.g there are inequivalent atoms of the same element
+            # We change the name to '<symbol>:<kind.name>'
+            if not mixture:
+                # Only do this if the name(symbol) is not equal to the kindname
+                if name != kind.name:
+                    name = name + ':' + kind.name
+            else:
+                # If we are dealing with the mixtures,
+                # we also add the kindname as an identifier
+                name = [ntemp + ':' + kind.name for ntemp in name]
 
             if spin_list:
                 spin = spin_list[i]
@@ -175,6 +189,7 @@ class CastepInputGenerator(object):
                 label = label_list[i]
             else:
                 label = None
+
             # Get the line of positions_abs block
             line = get_castep_ion_line(
                 name,
@@ -273,34 +288,48 @@ class CastepInputGenerator(object):
         # --------- PSEUDOPOTENTIALS --------
         # Check if we are using UPF pseudos
         # Now only support simple elemental pseudopotentials
-        kindname = set()  # All of the kindname
-        species_pot_list = []
+
+        species_pot_map = {}
         pseudos = self.inputs.pseudos
-        for kind in self.inputs[in_ln['structure']].kinds:
-            kindname.add(kind.name)
-
         # Make kindname unique
-        for s in kindname:
-            ps = pseudos[s]  # Get the pseudopotential object
-
-            # If we are dealing with a UpfData object
-            from aiida.orm import UpfData
-            from ..data.otfg import OTFGData
-            from ..data.usp import UspData
-            if isinstance(ps, (UpfData, UspData)):
-                # Add the specification to the file
-                species_pot_list.append("{:5} {}".format(s, ps.filename))
-                # Add to the copy list
-                self.local_copy_list_to_append.append((ps.uuid, ps.filename,
-                                                       ps.filename))
-            # If we are using OTFG, just add the string property of it
-            elif isinstance(ps, OTFGData):
-                species_pot_list.append("{:5} {}".format(s, ps.string))
+        for kind in self.inputs[in_ln['structure']].kinds:
+            symbols = kind.symbols
+            # If the site has multiple symbols, add all of them to the list
+            if len(symbols) > 1:
+                mixture = True
             else:
-                raise InputValidationError(
-                    'Unkonwn node as pseudo: {}'.format(ps))
+                mixture = False
+            for symbol in symbols:
+                if symbol == kind.name:
+                    pseudo_name = symbol
+                else:
+                    pseudo_name = symbol + ':' + kind.name
 
-        self.cell_file["SPECIES_POT"] = species_pot_list
+                if not mixture:
+                    # Get the pseudopotential is defined by the kind.name
+                    ps = pseudos[kind.name]
+                else:
+                    # If with mixture the pseudopotential is deined as '<kind_name>_<symbol>'
+                    ps = pseudos[kind.name + '_' + symbol]
+
+                # If we are dealing with a UpfData object
+                if isinstance(ps, (UpfData, UspData)):
+                    # Add the specification to the file
+                    species_pot_map[pseudo_name] = "{:5} {}".format(
+                        pseudo_name, ps.filename)
+                    # Add to the copy list
+                    self.local_copy_list_to_append.add((ps.uuid, ps.filename,
+                                                        ps.filename))
+                # If we are using OTFG, just add the string property of it
+                elif isinstance(ps, OTFGData):
+                    species_pot_map[pseudo_name] = "{:5} {}".format(
+                        pseudo_name, ps.string)
+                else:
+                    raise InputValidationError(
+                        'Unkonwn node as pseudo: {}'.format(ps))
+
+        # Ensure it is a list
+        self.cell_file["SPECIES_POT"] = list(species_pot_map.values())
 
     def _prepare_param_file(self):
         """

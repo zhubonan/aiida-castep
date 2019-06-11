@@ -23,6 +23,46 @@ def get_sto_structure():
     return s
 
 
+def get_sto_structure_with_tags():
+    """Return a STO structure"""
+    from aiida.plugins import DataFactory
+    StructureData = DataFactory('structure')
+
+    a = 3.905
+
+    cell = ((a, 0., 0.), (0., a, 0.), (0., 0., a))
+    s = StructureData(cell=cell)
+    s.append_atom(position=(0., 0., 0.), symbols=["Sr"])
+    s.append_atom(position=(a / 2, a / 2, a / 2), symbols=["Ti"])
+    s.append_atom(position=(a / 2, a / 2, 0.), symbols=["O"])
+    s.append_atom(position=(a / 2, 0., a / 2), symbols=["O"], name='O1')
+    s.append_atom(position=(0., a / 2, a / 2), symbols=["O"], name='O2')
+    s.label = "STO"
+    return s
+
+
+def get_mixture_cell():
+    """Return a STO structure"""
+    from aiida.plugins import DataFactory
+    StructureData = DataFactory('structure')
+
+    a = 3.905
+
+    cell = ((a, 0., 0.), (0., a, 0.), (0., 0., a))
+    s = StructureData(cell=cell)
+    s.append_atom(
+        position=(0., 0., 0.),
+        symbols=["Sr", "Ti"],
+        weights=(0.5, 0.5),
+        name='SrTi')
+    s.append_atom(position=(a / 2, a / 2, a / 2), symbols=["Ti"])
+    s.append_atom(position=(a / 2, a / 2, 0.), symbols=["O"])
+    s.append_atom(position=(a / 2, 0., a / 2), symbols=["O"], name='O1')
+    s.append_atom(position=(0., a / 2, a / 2), symbols=["O"], name='O2')
+    s.label = "STO"
+    return s
+
+
 def get_x2_structure(x):
     """Return a O2 molecule in a box"""
     from aiida.plugins import DataFactory

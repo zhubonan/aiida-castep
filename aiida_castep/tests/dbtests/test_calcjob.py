@@ -58,6 +58,38 @@ def test_inp_gen_cell(gen_instance, sto_calc_inputs):
     assert 'C9' in gen_instance.cell_file['SPECIES_POT'][0]
 
 
+def test_cell_with_tags(gen_instance, sto_calc_inputs):
+    """
+    Test that the inputs generator correctly handles the case with
+    kind.name != symbol
+    """
+    from ..utils import get_mixture_cell
+    sto_tags = get_mixture_cell()
+    sto_calc_inputs.structure = sto_tags
+    pseudos = sto_calc_inputs.pseudos
+    pseudos['O1'] = pseudos['O']
+    pseudos['O2'] = pseudos['O']
+    pseudos['SrTi_Sr'] = pseudos['O']
+    pseudos['SrTi_Ti'] = pseudos['O']
+    gen_instance.inputs = sto_calc_inputs
+    gen_instance.prepare_inputs()
+
+    positions = gen_instance.cell_file['POSITIONS_ABS']
+
+    assert 'Sr:SrTi' in positions[0].split('\n')[0]
+    assert 'Ti:SrTi' in positions[0].split('\n')[1]
+
+    # Check the currect type are there
+    assert 'Sr:SrTi' in gen_instance.cell_file['SPECIES_POT'][0]
+    assert 'C9' in gen_instance.cell_file['SPECIES_POT'][0]
+
+    assert 'O:O1' in gen_instance.cell_file['SPECIES_POT'][-2]
+    assert 'C9' in gen_instance.cell_file['SPECIES_POT'][-2]
+
+    assert 'O:O2' in gen_instance.cell_file['SPECIES_POT'][-1]
+    assert 'C9' in gen_instance.cell_file['SPECIES_POT'][-2]
+
+
 @pytest.mark.process_execution
 def test_submission(new_database, sto_calc_inputs):
     """
