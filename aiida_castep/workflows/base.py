@@ -420,7 +420,7 @@ class CastepBaseWorkChain(WorkChain):
         # Raise error if not handled
         if not is_handled:
             raise UnexpectedCalculationFailure(
-                'calculation failusre was not handled')
+                'calculation failure was not handled')
 
         if handler_report:
             return handler_report.exit_code
