@@ -324,8 +324,8 @@ def export_calculation(n, output_dir, prefix=None):
             if node.get_object(objname).type != FileType.FILE:
                 continue
             with node.open(objname, mode='rb') as fsource:
-                if prefix:
-                    name, suffix = objname.split('.')
+                name, suffix = objname.split('.')
+                if prefix and name == n.get_option('seedname'):
                     outname = prefix + '.' + suffix
                 else:
                     outname = objname
