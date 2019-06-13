@@ -109,6 +109,7 @@ class CastepBaseWorkChain(WorkChain):
             'pseudos_family',
             valid_type=orm.Str,
             serializer=to_aiida_type,
+            required=False,
             help='Pseudopotential family to be used')
         spec.input(
             'kpoints',
@@ -125,8 +126,11 @@ class CastepBaseWorkChain(WorkChain):
             'options',
             valid_type=orm.Dict,
             serializer=to_aiida_type,
+            required=False,
             help=
             'Options specifying resources, labels etc. Passed to the CalcJob.')
+        spec.expose_inputs(
+            CastepCalculation, namespace='calc', include=['metadata'])
 
         spec.output('output_array', valid_type=orm.ArrayData, required=False)
         spec.output(
@@ -204,30 +208,21 @@ class CastepBaseWorkChain(WorkChain):
         else:
             self.ctx.inputs.settings = {}
 
-        # Process the options input
-        self.ctx.inputs.metadata = AttributeDict()
+        # Process the options in the input
         if 'options' in self.inputs:
             options = self.inputs.options.get_dict()
         else:
             options = {}
 
-        if 'label' in options:
-            self.ctx.inputs.metadata.label = options.pop('label')
-
-        if 'description' in options:
-            self.ctx.inputs.metadata.description = options.pop('description')
-
         # Deal with the continuations
-        use_bin = options.pop('use_castep_bin', False)
+        use_bin = options.get('use_castep_bin', False)
         if use_bin:
             restart_suffix = 'castep_bin'
         else:
             restart_suffix = 'check'
 
-        seedname = options.get('seedname',
-                               self._calculation_class._DEFAULTS['seedname'])
-
-        self.ctx.inputs.metadata.options = options
+        # Set the seed name
+        seedname = self.inputs.calc.metadata.options.seedname
 
         # In case we are dealing with a plain inputs, extend any plain inputs
         helper = CastepHelper()
@@ -332,7 +327,10 @@ class CastepBaseWorkChain(WorkChain):
             )
 
         inputs = self._prepare_process_inputs(unwrapped_inputs)
-        calculation = self.submit(self._calculation_class, **inputs)
+        calculation = self.submit(
+            self._calculation_class,
+            metadata=self.inputs.calc.metadata,
+            **inputs)
 
         self.report('launching {}<{}> iteration #{}'.format(
             self.ctx.calc_name, calculation.pk, self.ctx.iteration))
@@ -537,22 +535,22 @@ def _handle_walltime_limit(self, calculation):
 
         if not self.ctx.restart_mode:
 
-            wclock = self.ctx.inputs.metadata.options.get(
+            wclock = self.inputs.calc.metadata.options.get(
                 'max_wallclock_seconds', 3600)
-            wclock_limit = self.ctx.inputs.metadata.options.get(
+            wclock_limit = self.inputs.calc.metadata.options.get(
                 'queue_wallclock_limit', 3600 * 24)
             if wclock == wclock_limit:
                 self.report('Cannot furhter increase the wallclock limit')
                 return ErrorHandlerReport(False, True)
             elif wclock * 1.5 < wclock_limit:
-                self.ctx.inputs.metadata.options[
+                self.inputs.calc.metadata.options[
                     'max_wallclock_seconds'] = int(wclock * 1.5)
             else:
-                self.ctx.inputs.metadata.options[
+                self.inputs.calcmetadata.options[
                     'max_wallclock_seconds'] = int(wclock_limit)
 
             self.report('Adjusted the wallclock limit to {}'.format(
-                self.ctx.inputs.metadata.options['max_wallclock_seconds']))
+                self.inputs.calc.metadata.options['max_wallclock_seconds']))
 
         return ErrorHandlerReport(True, False)
 
