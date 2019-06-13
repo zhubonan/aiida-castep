@@ -59,8 +59,8 @@
         ],
         "aiida.workflows": [
             "castep.base = aiida_castep.workflows.base:CastepBaseWorkChain",
-            "castep.relax = aiida_castep.workflows.base:CastepRelaxWorkChain",
-            "castep.altrelax = aiida_castep.workflows.base:CastepAlterRelaxWorkChain"
+            "castep.relax = aiida_castep.workflows.relax:CastepRelaxWorkChain",
+            "castep.altrelax = aiida_castep.workflows.relax:CastepAlterRelaxWorkChain"
         ]
     }
 }

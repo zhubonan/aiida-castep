@@ -422,7 +422,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
                 User.objects.get_default().get_full_name()),
             "# AiiDA profile: {}".format(profile.name),
             "# Information of the calculation node",
-            "# type: {}".format(self.get_name()),
+            #"# type: {}".format(self.get_name()),
             #"# pk: {}".format(self.pk),
             #"# uuid: {}".format(self.uuid),
             "# label: {}".format(self.inputs.metadata.get('label')),
