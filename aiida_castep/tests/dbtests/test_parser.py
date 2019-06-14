@@ -77,6 +77,35 @@ def test_parse_warnings(
     assert return_node.exit_status == CODES['ERROR_NO_OUTPUT_FILE'][0]
 
 
+def test_parse_errs(
+        new_database,
+        db_test_app,
+        generate_calc_job_node,
+        generate_parser,
+        h2_calc_inputs,
+):
+    """
+    Test basic parsing
+    """
+    from aiida_castep.common import EXIT_CODES_SPEC as CODES
+    from io import StringIO
+
+    node = generate_calc_job_node(
+        'castep.castep',
+        'H2-geom',
+        inputs=h2_calc_inputs,
+    )
+    parser = generate_parser('castep.castep')
+
+    folder = node.outputs.retrieved
+
+    error_string = 'Error Message\nError'
+    err_handle = StringIO(error_string)
+    folder.put_object_from_filelike(err_handle, 'aiida.0001.err', force=True)
+    results, return_node = parser.parse_from_node(node, store_provenance=False)
+    assert return_node.exit_status == CODES['ERROR_CASTEP_ERROR'][0]
+
+
 def test_parsing_geom(new_database, db_test_app, generate_calc_job_node,
                       generate_parser, h2_calc_inputs):
     """

@@ -37,7 +37,6 @@ OUTPUT_LINKNAMES = {
 # the highest priority is used as the return code
 
 EXIT_CODES_SPEC = OrderedDict((
-    ('CALC_FINISHED', (0, 'Calculation terminated gracefully, end found')),
     ('ERROR_SCF_NOT_CONVERGED', (101,
                                  'SCF Cycles failed to reach convergence')),
     ('ERROR_STOP_REQUESTED',
@@ -46,14 +45,15 @@ EXIT_CODES_SPEC = OrderedDict((
       )),
     ('ERROR_TIMELIMIT_REACHED',
      (107, 'Calculation self-terminated due to time limit')),
-    ('ERROR_NO_END_OF_CALCULATION', (105, 'Cannot find the end of calculation')
-     ),  # Indicated by the lack of summary time
     # Errors with missing files
     ('ERROR_CASTEP_ERROR',
      (104, 'CASTEP generate error files. Check them for details')),
+    ('ERROR_NO_END_OF_CALCULATION', (105, 'Cannot find the end of calculation')
+     ),  # Indicated by the lack of summary time
     ('ERROR_NO_OUTPUT_FILE', (106, 'No output .castep files found')),
     ('ERROR_NO_RETRIEVE_FOLDER', (108, 'No retrieve folder is found')),
     ('UNKOWN_ERROR', (200, 'UNKOWN ERROR')),
+    ('CALC_FINISHED', (0, 'Calculation terminated gracefully, end found')),
 ))
 
 # exit code dictionary with the numerical code as the keys

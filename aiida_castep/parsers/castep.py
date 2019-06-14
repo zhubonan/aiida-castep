@@ -69,9 +69,14 @@ class CastepParser(Parser):
             return self.exit_codes.ERROR_NO_OUTPUT_FILE
 
         # The calculation is failed if there is any err file.
-        for f in filenames:
-            if ".err" in f:
-                exit_code_1 = 'ERROR_CASTEP_ERROR'
+        err_filenames = [fname for fname in filenames if '.err' in fname]
+        if err_filenames:
+            exit_code_1 = 'ERROR_CASTEP_ERROR'
+
+        # Add the content of err files
+        err_contents = set()
+        for fname in err_filenames:
+            err_contents.add(output_folder.get_object_content(fname))
 
         # Trajectory files
         has_md_geom = False
@@ -113,9 +118,8 @@ class CastepParser(Parser):
             **parser_opts)
         out_dict, trajectory_data, structure_data, bands_data, exit_code_2\
             = raw_parser.parse()
-        ranks = {k: n for n, k in enumerate(calc_exit_code)}
 
-        # Combine the exit codes
+        # Combine the exit codes use the more specific error
         exit_code = None
         for code in calc_exit_code:
             if code in (exit_code_2, exit_code_1):
@@ -132,6 +136,9 @@ class CastepParser(Parser):
 
         # Add warnings from this level
         out_dict["warnings"].extend(warnings)
+
+        # Add error messages
+        out_dict["error_messages"] = list(err_contents)
 
         ######## --- PROCESSING BANDS DATA -- ########
         if has_bands:
