@@ -80,14 +80,12 @@ def test_cell_with_tags(gen_instance, sto_calc_inputs):
     assert 'Ti:SrTi' in positions[0].split('\n')[1]
 
     # Check the currect type are there
-    assert 'Sr:SrTi' in gen_instance.cell_file['SPECIES_POT'][0]
-    assert 'C9' in gen_instance.cell_file['SPECIES_POT'][0]
-
-    assert 'O:O1' in gen_instance.cell_file['SPECIES_POT'][-2]
-    assert 'C9' in gen_instance.cell_file['SPECIES_POT'][-2]
-
-    assert 'O:O2' in gen_instance.cell_file['SPECIES_POT'][-1]
-    assert 'C9' in gen_instance.cell_file['SPECIES_POT'][-2]
+    species_pots = [
+        tuple(line.split()) for line in gen_instance.cell_file['SPECIES_POT']
+    ]
+    assert ('Sr:SrTi', 'C9') in species_pots
+    assert ('O:O1', 'C9') in species_pots
+    assert ('O:O2', 'C9') in species_pots
 
 
 @pytest.mark.process_execution
