@@ -4,6 +4,7 @@ Check if various AiiDA types are created correctly.
 """
 
 from __future__ import absolute_import
+import six
 import pytest
 from aiida_castep.common import OUTPUT_LINKNAMES
 
@@ -99,7 +100,7 @@ def test_parse_errs(
 
     folder = node.outputs.retrieved
 
-    error_string = 'Error Message\nError'
+    error_string = u'Error Message\nError'
     err_handle = StringIO(error_string)
     folder.put_object_from_filelike(err_handle, 'aiida.0001.err', force=True)
     results, return_node = parser.parse_from_node(node, store_provenance=False)
