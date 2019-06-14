@@ -523,7 +523,7 @@ def _handle_walltime_limit(self, calculation):
         self.ctx.restart_calc = calculation
         self.ctx.restart_mode = None
         dot_castep = _get_castep_output_file(calculation)
-        for n, line in dot_castep[::-1]:
+        for n, line in enumerate(dot_castep[::-1]):
             model_match = re.match(r'Writing model to \w+\.(\w+)', line)
             # If the writing model is at the last line there is a good
             # Chance that it was interrupted
