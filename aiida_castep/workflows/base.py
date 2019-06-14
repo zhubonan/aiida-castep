@@ -456,16 +456,20 @@ class CastepBaseWorkChain(WorkChain):
         if exception:
             self.report('{}'.format(exception))
 
-        if self.ctx.unexpected_failure:
-            self.report(
-                'failure of {}<{}> could not be handled for the second consecutive time'
-                .format(self.ctx.calc_name, calculation.pk))
-            return self.exit_codes.UNKOWN_ERROR
+        # if self.ctx.unexpected_failure:
+        #     self.report(
+        #         'failure of {}<{}> could not be handled for the second consecutive time'
+        #         .format(self.ctx.calc_name, calculation.pk))
+        #     return self.exit_codes.UNKOWN_ERROR
 
-        else:
-            self.report(
-                'failure of {}<{}> could not be handled, restarting once more'.
-                format(self.ctx.calc_name, calculation.pk))
+        # else:
+        #     self.report(
+        #         'failure of {}<{}> could not be handled, restarting once more'.
+        #         format(self.ctx.calc_name, calculation.pk))
+
+        self.report('failure of {}<{}> could not be handled'.format(
+            self.ctx.calc_name, calculation.pk))
+        return self.exit_codes.UNKOWN_ERROR
 
 
 @register_error_handler(CastepBaseWorkChain, 900)
