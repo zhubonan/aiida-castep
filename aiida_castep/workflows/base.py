@@ -130,7 +130,8 @@ class CastepBaseWorkChain(WorkChain):
             serializer=to_aiida_type,
             required=False,
             help=
-            'Options specifying resources, labels etc. Passed to the CalcJob.')
+            ('Options specifying resources, labels etc. Passed to the CalcJob.'
+             'Avaliable options: queue_wallclock_limit, use_castep_bin'))
         spec.expose_inputs(
             CastepCalculation, namespace='calc', include=['metadata'])
 
@@ -215,6 +216,8 @@ class CastepBaseWorkChain(WorkChain):
             options = self.inputs.options.get_dict()
         else:
             options = {}
+
+        self.ctx.options = options
 
         # Deal with the continuations
         use_bin = options.get('use_castep_bin', False)
@@ -550,8 +553,8 @@ def _handle_walltime_limit(self, calculation):
 
             wclock = self.inputs.calc.metadata.options.get(
                 'max_wallclock_seconds', 3600)
-            wclock_limit = self.inputs.calc.metadata.options.get(
-                'queue_wallclock_limit', 3600 * 24)
+            wclock_limit = self.ctx.options.get('queue_wallclock_limit',
+                                                3600 * 24)
             if wclock == wclock_limit:
                 self.report('Cannot furhter increase the wallclock limit')
                 return ErrorHandlerReport(False, True)
