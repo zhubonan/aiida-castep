@@ -6,6 +6,8 @@ implementing more complex ones
 from __future__ import absolute_import
 import six
 import re
+import numpy as np
+
 from aiida.engine import WorkChain, if_, while_, ToContext, append_
 from aiida.orm.nodes.data.base import to_aiida_type
 from aiida.orm import UpfData
@@ -248,8 +250,15 @@ class CastepBaseWorkChain(WorkChain):
         if self.inputs.get('kpoints'):
             self.ctx.inputs.kpoints = self.inputs.kpoints
         elif self.inputs.get('kpoints_spacing'):
-            self.ctx.inputs.parameters['CELL'][
-                'kpoints_mp_spacing'] = self.inputs.kpoints_spacing.value
+            spacing = self.inputs.kpoints_spacing.value
+            kpoints = KpointsData()
+            # Here i set the cell directly
+            # The set_cell_from_structure will consider the PBC
+            # However for CASTEP a non-peroidic cell does not make any sense
+            # So the default should be that the structure is peroidic
+            kpoints.set_cell(self.inputs.structure.cell)
+            kpoints.set_kpoints_mesh_from_density(np.pi * 2 * spacing)
+            self.ctx.inputs.kpoints = kpoints
         else:
             self.report('No valid kpoint input specified')
             return self.exit_codes.ERROR_INVALID_INPUT_RESOURCES
