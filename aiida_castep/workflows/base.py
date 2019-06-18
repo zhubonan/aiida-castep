@@ -553,9 +553,10 @@ def _handle_walltime_limit(self, calculation):
 
             wclock = self.inputs.calc.metadata.options.get(
                 'max_wallclock_seconds', 3600)
-            wclock_limit = self.ctx.options.get('queue_wallclock_limit',
-                                                3600 * 24)
-            if wclock == wclock_limit:
+            wclock_limit = self.ctx.options.get('queue_wallclock_limit', None)
+            if wclock_limit is None:
+                pass
+            elif wclock == wclock_limit:
                 self.report('Cannot furhter increase the wallclock limit')
                 return ErrorHandlerReport(False, True)
             elif wclock * 1.5 < wclock_limit:
