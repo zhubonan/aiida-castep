@@ -502,7 +502,7 @@ class CastepTSCalculation(TaskSpecificCalculation):
         super(CastepTSCalculation, cls).define(spec)
         spec.input(
             inp_ln['prod_structure'],
-            valid_type=orm.Structure,
+            valid_type=orm.StructureData,
             required=True,
             help='Product structure for transition state search.')
 
@@ -538,7 +538,7 @@ class CastepExtraKpnCalculation(TaskSpecificCalculation):
     def define(cls, spec):
         import aiida.orm as orm
         super(CastepExtraKpnCalculation, cls).define(spec)
-        spec.inputs(
+        spec.input(
             '{}_kpoints'.format(cls.KPN_NAME.lower()),
             valid_type=orm.KpointsData,
             help='Additional kpoints for {}'.format(cls.KPN_NAME),
