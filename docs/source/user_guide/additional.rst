@@ -2,7 +2,7 @@
 Additional settings
 ===================
 
-An additional ``ParameterData`` node can be used by the calculation. The following fields can be used:
+An additional ``Dict`` node can be used by the calculation. The following fields can be used:
 
 * ``SPINS``: A list of initial spins for each atom.
 

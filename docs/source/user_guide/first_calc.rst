@@ -53,7 +53,7 @@ Setup CASTEP parameters
 -----------------------
 
 For most CASTEP calculations we need a ``<seed>.param`` file and a ``<seed>.cell`` file.
-To work with, ``aiida_castep`` we need a single ``ParameterData`` node that includes the keyword-value pairs that should have been put into the two files.
+To work with, ``aiida_castep`` we need a single ``Dict`` node that includes the keyword-value pairs that should have been put into the two files.
 The node is constructed based on a dictionary::
 
  param_in = {"PARAM": {
@@ -269,7 +269,7 @@ Accessing Results
 
 A series of node will be created when the calculation is finished and parsed.
 Use ``calc.get_outgoing().all()`` to access the output nodes. 
-Alternatively, the main ``ParameterData`` node's content can be return using ``calc.res.<tab completion>``. 
+Alternatively, the main ``Dict`` node's content can be return using ``calc.res.<tab completion>``. 
 Other nodes can be access using ``calc.outputs.<tab completion>``. 
 The calculation's state is set to "FINISHED" after it is completed without error.
 This does not mean that the underlying task has succeeded.

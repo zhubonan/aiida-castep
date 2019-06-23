@@ -61,7 +61,6 @@ the results should look like::
   * castep.ts
   * templatereplacer
 
-
 Generate CASTEP help information
 --------------------------------
 
@@ -124,7 +123,7 @@ For a typical CASTEP calculation, like most density functional theory calculatio
   may be called to simplify the process once the structure is known.
   The pseudopotentials can be any combination of ``OtfgData``, ``UspData``, ``UpfData`` nodes.
 
-* An optional ``ParameterData`` node with link name ``settings`` can be supplied to defines extra properties such as initial spins and use of symbolic link in restart calculations.
+* An optional ``Dict`` node with link name ``settings`` can be supplied to defines extra properties such as initial spins and use of symbolic link in restart calculations.
 
 The simply the process, a ``ProcessBuilder`` instance can be used to define the inputs under interactive python shell.
 Finally, the calculation can be submitted by the ``aiida.engine.submit`` or the ``aiida.engine.run_get_node`` function.
@@ -144,6 +143,6 @@ In addition, the following keys are set automatically:
 
 * *run_time* will be set to 95% of the requested wall-time by default unless it will be less than 3600 seconds.
   This is to avoid running out of time while writing the checkpoint file.
-  To completely disable time limit control, set it to *0* explicitly in ``ParameterData`` node.
+  To completely disable time limit control, set it to *0* explicitly in ``Dict`` node.
 
 * Consistency of spins are checked.  Keyword *spin* in ``<seed>.param`` will be set automatically, if not already defined, using the initial spins set for ``<seed>.cell`` file.
