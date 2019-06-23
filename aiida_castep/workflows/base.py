@@ -145,8 +145,7 @@ class CastepBaseWorkChain(WorkChain):
         spec.output('remote_folder', valid_type=orm.RemoteData)
 
         # Define the exit codes
-        spec.exit_code(900, 'ERROR_INPUT_VALIDATION_FAILURE',
-                       'Input validation is failed')
+        spec.exit_code(900, 'ERROR_INVALID_INPUTS', 'Input validate is failed')
         spec.exit_code(
             201, 'ERROR_TOTAL_WALLCLOCK_EXCEEDED',
             'The maximum length of the wallclocks has been exceeded')
@@ -264,7 +263,7 @@ class CastepBaseWorkChain(WorkChain):
             self.ctx.inputs.kpoints = kpoints
         else:
             self.report('No valid kpoint input specified')
-            return self.exit_codes.ERROR_INVALID_INPUT_RESOURCES
+            return self.exit_codes.ERROR_INVALID_INPUTS
 
         # Validate the inputs related to pseudopotentials
         structure = self.inputs.structure
@@ -278,7 +277,7 @@ class CastepBaseWorkChain(WorkChain):
             self.ctx.inputs.pseudos = pseudos
         else:
             self.report('No valid pseudopotential input specified')
-            return self.exit_codes.ERROR_INVALID_INPUT_RESOURCES
+            return self.exit_codes.ERROR_INVALID_INPUTS
 
     def should_dry_run(self):
         """
