@@ -36,6 +36,15 @@ def param_dict():
     return out
 
 
+@pytest.mark.parametrize('entry_point',
+                         ('castep.bs', 'castep.castep', 'castep.ts',
+                          'castep.pot1d', 'castep.spec', 'castep.phonon'))
+def test_get_builder(db_test_app, entry_point):
+    from aiida.plugins import CalculationFactory
+    cls = CalculationFactory(entry_point)
+    builder = cls.get_builder()
+
+
 def test_inp_gen_param(gen_instance, param_dict):
     """
     Test generate paramters

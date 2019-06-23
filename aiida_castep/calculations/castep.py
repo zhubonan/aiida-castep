@@ -527,72 +527,78 @@ class CastepExtraKpnCalculation(TaskSpecificCalculation):
     """
     CASTEP calculation with extra kpoints (e.g SPEC, BS, PHONON, SPECTRAL)
     """
-    KPN_NAME = ""  # Alias of the name, e.g BS for bandstructure calculation
+    KPN_NAMES = []  # Alias of the name, e.g BS for bandstructure calculation
     REQUIRE_EXTRA_KPN = False  # Check the existence of extra kpoints node
-
-    @classproperty
-    def kpn_name(self):
-        return self.KPN_NAME.lower()
+    REQUIRE_WEIGHTS = True  # Require weights for explicit kpoints
 
     @classmethod
     def define(cls, spec):
         import aiida.orm as orm
         super(CastepExtraKpnCalculation, cls).define(spec)
-        spec.input(
-            '{}_kpoints'.format(cls.KPN_NAME.lower()),
-            valid_type=orm.KpointsData,
-            help='Additional kpoints for {}'.format(cls.KPN_NAME),
-            required=cls.REQUIRE_EXTRA_KPN,
-        )
+        for required, kpn_name in cls.KPN_NAMES:
+            spec.input(
+                '{}_kpoints'.format(kpn_name.lower()),
+                valid_type=orm.KpointsData,
+                help='Additional kpoints for {}'.format(kpn_name),
+                required=required,
+            )
 
     def _prepare_cell_file(self):
         """Add BS kpoints information to the calculation"""
         super(CastepExtraKpnCalculation, self)._prepare_cell_file()
 
-        extra_kpns = self.inputs.get('{}_kpoints'.format(
-            self.KPN_NAME.lower()))
-        # If not defined, just return
-        if extra_kpns is None:
-            return
+        for _, kpn_name in self.KPN_NAMES:
+            extra_kpns = self.inputs.get('{}_kpoints'.format(kpn_name.lower()))
+            # If not defined, just return
+            if extra_kpns is None:
+                continue
 
-        try:
-            mesh, offset = extra_kpns.get_kpoints_mesh()
-            has_mesh = True
-        except AttributeError:
             try:
-                bs_kpts_list = extra_kpns.get_kpoints()
-                num_kpoints = len(bs_kpts_list)
-                has_mesh = False
-                if num_kpoints == 0:
+                mesh, offset = extra_kpns.get_kpoints_mesh()
+                has_mesh = True
+            except AttributeError:
+                # Not defined as mesh
+                try:
+                    bs_kpts_list = extra_kpns.get_kpoints()
+                    num_kpoints = len(bs_kpts_list)
+                    has_mesh = False
+                    if num_kpoints == 0:
+                        raise InputValidationError(
+                            "At least one k points must be provided")
+                except AttributeError:
                     raise InputValidationError(
-                        "At least one k points must be provided")
-            except AttributeError:
-                raise InputValidationError(
-                    "No valid {}_kpoints have been found".format(
-                        self.kpn_name))
+                        "No valid {}_kpoints have been found".format(
+                            kpn_name.lower()))
 
-            try:
-                _, weights = extra_kpns.get_kpoints(also_weights=True)
+                try:
+                    _, weights = extra_kpns.get_kpoints(also_weights=True)
 
-            except AttributeError:
-                import numpy as np
-                weights = np.ones(num_kpoints, dtype=float) / num_kpoints
+                except AttributeError:
+                    import numpy as np
+                    weights = np.ones(num_kpoints, dtype=float) / num_kpoints
 
-        if has_mesh is True:
-            mesh_name = "{}_kpoints_mp_grid".format(self.kpn_name)
-            self.cell_file[mesh_name] = "{} {} {}".format(*mesh)
-            if offset != [0., 0., 0.]:
-                self.cell_file[mesh_name.replace(
-                    "grid", "offset")] = "{} {} {}".format(*offset)
-        else:
-            bs_kpts_lines = []
-            for kpoint, weight in zip(bs_kpts_list, weights):
-                bs_kpts_lines.append("{:18.10f} {:18.10f} "
-                                     "{:18.10f} {:18.10f}".format(
-                                         kpoint[0], kpoint[1], kpoint[2],
-                                         weight))
-            bname = "{}_kpoints_list".format(self.kpn_name).upper()
-            self.cell_file[bname] = bs_kpts_lines
+            # Add to the cell file
+            if has_mesh is True:
+                mesh_name = "{}_kpoints_mp_grid".format(kpn_name.lower())
+                self.cell_file[mesh_name] = "{} {} {}".format(*mesh)
+                if offset != [0., 0., 0.]:
+                    self.cell_file[mesh_name.replace(
+                        "grid", "offset")] = "{} {} {}".format(*offset)
+            else:
+                extra_kpts_lines = []
+                for kpoint, weight in zip(bs_kpts_list, weights):
+                    if self.REQUIRE_WEIGHTS:
+                        extra_kpts_lines.append("{:18.10f} {:18.10f} "
+                                                "{:18.10f} {:18.10f}".format(
+                                                    kpoint[0], kpoint[1],
+                                                    kpoint[2], weight))
+                    else:
+                        extra_kpts_lines.append("{:18.10f} {:18.10f} "
+                                                "{:18.10f}".format(
+                                                    kpoint[0], kpoint[1],
+                                                    kpoint[2]))
+                bname = "{}_kpoints_list".format(kpn_name).upper()
+                self.cell_file[bname] = extra_kpts_lines
 
     @classmethod
     def get_castep_input_summary(cls, builder):
@@ -614,7 +620,7 @@ class CastepBSCalculation(CastepExtraKpnCalculation):
 
     TASK = "BANDSTRUCTURE"
     _acceptable_tasks = [TASK]
-    KPN_NAME = "BS"
+    KPN_NAMES = ((True, "BS"), )
 
 
 class CastepSpectralCalculation(CastepExtraKpnCalculation):
@@ -623,7 +629,7 @@ class CastepSpectralCalculation(CastepExtraKpnCalculation):
     """
     TASK = "SPECTRAL"
     _acceptable_tasks = [TASK]
-    KPN_NAME = "SPECTRAL"
+    KPN_NAMES = ((True, "SPECTRAL"), )
 
 
 class CastepOpticsCalclulation(CastepExtraKpnCalculation):
@@ -632,7 +638,16 @@ class CastepOpticsCalclulation(CastepExtraKpnCalculation):
     """
     TASK = "OPTICS"
     _acceptable_tasks = [TASK]
-    KPN_NAME = "OPTICS"
+    KPN_NAMES = ((True, "OPTICS"), )
+
+
+class CastepPhononCalculation(CastepExtraKpnCalculation):
+    """
+    CASTEP Phonon calculation
+    """
+    TASK = "PHONON"
+    _acceptable_tasks = [TASK]
+    KPN_NAMES = ((True, "PHONON"), (False, "PHONON_FINE"))
 
 
 def submit_test(process_class, inputs=None):
