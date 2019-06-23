@@ -137,12 +137,14 @@ This includes the generation time, AiiDA user, pk, uuid, label and description o
 All keywords are written in lower case.
 In addition, the following keys are set automatically:
 
-* *iprint* is set to 1, otherwise parsing may not be fully supported.
+* *iprint* is set to 1 by default. *iprint = 2* may work but not fully tested yet.
 
 * If not set explicitly, *comment* will be set as the label of the calculation node to keep things tracked.
 
-* *run_time* will be set to 95% of the requested wall-time by default unless it will be less than 3600 seconds.
+* *run_time* will be set to 95% of the requested wall-time by default unless it will be less than 180 seconds.
   This is to avoid running out of time while writing the checkpoint file.
+  CASTEP does try to be intelligent and stop if it thinkgs the next iteration (geometry optimisation, phonons e.t.c)
+  will exceed the time limit. 
   To completely disable time limit control, set it to *0* explicitly in ``Dict`` node.
 
 * Consistency of spins are checked.  Keyword *spin* in ``<seed>.param`` will be set automatically, if not already defined, using the initial spins set for ``<seed>.cell`` file.
