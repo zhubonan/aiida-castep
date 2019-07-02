@@ -32,6 +32,8 @@ KpointsData = DataFactory("array.kpoints")
 StructureData = DataFactory("structure")
 Dict = DataFactory("dict")
 
+__version__ = '0.0.1'
+
 
 class CastepBaseWorkChain(WorkChain):
     """
@@ -59,34 +61,11 @@ class CastepBaseWorkChain(WorkChain):
         super(CastepBaseWorkChain, cls).define(spec)
 
         # The inputs
-        spec.input(
-            'max_iterations',
-            valid_type=orm.Int,
-            default=orm.Int(10),
-            serializer=to_aiida_type,
-            help='Maximum number of restarts')
-        spec.input(
-            'code',
-            valid_type=orm.Code,
-            required=True,
-            help='Code for the CASTEP calculation')
-        spec.input(
-            'structure',
-            valid_type=orm.StructureData,
-            help="Defines the input structure")
-        spec.input(
-            'settings',
-            valid_type=orm.Dict,
-            serializer=to_aiida_type,
-            required=False,
-            help="Use an additional node for sepcial settings")
-        spec.input(
-            'parameters',
-            valid_type=orm.Dict,
-            serializer=to_aiida_type,
-            help=
-            "Use a node that sepcifies the input parameters, supports flat format"
-        )
+        spec.input('max_iterations',
+                   valid_type=orm.Int,
+                   default=orm.Int(10),
+                   serializer=to_aiida_type,
+                   help='Maximum number of restarts')
         spec.input(
             'reuse_folder',
             valid_type=orm.RemoteData,
@@ -99,31 +78,16 @@ class CastepBaseWorkChain(WorkChain):
             help=
             'Use a remote folder as the parent folder. Useful for restarts.',
             required=False)
-        spec.input_namespace(
-            'pseudos',
-            valid_type=(UspData, OTFGData, UpfData),
-            help=("Use nodes for the pseudopotentails of one of"
-                  "the element in the structure. You should pass a"
-                  "a dictionary specifying the pseudpotential node for"
-                  "each kind such as {O: <PsudoNode>}"),
-            dynamic=True)
-        spec.input(
-            'pseudos_family',
-            valid_type=orm.Str,
-            serializer=to_aiida_type,
-            required=False,
-            help='Pseudopotential family to be used')
-        spec.input(
-            'kpoints',
-            valid_type=KpointsData,
-            required=False,
-            help="Use a node defining the kpoints for the calculation")
-        spec.input(
-            'kpoints_spacing',
-            valid_type=orm.Float,
-            required=False,
-            serializer=to_aiida_type,
-            help="Kpoint spacing")
+        spec.input('pseudos_family',
+                   valid_type=orm.Str,
+                   serializer=to_aiida_type,
+                   required=False,
+                   help='Pseudopotential family to be used')
+        spec.input('kpoints_spacing',
+                   valid_type=orm.Float,
+                   required=False,
+                   serializer=to_aiida_type,
+                   help="Kpoint spacing")
         spec.input(
             'options',
             valid_type=orm.Dict,
@@ -132,15 +96,16 @@ class CastepBaseWorkChain(WorkChain):
             help=
             ('Options specifying resources, labels etc. Passed to the CalcJob.'
              'Avaliable options: queue_wallclock_limit, use_castep_bin'))
-        spec.expose_inputs(
-            CastepCalculation, namespace='calc', include=['metadata'])
+        spec.expose_inputs(cls._calculation_class, namespace='calc')
 
         spec.output('output_array', valid_type=orm.ArrayData, required=False)
-        spec.output(
-            'output_trajectory', valid_type=orm.ArrayData, required=False)
+        spec.output('output_trajectory',
+                    valid_type=orm.ArrayData,
+                    required=False)
         spec.output('output_bands', valid_type=orm.BandsData, required=True)
-        spec.output(
-            'output_structure', valid_type=orm.StructureData, required=False)
+        spec.output('output_structure',
+                    valid_type=orm.StructureData,
+                    required=False)
         spec.output('output_parameters', valid_type=orm.Dict, required=True)
         spec.output('remote_folder', valid_type=orm.RemoteData)
 
@@ -197,16 +162,16 @@ class CastepBaseWorkChain(WorkChain):
         to be launched"""
         self.ctx.inputs = AttributeDict({
             'structure':
-            self.inputs.structure,
+            self.inputs.calc.structure,
             'parameters':
-            self.inputs.parameters.get_dict(),
+            self.inputs.calc.parameters.get_dict(),
             'code':
-            self.inputs.code,
+            self.inputs.calc.code,
         })
 
         # Propagate the settings to the inputs of the CalcJob
-        if 'settings' in self.inputs:
-            self.ctx.inputs.settings = self.inputs.settings.get_dict()
+        if 'settings' in self.inputs.calc:
+            self.ctx.inputs.settings = self.inputs.calc.settings.get_dict()
         else:
             self.ctx.inputs.settings = {}
 
@@ -215,7 +180,6 @@ class CastepBaseWorkChain(WorkChain):
             options = self.inputs.options.get_dict()
         else:
             options = {}
-
         self.ctx.options = options
 
         # Deal with the continuations
@@ -249,8 +213,8 @@ class CastepBaseWorkChain(WorkChain):
             self.ctx.inputs.parameters['PARAM'].pop('continuation', None)
 
         # Kpoints
-        if self.inputs.get('kpoints'):
-            self.ctx.inputs.kpoints = self.inputs.kpoints
+        if self.inputs.calc.get('kpoints'):
+            self.ctx.inputs.kpoints = self.inputs.calc.kpoints
         elif self.inputs.get('kpoints_spacing'):
             spacing = self.inputs.kpoints_spacing.value
             kpoints = KpointsData()
@@ -258,7 +222,7 @@ class CastepBaseWorkChain(WorkChain):
             # The set_cell_from_structure will consider the PBC
             # However for CASTEP a non-peroidic cell does not make any sense
             # So the default should be that the structure is peroidic
-            kpoints.set_cell(self.inputs.structure.cell)
+            kpoints.set_cell(self.inputs.calc.structure.cell)
             kpoints.set_kpoints_mesh_from_density(np.pi * 2 * spacing)
             self.ctx.inputs.kpoints = kpoints
         else:
@@ -266,8 +230,8 @@ class CastepBaseWorkChain(WorkChain):
             return self.exit_codes.ERROR_INVALID_INPUTS
 
         # Validate the inputs related to pseudopotentials
-        structure = self.inputs.structure
-        pseudos = self.inputs.get('pseudos', None)
+        structure = self.inputs.calc.structure
+        pseudos = self.inputs.calc.get('pseudos', None)
         pseudos_family = self.inputs.get('pseudos_family', None)
         if pseudos_family:
             pseudo_dict = get_pseudos_from_structure(structure,
@@ -338,10 +302,9 @@ class CastepBaseWorkChain(WorkChain):
             )
 
         inputs = self._prepare_process_inputs(unwrapped_inputs)
-        calculation = self.submit(
-            self._calculation_class,
-            metadata=self.inputs.calc.metadata,
-            **inputs)
+        calculation = self.submit(self._calculation_class,
+                                  metadata=self.inputs.calc.metadata,
+                                  **inputs)
 
         self.report('launching {}<{}> iteration #{}'.format(
             self.ctx.calc_name, calculation.pk, self.ctx.iteration))
@@ -410,8 +373,9 @@ class CastepBaseWorkChain(WorkChain):
         is_handled = False
         handler_report = None
 
-        handlers = sorted(
-            self._error_handlers, key=lambda x: x.priority, reverse=True)
+        handlers = sorted(self._error_handlers,
+                          key=lambda x: x.priority,
+                          reverse=True)
 
         if not handlers:
             raise UnexpectedCalculationFailure(
@@ -562,7 +526,7 @@ def _handle_walltime_limit(self, calculation):
                 self.inputs.calc.metadata.options[
                     'max_wallclock_seconds'] = int(wclock * 1.5)
             else:
-                self.inputs.calcmetadata.options[
+                self.inputs.calc.metadata.options[
                     'max_wallclock_seconds'] = int(wclock_limit)
 
             self.report('Adjusted the wallclock limit to {}'.format(

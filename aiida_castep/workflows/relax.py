@@ -12,6 +12,8 @@ import aiida.orm as orm
 from aiida.orm.nodes.data.base import to_aiida_type
 from .base import CastepBaseWorkChain
 
+__version__ = '0.0.1'
+
 
 class CastepRelaxWorkChain(WorkChain):
     """
@@ -31,24 +33,26 @@ class CastepRelaxWorkChain(WorkChain):
 
         # Apply superclass specifications
         super(CastepRelaxWorkChain, cls).define(spec)
-        spec.expose_inputs(
-            CastepBaseWorkChain, namespace='base', exclude=('structure', ))
+        spec.expose_inputs(CastepBaseWorkChain,
+                           namespace='base',
+                           exclude=('calc', ))
+        spec.expose_inputs(CastepBaseWorkChain._calculation_class,
+                           namespace='calc')
 
-        spec.input(
-            'structure',
-            valid_type=orm.StructureData,
-            help='Structure to be used for relxation',
-            required=True)
-        spec.input(
-            'relax_options',
-            valid_type=orm.Dict,
-            serializer=to_aiida_type,
-            required=False,
-            help='Options for relaxation')
+        spec.input('structure',
+                   valid_type=orm.StructureData,
+                   help='Structure to be used for relxation',
+                   required=True)
+        spec.input('relax_options',
+                   valid_type=orm.Dict,
+                   serializer=to_aiida_type,
+                   required=False,
+                   help='Options for relaxation')
 
         spec.expose_outputs(CastepBaseWorkChain, exclude=['output_structure'])
-        spec.output(
-            'output_structure', valid_type=orm.StructureData, required=True)
+        spec.output('output_structure',
+                    valid_type=orm.StructureData,
+                    required=True)
 
         spec.outline(
             cls.setup,
@@ -70,7 +74,8 @@ class CastepRelaxWorkChain(WorkChain):
         self.ctx.current_structure = self.inputs.structure
         self.ctx.restart_mode = 'reuse'
         # A dictionary used to update the default inputs
-        self.ctx.inputs_update = {}
+        self.ctx.calc_update = {}  # Update to the calc namespace
+        self.ctx.base_update = {}  # Update to the baes namespace
         self.ctx.inputs = AttributeDict(self.inputs)
 
         relax_options = self.inputs.get('relax_options', None)
@@ -91,12 +96,19 @@ class CastepRelaxWorkChain(WorkChain):
     def run_relax(self):
         """Run the relaxation"""
         self.ctx.iteration += 1
+        # Assemble the inputs
         inputs = AttributeDict(
-            self.exposed_inputs(CastepBaseWorkChain, namespace='base'))
-        inputs.structure = self.ctx.current_structure
+            self.exposed_inputs(CastepBaseWorkChain,
+                                namespace='base',
+                                agglomerate=False))
+        inputs.calc = AttributeDict(
+            self.exposed_inputs(CastepBaseWorkChain._calculation_class,
+                                namespace='calc'))
+        inputs.calc.structure = self.ctx.current_structure
 
         # Update the inputs
-        inputs.update(self.ctx.inputs_update)
+        inputs.calc.update(self.ctx.calc_update)
+        inputs.update(self.ctx.base_update)
 
         running = self.submit(CastepBaseWorkChain, **inputs)
 
@@ -131,7 +143,7 @@ class CastepRelaxWorkChain(WorkChain):
         if output_parameters.get('geom_unconverged') is True:
             # Assign restart mode and folder
             if self.ctx.restart_mode in ['reuse', 'continuation']:
-                self.ctx.inputs_update['{}_folder'.format(
+                self.ctx.base_update['{}_folder'.format(
                     self.ctx.restart_mode)] = workchain.outputs.remote_folder
                 # Unless we use the continuation mode, the structure should be set to the output structure
             if self.ctx.restart_mode != 'continuation':
@@ -196,7 +208,7 @@ class CastepAlterRelaxWorkChain(CastepRelaxWorkChain):
 
     def setup(self):
         super(CastepAlterRelaxWorkChain, self).setup()
-        input_parameters = self.inputs.base.parameters.get_dict()
+        input_parameters = self.inputs.calc.parameters.get_dict()
 
         # Find the inital cell constraint
         cell_constraints = input_parameters.get('cell_constraints')
@@ -243,7 +255,7 @@ class CastepAlterRelaxWorkChain(CastepRelaxWorkChain):
         if unconv is True or self.ctx.is_fixed_cell:
             # Assign restart mode and folder
             if self.ctx.restart_mode in ['reuse', 'continuation']:
-                self.ctx.inputs_update['{}_folder'.format(
+                self.ctx.base_update['{}_folder'.format(
                     self.ctx.restart_mode)] = workchain.outputs.remote_folder
             # Unless we use the continuation mode, the structure should be set to the output structure
             if self.ctx.restart_mode != 'continuation':
@@ -280,11 +292,11 @@ class CastepAlterRelaxWorkChain(CastepRelaxWorkChain):
         """Set the cell constraints"""
 
         # Load the current configuration from the context
-        input_param = self.ctx.inputs_update.get('parameters', None)
+        input_param = self.ctx.calc_update.get('parameters', None)
 
         # If not, create from the inputs
         if not input_param:
-            input_param = self.inputs.base.parameters.get_dict()
+            input_param = self.inputs.calc.parameters.get_dict()
 
         # Keep the original format of the inptus.
         if 'CELL' in input_param:
@@ -298,4 +310,4 @@ class CastepAlterRelaxWorkChain(CastepRelaxWorkChain):
         else:
             input_param['geom_max_iter'] = iter_max
 
-        self.ctx.inputs_update['parameters'] = input_param
+        self.ctx.calc_update['parameters'] = input_param
