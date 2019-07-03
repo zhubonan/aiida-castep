@@ -161,13 +161,10 @@ class CastepBaseWorkChain(WorkChain):
         This inputs is used as a staging area for the next calculation
         to be launched"""
         self.ctx.inputs = AttributeDict({
-            'structure':
-            self.inputs.calc.structure,
-            'parameters':
-            self.inputs.calc.parameters.get_dict(),
-            'code':
-            self.inputs.calc.code,
+            'structure': self.inputs.calc.structure,
+            'code': self.inputs.calc.code,
         })
+        input_parameters = self.inputs.calc.parameters.get_dict()
 
         # Propagate the settings to the inputs of the CalcJob
         if 'settings' in self.inputs.calc:
@@ -194,8 +191,8 @@ class CastepBaseWorkChain(WorkChain):
 
         # In case we are dealing with a plain inputs, extend any plain inputs
         helper = CastepHelper()
-        param_dict = helper.check_dict(self.ctx.inputs.parameters)
-        self.ctx.inputs.parameters = param_dict
+        param_dict = helper.check_dict(input_parameters)
+        self.ctx.inputs['parameters'] = param_dict
 
         if self.inputs.get('continuation_folder'):
             self.ctx.inputs[

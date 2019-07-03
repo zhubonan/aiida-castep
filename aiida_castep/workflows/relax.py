@@ -37,7 +37,8 @@ class CastepRelaxWorkChain(WorkChain):
                            namespace='base',
                            exclude=('calc', ))
         spec.expose_inputs(CastepBaseWorkChain._calculation_class,
-                           namespace='calc')
+                           namespace='calc',
+                           exclude=['structure'])
 
         spec.input('structure',
                    valid_type=orm.StructureData,
