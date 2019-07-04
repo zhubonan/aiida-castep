@@ -19,7 +19,8 @@ The order of error is also adjusted. Fixed a bug where if the *.err files are
 present the returned code would be same as when end of the calculation is not
 found. This fix allows the internal crash of CASTEP (usually with the *.err files)
 to be differentiated with the calculation being killed (by scheduler).
+1.0.2 -> Fix a bug of parsing cons'd forces
 """
 
-CALC_PARSER_VERSION = "1.0.1"
+CALC_PARSER_VERSION = "1.0.2"
 PLUGIN_VERSION = "1.0.0b1"
