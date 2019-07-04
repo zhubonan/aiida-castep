@@ -166,9 +166,8 @@ class RawParser(object):
                 # Cannot find the last geometry data
                 structure_data = {}
             else:
-                structure_data = dict(cell=last_cell,
-                                      positions=last_positions,
-                                      symbols=symbols)
+                structure_data = dict(
+                    cell=last_cell, positions=last_positions, symbols=symbols)
         else:
             traj_data = {}
             structure_data = {}
@@ -269,7 +268,8 @@ def parse_castep_text_output(out_lines, input_dict):
         SCF_FAILURE_ERROR,
         "STOP keyword detected in parameter file. Stop execution.":
         STOP_REQUESTED_ERROR,
-        "Insufficient time for another iteration": INSUFFICENT_TIME_ERROR,
+        "Insufficient time for another iteration":
+        INSUFFICENT_TIME_ERROR,
     }
 
     # Warnings that won't result in a calculation in FAILED state
@@ -381,8 +381,8 @@ def parse_castep_text_output(out_lines, input_dict):
             continue
 
         if "Stress Tensor" in line:
-            i, stress, pressure = parse_stress_box(body_lines[count:count +
-                                                              20])
+            i, stress, pressure = parse_stress_box(
+                body_lines[count:count + 20])
             assert len(stress) == 3
             if "Symmetrised" in line:
                 prefix = "symm_"
@@ -959,9 +959,8 @@ def parse_raw_ouput(out_lines,
         # Cannot find the last geometry data
         structure_data = {}
     else:
-        structure_data = dict(cell=last_cell,
-                              positions=last_positions,
-                              symbols=symbols)
+        structure_data = dict(
+            cell=last_cell, positions=last_positions, symbols=symbols)
 
     # Parameter data to be returned, combine both out_data and parser_info
     parameter_data = dict(out_data)

@@ -33,27 +33,28 @@ class CastepRelaxWorkChain(WorkChain):
 
         # Apply superclass specifications
         super(CastepRelaxWorkChain, cls).define(spec)
-        spec.expose_inputs(CastepBaseWorkChain,
-                           namespace='base',
-                           exclude=('calc', ))
-        spec.expose_inputs(CastepBaseWorkChain._calculation_class,
-                           namespace='calc',
-                           exclude=['structure'])
+        spec.expose_inputs(
+            CastepBaseWorkChain, namespace='base', exclude=('calc', ))
+        spec.expose_inputs(
+            CastepBaseWorkChain._calculation_class,
+            namespace='calc',
+            exclude=['structure'])
 
-        spec.input('structure',
-                   valid_type=orm.StructureData,
-                   help='Structure to be used for relxation',
-                   required=True)
-        spec.input('relax_options',
-                   valid_type=orm.Dict,
-                   serializer=to_aiida_type,
-                   required=False,
-                   help='Options for relaxation')
+        spec.input(
+            'structure',
+            valid_type=orm.StructureData,
+            help='Structure to be used for relxation',
+            required=True)
+        spec.input(
+            'relax_options',
+            valid_type=orm.Dict,
+            serializer=to_aiida_type,
+            required=False,
+            help='Options for relaxation')
 
         spec.expose_outputs(CastepBaseWorkChain, exclude=['output_structure'])
-        spec.output('output_structure',
-                    valid_type=orm.StructureData,
-                    required=True)
+        spec.output(
+            'output_structure', valid_type=orm.StructureData, required=True)
 
         spec.outline(
             cls.setup,
@@ -99,12 +100,11 @@ class CastepRelaxWorkChain(WorkChain):
         self.ctx.iteration += 1
         # Assemble the inputs
         inputs = AttributeDict(
-            self.exposed_inputs(CastepBaseWorkChain,
-                                namespace='base',
-                                agglomerate=False))
+            self.exposed_inputs(
+                CastepBaseWorkChain, namespace='base', agglomerate=False))
         inputs.calc = AttributeDict(
-            self.exposed_inputs(CastepBaseWorkChain._calculation_class,
-                                namespace='calc'))
+            self.exposed_inputs(
+                CastepBaseWorkChain._calculation_class, namespace='calc'))
         inputs.calc.structure = self.ctx.current_structure
 
         # Update the inputs

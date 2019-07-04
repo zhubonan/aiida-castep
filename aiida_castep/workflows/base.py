@@ -61,11 +61,12 @@ class CastepBaseWorkChain(WorkChain):
         super(CastepBaseWorkChain, cls).define(spec)
 
         # The inputs
-        spec.input('max_iterations',
-                   valid_type=orm.Int,
-                   default=orm.Int(10),
-                   serializer=to_aiida_type,
-                   help='Maximum number of restarts')
+        spec.input(
+            'max_iterations',
+            valid_type=orm.Int,
+            default=orm.Int(10),
+            serializer=to_aiida_type,
+            help='Maximum number of restarts')
         spec.input(
             'reuse_folder',
             valid_type=orm.RemoteData,
@@ -78,16 +79,18 @@ class CastepBaseWorkChain(WorkChain):
             help=
             'Use a remote folder as the parent folder. Useful for restarts.',
             required=False)
-        spec.input('pseudos_family',
-                   valid_type=orm.Str,
-                   serializer=to_aiida_type,
-                   required=False,
-                   help='Pseudopotential family to be used')
-        spec.input('kpoints_spacing',
-                   valid_type=orm.Float,
-                   required=False,
-                   serializer=to_aiida_type,
-                   help="Kpoint spacing")
+        spec.input(
+            'pseudos_family',
+            valid_type=orm.Str,
+            serializer=to_aiida_type,
+            required=False,
+            help='Pseudopotential family to be used')
+        spec.input(
+            'kpoints_spacing',
+            valid_type=orm.Float,
+            required=False,
+            serializer=to_aiida_type,
+            help="Kpoint spacing")
         spec.input(
             'options',
             valid_type=orm.Dict,
@@ -99,13 +102,11 @@ class CastepBaseWorkChain(WorkChain):
         spec.expose_inputs(cls._calculation_class, namespace='calc')
 
         spec.output('output_array', valid_type=orm.ArrayData, required=False)
-        spec.output('output_trajectory',
-                    valid_type=orm.ArrayData,
-                    required=False)
+        spec.output(
+            'output_trajectory', valid_type=orm.ArrayData, required=False)
         spec.output('output_bands', valid_type=orm.BandsData, required=True)
-        spec.output('output_structure',
-                    valid_type=orm.StructureData,
-                    required=False)
+        spec.output(
+            'output_structure', valid_type=orm.StructureData, required=False)
         spec.output('output_parameters', valid_type=orm.Dict, required=True)
         spec.output('remote_folder', valid_type=orm.RemoteData)
 
@@ -161,8 +162,10 @@ class CastepBaseWorkChain(WorkChain):
         This inputs is used as a staging area for the next calculation
         to be launched"""
         self.ctx.inputs = AttributeDict({
-            'structure': self.inputs.calc.structure,
-            'code': self.inputs.calc.code,
+            'structure':
+            self.inputs.calc.structure,
+            'code':
+            self.inputs.calc.code,
         })
         input_parameters = self.inputs.calc.parameters.get_dict()
 
@@ -299,9 +302,10 @@ class CastepBaseWorkChain(WorkChain):
             )
 
         inputs = self._prepare_process_inputs(unwrapped_inputs)
-        calculation = self.submit(self._calculation_class,
-                                  metadata=self.inputs.calc.metadata,
-                                  **inputs)
+        calculation = self.submit(
+            self._calculation_class,
+            metadata=self.inputs.calc.metadata,
+            **inputs)
 
         self.report('launching {}<{}> iteration #{}'.format(
             self.ctx.calc_name, calculation.pk, self.ctx.iteration))
@@ -370,9 +374,8 @@ class CastepBaseWorkChain(WorkChain):
         is_handled = False
         handler_report = None
 
-        handlers = sorted(self._error_handlers,
-                          key=lambda x: x.priority,
-                          reverse=True)
+        handlers = sorted(
+            self._error_handlers, key=lambda x: x.priority, reverse=True)
 
         if not handlers:
             raise UnexpectedCalculationFailure(
