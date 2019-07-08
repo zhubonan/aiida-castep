@@ -295,7 +295,7 @@ class CastepBaseWorkChain(WorkChain):
         self.ctx.iteration += 1
 
         try:
-            unwrapped_inputs = self.ctx.inputs
+            unwrapped_inputs = AttributeDict(self.ctx.inputs)
         except AttributeError:
             raise ValueError(
                 'no calculation input dictionary was defined in self.ctx.inputs'
@@ -356,7 +356,7 @@ class CastepBaseWorkChain(WorkChain):
 
     def _prepare_process_inputs(self, inputs_dict):
         """Convert plain dictionary to Dict node"""
-        out = dict(inputs_dict)
+        out = AttributeDict(inputs_dict)
         for key in self._context_pain_dicts:
             if key in out:
                 out[key] = Dict(dict=out[key])
@@ -508,6 +508,9 @@ def _handle_walltime_limit(self, calculation):
             # Chance that it was interrupted
             if model_match and n > 0 and model_match.group(1) == 'check':
                 self.ctx.restart_mode = 'continuation'
+                self.report(
+                    'dot castep indicate model has been written, try continuation'
+                )
                 break
 
         # If we are do not continue the run, try input the wallclock
