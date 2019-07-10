@@ -203,8 +203,7 @@ def castep_input_summary(calc):
     # Show the parent calculation whose RemoteData is linked to the node
     if in_remote is not None:
         input_calc = [
-            n.node for n in in_remote.get_incoming()
-            if n.link_label == 'remote_folder'
+            n.node for n in in_remote.get_incoming(link_type=LinkType.CREATE)
         ]
         assert len(
             input_calc
