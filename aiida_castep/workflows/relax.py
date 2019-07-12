@@ -4,7 +4,7 @@ Module for Relxation WorkChain
 
 from __future__ import absolute_import
 
-from aiida.engine import WorkChain, if_, while_, ToContext, append_
+from aiida.engine import WorkChain, while_, ToContext, append_
 from aiida.common import AttributeDict
 import aiida.orm as orm
 from aiida.orm.nodes.data.base import to_aiida_type

@@ -17,13 +17,13 @@ from aiida.plugins import DataFactory
 from aiida.engine import CalcJob
 from aiida_castep.data import get_pseudos_from_structure
 
-from aiida_castep.common import INPUT_LINKNAMES, OUTPUT_LINKNAMES, EXIT_CODES_SPEC
+from aiida_castep.common import (INPUT_LINKNAMES, OUTPUT_LINKNAMES,
+                                 EXIT_CODES_SPEC)
 from aiida_castep.calculations.helper import CastepHelper
 from aiida_castep.calculations import CastepCalculation
 from aiida_castep.calculations.tools import flat_input_param_validator
-from ..data.otfg import OTFGData
-from ..data.usp import UspData
-from .common import UnexpectedCalculationFailure, register_error_handler, ErrorHandlerReport
+from .common import (UnexpectedCalculationFailure, register_error_handler,
+                     ErrorHandlerReport)
 
 inp_ln = INPUT_LINKNAMES
 out_ln = OUTPUT_LINKNAMES

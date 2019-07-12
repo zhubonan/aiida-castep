@@ -3,29 +3,25 @@ Calculations of CASTEP
 """
 from __future__ import print_function
 from __future__ import absolute_import
-import warnings
 import six
 from six.moves import zip
 
-from aiida.common import InputValidationError, MultipleObjectsError
-from aiida.common.utils import classproperty
+from aiida.common import InputValidationError
 from aiida.common import CalcInfo, CodeInfo
 from aiida.plugins import DataFactory
 from aiida.engine import ProcessBuilder
 from aiida.orm.nodes.data.base import to_aiida_type
 
-from aiida.orm import UpfData, User, Node
+from aiida.orm import UpfData, User
 from aiida.engine import CalcJob
 
 from ..common import INPUT_LINKNAMES, OUTPUT_LINKNAMES, EXIT_CODES_SPEC
 from .inpgen import CastepInputGenerator
 from ..data.otfg import OTFGData
 from ..data.usp import UspData
-from .utils import get_castep_ion_line, _lowercase_dict, _uppercase_dict
-from .datastructure import CellFile
+from .utils import get_castep_ion_line
 from .tools import (castep_input_summary, update_parameters,
-                    use_pseudos_from_family, create_restart,
-                    input_param_validator)
+                    use_pseudos_from_family, input_param_validator)
 
 from .._version import CALC_PARSER_VERSION
 __version__ = CALC_PARSER_VERSION
