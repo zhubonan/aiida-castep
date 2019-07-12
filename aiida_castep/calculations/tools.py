@@ -358,3 +358,30 @@ def create_restart(inputs,
         new_builder[INPUT_LINKNAMES['parent_calc_folder']] = parent_folder
 
     return new_builder
+
+
+def validate_input_param(input_dict):
+    """
+    Validate inputs parameters
+    :param input_dict: A Dict instance or python dict instance
+    """
+
+    from .helper import CastepHelper
+    if isinstance(input_dict, Dict):
+        py_dict = input_dict.get_dict()
+    else:
+        py_dict = input_dict
+    helper = CastepHelper()
+    helper.check_dict(py_dict, auto_fix=False)
+
+
+def input_param_validator(input_dict):
+    """
+    Validator used for input ports
+    """
+
+    from .helper import HelperCheckError
+    try:
+        validate_input_param(input_dict)
+    except HelperCheckError as error:
+        return error.args[0]

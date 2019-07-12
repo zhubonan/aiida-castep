@@ -22,8 +22,10 @@ from .inpgen import CastepInputGenerator
 from ..data.otfg import OTFGData
 from ..data.usp import UspData
 from .utils import get_castep_ion_line, _lowercase_dict, _uppercase_dict
-from .datastructure import CellFile, ParamFile
-from .tools import castep_input_summary, update_parameters, use_pseudos_from_family, create_restart
+from .datastructure import CellFile
+from .tools import (castep_input_summary, update_parameters,
+                    use_pseudos_from_family, create_restart,
+                    input_param_validator)
 
 from .._version import CALC_PARSER_VERSION
 __version__ = CALC_PARSER_VERSION
@@ -126,6 +128,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
             inp_ln['parameters'],
             valid_type=orm.Dict,
             serializer=to_aiida_type,
+            validator=input_param_validator,
             help="Use a node that sepcifies the input parameters")
         spec.input(
             inp_ln['parent_calc_folder'],
