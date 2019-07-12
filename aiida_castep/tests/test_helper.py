@@ -3,7 +3,7 @@ from aiida_castep.calculations.helper import CastepHelper, HelperCheckError
 import unittest
 
 helper = CastepHelper()
-has_info = helper.BY_PASS
+no_info = helper.BY_PASS
 
 
 class TestHelper(unittest.TestCase):
@@ -34,13 +34,13 @@ class TestHelper(unittest.TestCase):
         d.update(self.only_param_dict)
         return d
 
-    @unittest.skipIf(has_info, "No helper info found")
+    @unittest.skipIf(no_info, "No helper info found")
     def test_from_flat(self):
         out, not_found = self.helper._from_flat_dict(self.flat_dict)
         # print(self.helper.help_dict)
         self.assertFalse(not_found)
 
-    @unittest.skipIf(has_info, "No helper info found")
+    @unittest.skipIf(no_info, "No helper info found")
     def test_check_dict_raw(self):
         """Test the underlying check_dict function"""
 
@@ -60,7 +60,7 @@ class TestHelper(unittest.TestCase):
         self.assertIn("kpointx_mp_grid", invalid)
         self.assertIn(("snap_to_symmetry", "CELL"), wrong)
 
-    @unittest.skipIf(has_info, "No helper info found")
+    @unittest.skipIf(no_info, "No helper info found")
     def test_check_dict(self):
         """Test top level check dict function"""
 
@@ -99,6 +99,15 @@ class TestHelper(unittest.TestCase):
         outdict["PARAM"].update(elec_method="dm")
         with self.assertRaises(HelperCheckError):
             outdict = self.helper.check_dict(outdict, auto_fix=False)
+
+    @unittest.skipIf(no_info, "No helper info found")
+    def test_check_dict_flat(self):
+        """Test checking error in a flat dictionary"""
+        flat = self.flat_dict
+        self.helper.check_dict(flat, auto_fix=False, allow_flat=True)
+        with self.assertRaises(HelperCheckError):
+            flat['kpoints_gdrd'] = 1
+            self.helper.check_dict(flat, auto_fix=False, allow_flat=True)
 
 
 if __name__ == "__main__":

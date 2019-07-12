@@ -183,13 +183,14 @@ class CastepHelper(object):
         out_dict = {"CELL": cell_dict, "PARAM": param_dict}
         return out_dict, not_found
 
-    def check_dict(self, input_dict, auto_fix=True):
+    def check_dict(self, input_dict, auto_fix=True, allow_flat=False):
         """
         Check input dictionary. Apply and warn about errors
         :param input_dict dictionary: a dictionary as the input, contain "CELL", "PARAM" and other keywords
         :param auto_fix bool: Whether we should fix error automatically
+        :param allow_flat: Accept that the input dictionary is flat.
 
-        :returns dict: A fixed dictionary
+        :returns dict: A structured dictionary
         """
         input_dict = input_dict.copy()  # this is a shallow copy
 
@@ -197,7 +198,7 @@ class CastepHelper(object):
         cell_dict = input_dict.pop("CELL", {})
         param_dict = input_dict.pop("PARAM", {})
 
-        if input_dict and not auto_fix:
+        if input_dict and not auto_fix and not allow_flat:
             raise HelperCheckError("keywords: {} at top level".format(
                 ", ".join(input_dict)))
 
@@ -209,22 +210,33 @@ class CastepHelper(object):
         # process what's left
         re_structured, not_found = self._from_flat_dict(input_dict)
         if not_found:
-            raise HelperCheckError(
-                "keywords: {} at top level are not recognized".format(
-                    ", ".join(not_found)))
+            suggests = [self.get_suggestion(s) for s in not_found]
+            # Warnings
+            not_reco = [
+                "keyword '{}' is not recognized at top level".format(s)
+                for s in not_found
+            ]
+            # Suggestions
+            sugst_str = [a + "\n" + b for a, b in zip(not_reco, suggests)]
+            # Combine warnings and suggestions together
+            sugst_str = "\n\n".join(sugst_str)
+            raise HelperCheckError(sugst_str)
 
         # Now construct a dictionary
         cell_dict.update(re_structured["CELL"])
         param_dict.update(re_structured["PARAM"])
 
+        # Construct an new dictionary
         input_dict = dict(CELL=cell_dict, PARAM=param_dict)
 
-        # Check the final dictionary
+        # Check the restructed dictionary
         invalid, wrong = self._check_dict(input_dict)
 
         if invalid:
             suggests = [self.get_suggestion(s) for s in invalid]
-            not_founds = ["keyword {} is not found".format(s) for s in invalid]
+            not_founds = [
+                "keyword '{}' is not found".format(s) for s in invalid
+            ]
             sugst_str = [a + "\n" + b for a, b in zip(not_founds, suggests)]
             sugst_str = "\n\n".join(sugst_str)
 
@@ -243,9 +255,10 @@ class CastepHelper(object):
                         value = input_dict["PARAM"].pop(key)
                         input_dict["CELL"].update({key: value})
             else:
-                raise HelperCheckError("keywords: {} are in "
-                                       "the wrong file".format(", ".join(
-                                           [k[0] for k in wrong])))
+                raise HelperCheckError(
+                    "Keywords: {} are in "
+                    "the wrong sub-dictionary".format(", ".join(
+                        ["'{}'".format(k[0]) for k in wrong])))
 
         # Check incompatible keys
         incomp = check_incompatible(input_dict["PARAM"], incompatible_keys)

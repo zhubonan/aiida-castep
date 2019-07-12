@@ -360,7 +360,7 @@ def create_restart(inputs,
     return new_builder
 
 
-def validate_input_param(input_dict):
+def validate_input_param(input_dict, allow_flat=False):
     """
     Validate inputs parameters
     :param input_dict: A Dict instance or python dict instance
@@ -372,7 +372,7 @@ def validate_input_param(input_dict):
     else:
         py_dict = input_dict
     helper = CastepHelper()
-    helper.check_dict(py_dict, auto_fix=False)
+    helper.check_dict(py_dict, auto_fix=False, allow_flat=allow_flat)
 
 
 def input_param_validator(input_dict):
@@ -383,5 +383,16 @@ def input_param_validator(input_dict):
     from .helper import HelperCheckError
     try:
         validate_input_param(input_dict)
+    except HelperCheckError as error:
+        return error.args[0]
+
+
+def flat_input_param_validator(input_dict):
+    """
+    Validator that allows allow_flat parameter format
+    """
+    from .helper import HelperCheckError
+    try:
+        validate_input_param(input_dict, allow_flat=True)
     except HelperCheckError as error:
         return error.args[0]

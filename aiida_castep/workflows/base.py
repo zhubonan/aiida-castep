@@ -20,6 +20,7 @@ from aiida_castep.data import get_pseudos_from_structure
 from aiida_castep.common import INPUT_LINKNAMES, OUTPUT_LINKNAMES, EXIT_CODES_SPEC
 from aiida_castep.calculations.helper import CastepHelper
 from aiida_castep.calculations import CastepCalculation
+from aiida_castep.calculations.tools import flat_input_param_validator
 from ..data.otfg import OTFGData
 from ..data.usp import UspData
 from .common import UnexpectedCalculationFailure, register_error_handler, ErrorHandlerReport
@@ -100,6 +101,12 @@ class CastepBaseWorkChain(WorkChain):
             ('Options specifying resources, labels etc. Passed to the CalcJob.'
              'Avaliable options: queue_wallclock_limit, use_castep_bin'))
         spec.expose_inputs(cls._calculation_class, namespace='calc')
+        spec.input(
+            'calc.parameters',
+            valid_type=orm.Dict,
+            serializer=to_aiida_type,
+            help='Input parameters, flat format is allowed.',
+            validator=flat_input_param_validator)
 
         spec.output('output_array', valid_type=orm.ArrayData, required=False)
         spec.output(
