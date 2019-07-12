@@ -176,7 +176,12 @@ class CastepBaseWorkChain(WorkChain):
         })
         input_parameters = self.inputs.calc.parameters.get_dict()
 
-        # Propagate the settings to the inputs of the CalcJob
+        # Copy over the metadata
+        self.ctx.inputs['metadata'] = AttributeDict(self.inputs.calc.metadata)
+        self.ctx.inputs['metadata']['options'] = AttributeDict(
+            self.inputs.calc.metadata.options)
+
+        # propagate the settings to the inputs of the CalcJob
         if 'settings' in self.inputs.calc:
             self.ctx.inputs.settings = self.inputs.calc.settings.get_dict()
         else:
@@ -300,6 +305,9 @@ class CastepBaseWorkChain(WorkChain):
         Submit a new calculation, taking the input dictionary from the context at self.ctx.inputs
         """
         self.ctx.iteration += 1
+        # Update the iterations in the inputs
+        self.ctx.inputs.metadata['call_link_label'] = \
+                                'iteration_{}'.format(self.ctx.iteration)
 
         try:
             unwrapped_inputs = AttributeDict(self.ctx.inputs)
@@ -309,10 +317,7 @@ class CastepBaseWorkChain(WorkChain):
             )
 
         inputs = self._prepare_process_inputs(unwrapped_inputs)
-        calculation = self.submit(
-            self._calculation_class,
-            metadata=self.inputs.calc.metadata,
-            **inputs)
+        calculation = self.submit(self._calculation_class, **inputs)
 
         self.report('launching {}<{}> iteration #{}'.format(
             self.ctx.calc_name, calculation.pk, self.ctx.iteration))

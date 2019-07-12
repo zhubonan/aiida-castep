@@ -105,6 +105,7 @@ class CastepRelaxWorkChain(WorkChain):
     def run_relax(self):
         """Run the relaxation"""
         self.ctx.iteration += 1
+        link_label = 'iteration_{}'.format(self.ctx.iteration)
         # Assemble the inputs
         inputs = AttributeDict(
             self.exposed_inputs(
@@ -117,6 +118,13 @@ class CastepRelaxWorkChain(WorkChain):
         # Update the inputs
         inputs.calc.update(self.ctx.calc_update)
         inputs.update(self.ctx.base_update)
+
+        # In case metadata is not defined at all
+        if 'metadata' in inputs:
+            inputs.metadata = AttributeDict(inputs['metadata'])
+            inputs.metadata['call_link_label'] = link_label
+        else:
+            inputs['metadata'] = {'call_link_label': link_label}
 
         running = self.submit(CastepBaseWorkChain, **inputs)
 
