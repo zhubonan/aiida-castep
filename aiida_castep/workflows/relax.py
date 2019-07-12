@@ -3,13 +3,13 @@ Module for Relxation WorkChain
 """
 
 from __future__ import absolute_import
-import six
-import re
 
 from aiida.engine import WorkChain, if_, while_, ToContext, append_
 from aiida.common import AttributeDict
 import aiida.orm as orm
 from aiida.orm.nodes.data.base import to_aiida_type
+
+from aiida_castep.calculations.tools import flat_input_param_validator
 from .base import CastepBaseWorkChain
 
 __version__ = '0.0.1'
@@ -39,6 +39,13 @@ class CastepRelaxWorkChain(WorkChain):
             CastepBaseWorkChain._calculation_class,
             namespace='calc',
             exclude=['structure'])
+
+        spec.input(
+            'calc.parameters',
+            valid_type=orm.Dict,
+            serializer=to_aiida_type,
+            help='Input parameters, flat format is allowed.',
+            validator=flat_input_param_validator)
 
         spec.input(
             'structure',
