@@ -147,6 +147,23 @@ def test_submit_test_function(new_database, sto_calc_inputs):
     assert builder.metadata.get('store_provenance') is not False
 
 
+def test_param_validation(db_test_app):
+    """Test input validations"""
+    from aiida_castep.calculations.castep import CastepCalculation
+
+    builder = CastepCalculation.get_builder()
+    # This shold work
+    builder.parameters = {'PARAM': {'cut_off_energy': 100}}
+
+    with pytest.raises(ValueError):
+        # Flat style is not allowed
+        builder.parameters = {'foo': 'bar'}
+
+    with pytest.raises(ValueError):
+        # Erorr will be catached
+        builder.parameters = {'PARAM': {'cut_off_eneryg': 100}}
+
+
 def run_castep_calc(inputs):
     from aiida_castep.calculations.castep import CastepCalculation
     from aiida.engine import run_get_node
