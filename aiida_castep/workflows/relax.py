@@ -150,7 +150,7 @@ class CastepRelaxWorkChain(WorkChain):
             structure = workchain.outputs.output_structure
         except AttributeError:
             self.report(
-                'Relaxation CastepBaseWorkChain finished but not output structure'
+                'Relaxation CastepBaseWorkChain finished but no output structure found'
             )
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_RELAX
 
@@ -164,6 +164,8 @@ class CastepRelaxWorkChain(WorkChain):
                 # Unless we use the continuation mode, the structure should be set to the output structure
             if self.ctx.restart_mode != 'continuation':
                 self.ctx.current_structure = structure
+
+            self._push_parameters(workchain)
             self.report(
                 'Relaxation CastepBaseWorkChain finished not not converged')
         else:
@@ -191,6 +193,58 @@ class CastepRelaxWorkChain(WorkChain):
         self.out('output_structure', structure)
 
         return exit_code
+
+    def _push_parameteres(self, workchain):
+        """
+        Push the parameters for completed calculation to the current inputs
+        """
+        from aiida.orm import QueryBuilder, WorkChainNode, CalcJobNode, Dict
+        from aiida.common.exceptions import NotExistent, MultipleObjectsError
+        from aiida_castep.common import INPUT_LINKNAMES as IN_LINKS
+        from aiida_castep.common import OUTPUT_LINKNAMES as OUT_LINKS
+        from aiida_castep.calculations.helper import CastepHelper
+        query = QueryBuilder(
+            WorkChainNode, filters={'id': workchain.pk}, tag='work')
+        query.append(
+            Dict,
+            with_incoming='work',
+            tag='output_dict',
+            edge_filters={'label': OUT_LINKS['results']})
+        query.append(
+            CalcJobNode,
+            with_outgoing='output_dict',
+            filters={'attributes.exit_status': 0},
+            tag='final_calc')
+        query.append(
+            Dict,
+            with_outgoing='final_calc',
+            edge_filters={'label': IN_LINKS['parameters']},
+            project=['attributes'])
+
+        try:
+            last_param = query.one()[0]
+        except (MultipleObjectsError, NotExistent):
+            self.report(
+                'Cannot found the input node for the last Calculation called in BaseWorkChain'
+            )
+            return self.exit_codes.ERROR_SUB_PROCESS_FAILED_RELAX
+
+        # Compare with the input parameters of this one
+        helper = CastepHelper()
+        orig_in_param = self.inputs.calc[IN_LINKS['parameters']].get_dict()
+        orig_in_param = helper._from_flat_dict(orig_in_param)
+
+        # Pop out any continuation related keywords
+        for param in [last_param, orig_in_param]:
+            for key in ['reuse', 'continuation']:
+                param['PARAM'].pop(key, None)
+
+        if orig_in_param != last_param:
+            self.report(
+                'Pushed the input parameters of the last completed calculation to the next iteration'
+            )
+            self.ctx.calc_update[IN_LINKS['parameters']] = Dict(
+                dict=last_param)
 
 
 class CastepAlterRelaxWorkChain(CastepRelaxWorkChain):
@@ -308,22 +362,22 @@ class CastepAlterRelaxWorkChain(CastepRelaxWorkChain):
         """Set the cell constraints"""
 
         # Load the current configuration from the context
-        input_param = self.ctx.calc_update.get('parameters', None)
+        last_param = self.ctx.calc_update.get('parameters', None)
 
         # If not, create from the inputs
-        if not input_param:
-            input_param = self.inputs.calc.parameters.get_dict()
+        if not last_param:
+            last_param = self.inputs.calc.parameters.get_dict()
 
         # Keep the original format of the inptus.
-        if 'CELL' in input_param:
-            input_param['CELL']['cell_constraints'] = cell_cons
+        if 'CELL' in last_param:
+            last_param['CELL']['cell_constraints'] = cell_cons
         else:
-            input_param['cell_constraints'] = cell_cons
+            last_param['cell_constraints'] = cell_cons
 
         # Keep the original format of the inptus.
-        if 'PARAM' in input_param:
-            input_param['PARAM']['geom_max_iter'] = iter_max
+        if 'PARAM' in last_param:
+            last_param['PARAM']['geom_max_iter'] = iter_max
         else:
-            input_param['geom_max_iter'] = iter_max
+            last_param['geom_max_iter'] = iter_max
 
-        self.ctx.calc_update['parameters'] = input_param
+        self.ctx.calc_update['parameters'] = last_param
