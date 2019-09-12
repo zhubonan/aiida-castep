@@ -194,7 +194,7 @@ class CastepRelaxWorkChain(WorkChain):
 
         return exit_code
 
-    def _push_parameteres(self, workchain):
+    def _push_parameters(self, workchain):
         """
         Push the parameters for completed calculation to the current inputs
         """
@@ -203,8 +203,8 @@ class CastepRelaxWorkChain(WorkChain):
         from aiida_castep.common import INPUT_LINKNAMES as IN_LINKS
         from aiida_castep.common import OUTPUT_LINKNAMES as OUT_LINKS
         from aiida_castep.calculations.helper import CastepHelper
-        query = QueryBuilder(
-            WorkChainNode, filters={'id': workchain.pk}, tag='work')
+        query = QueryBuilder()
+        query.append(WorkChainNode, filters={'id': workchain.pk}, tag='work')
         query.append(
             Dict,
             with_incoming='work',
@@ -232,7 +232,7 @@ class CastepRelaxWorkChain(WorkChain):
         # Compare with the input parameters of this one
         helper = CastepHelper()
         orig_in_param = self.inputs.calc[IN_LINKS['parameters']].get_dict()
-        orig_in_param = helper._from_flat_dict(orig_in_param)
+        orig_in_param, _ = helper._from_flat_dict(orig_in_param)
 
         # Pop out any continuation related keywords
         for param in [last_param, orig_in_param]:
