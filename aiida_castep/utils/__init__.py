@@ -345,3 +345,20 @@ def export_calculation(n, output_dir, prefix=None):
     # outputs
     retrieved = n.outputs.retrieved
     bwrite(retrieved, output_dir)
+
+
+def compute_kpoints_spacing(cell, grid, unit="2pi"):
+    """
+    Compute the spacing of the kpoints in the receprical space.
+    Spacing = 1 / cell_length / mesh for each dimension.
+    Assume orthogonal cell shape.
+    """
+    cell = np.asarray(cell, dtype=np.float)
+    grid = np.asarray(grid, dtype=np.float)
+
+    spacings = 1. / cell / grid
+    if unit == "1/A":
+        spacings *= 2 * np.pi
+    elif unit != "2pi":
+        raise ValueError("Unit {} is not unkown".format(unit))
+    return spacings
