@@ -19,42 +19,41 @@ Loading classes
 
 The plugin system allows plugin classes to be loaded using *factory* functions::
 
-  from aiida.orm import DataFactory, CalculationFactory
+  from aiida.plugins import DataFactory, CalculationFactory
   # Classes defined in this plugin
   CastepCalculation = CalculationFactory("castep.castep")
   OtfgData = DataFactory("castep.otfgdata")
   UspData = DataFactory("castep.uspdata")
   # Native aiida classes
   KpointsData = DataFactory("array.kpoints")
-  ParameterData = DataFactory("parameter")
+  Dict = DataFactory("dict")
   StructureData = DataFactory("structure")
-
-The first line can be neglected if we are running interactively from ``verdi shell``.
 
 .. note:: It is best to work through the example interactively using ``verdi shell``.
 
-Constructing a Calculation
---------------------------
+The first step
+--------------
 
-To construct a calculations, one can call ``CastepCalculation()`` but it is often more convenient to do this from a
-``Code`` node that represents the CASTEP executable will be used::
+The inputs of the calculation needs to be stored in a nested dictionary.
+It is often more convenient to work with a ``ProcessBuilder`` which enables tab completions
+for link names and can also display doc strings::
+
+ builder = CastepCalculation.get_builder()
+
+First, we need to define the *code* of the calculation which represents the actual executable
+to be used to do the work::
 
  code = Code.get_from_string("castep-xx.xx@your_computer")
- calc = code.new_calc()
+ builder.code = code
+ # If in any doubt, this give help string in IPython
+ builder.code?
 
-In this way the ``Computer`` and ``Code`` are set automatically,
-otherwise ``use_code`` and ``set_computer`` methods need
-to be called manually::
-
- calc = CastepCalculation()
- calc.use_code(code)
- calc.set_computer(code.get_computer())
 
 Setup CASTEP parameters
 -----------------------
 
 For most CASTEP calculations we need a ``<seed>.param`` file and a ``<seed>.cell`` file.
-To work with, ``aiida_castep`` we need a single ``ParameterData`` node that includes the keyword-value pairs that should have been put into the two files.
+To work with, ``aiida_castep`` we need a single ``Dict`` node that includes the keyword-value pairs that should have been put into the two files.
 The node is constructed based on a dictionary::
 
  param_in = {"PARAM": {
@@ -72,13 +71,20 @@ The node is constructed based on a dictionary::
 
 To construct the node, call::
 
- param_data = ParameterData(dict=param_in)
+ param_data = Dict(dict=param_in)
 
 Not everything you otherwise have to write in the ``<seed>.cell`` goes into the dictionary.
 For example, there is no need to supply **lattice_cart** and **positions_abs** as they will be defined by the ``StructureData`` input node.
-Finally, we link the ``ParameterData`` to the calculation node using::
+Finally, we store the ``Dict`` in the builder::
 
- calc.use_parameters(param_data)
+ builder.parameters = param_data
+
+A plain dictionary can also be used as the input as a ``Dict`` node can be automatically generated from it.
+This would also work::
+
+ builder.parameters = param_in
+
+The downside is that a new ``Dict`` node is always created even the contents are identical.
 
 .. note::
    It is recommended to use python types instead of strings to make it easy for querying.
@@ -119,10 +125,10 @@ To define the k points mesh, run::
 Here we are using a MP grid, alternatively k-points may be passed explicitly as in
 ``KpointsData``.
 See AiiDA's `documentation <https://aiida-core.readthedocs.io/en/v0.12.0/datatypes/index.html>`__ for more information.
-Finally, we tell the calculation to use them as inputs::
+Finally, we save them in the builder as inputs::
 
- calc.use_kpoints(kpoints)
- calc.use_structure(silicon)
+ builder.kpoints = kpoints
+ builder.structure = structure
 
 .. note::
    There are several useful routines in :py:mod:`aiida_castep.utils` to work with ``ase``,
@@ -165,9 +171,9 @@ A more convenient way of uploading a set of usp files is to use ``upload_usp_fam
    The element is inferred from the file name which should be in the format *<element>_<foo>.usp*.
    Norm-conserving *recpot* files are treated as if they are *usp* files.
 
-To let the calculation use the pseudo potential::
+To let the builder use the pseudo potential::
 
- calc.use_pseudos(si00, kind="Si")
+ builder.pseudos.Si = si00
 
 Alternatively, and in fact used more commonly, is to create a family of the potentials::
 
@@ -176,9 +182,9 @@ Alternatively, and in fact used more commonly, is to create a family of the pote
 
 A family is just a collection of pseudopoentials. It can be applied to a calculation using::
 
- calc.use_pseudos_from_family("LDA_test")
+ CastepCalculation.use_pseudos_from_family(builder, "LDA_test")
 
-For this to work, the ``use_structure`` method most be called beforehand to define the input structure
+For this to work, the ``structure`` file of the builder must be define beforehand.
 of the calculation.
 
 Setting the resources
@@ -186,13 +192,15 @@ Setting the resources
 
 To run our calculations on remote clusters, we need request some resources.
 Please refer to AiiDA's `documentation <https://aiida-core.readthedocs.io/en/v0.12.0/scheduler/index.html#job-resourcesl>`__ for details as the settings are scheduler dependent.
+Options of running calculations are set under the ``metadata.options`` namespace.
+These properties are eventually stored as the attributes of the created ``CalcJobNode``.
 As an example for now::
 
- calc.set_max_wallclock_seconds(600)
- calc.set_resources({"num_machines": 1})
+ builder.metadata.options.max_wallclock_seconds = 3600
+ builder.metadata.options.resources = {"num_machines": 1}
 
-This lets AiiDA know  we want to run on a single node for 3600 seconds.
-You may want to call ``set_custom_scheduler_commands`` for inserting additional lines in to the submission script,
+This lets AiiDA know that we want to run on a single node for a maximum of 3600 seconds.
+You may want to set the ``custom_scheduler_commands`` for inserting additional lines in to the submission script,
 for example, to define the account to be charged.
 
 Submission
@@ -201,7 +209,7 @@ Submission
 Now we are ready to submit the calculation.
 But before actual submission we can have a glance of the inputs to see if there is any mistake by using::
 
- calc.get_castep_inputs()
+ CastepCalculation.get_castep_input_summary(builder)
 
 A dictionary is returned as a summary of the inputs of the calculation::
 
@@ -224,7 +232,7 @@ A dictionary is returned as a summary of the inputs of the calculation::
 
 To test generating the input files, call::
 
- calc.submit_test()
+ CastepCalculation.submit_test(builder)
 
 This write inputs to written to date coded sub folders inside ``submit_test`` folder at current working directory.
 The input keywords for cell and param file will be check, and if there is any mistake an exception will be raised.
@@ -232,32 +240,39 @@ The input keywords for cell and param file will be check, and if there is any mi
 .. note::
    The content of the folder should be identical to what will be uploaded to remote computer.
    Hence we can also check if the job script is correctly generated.
+   The dryrun test can be performed locally with::
+
+     CastepCalculation.dryrun_test(builder)
+   
 
 Finally, we are ready to submit the calculation::
 
- calc.store_all()
- calc.submit()
+ from aiida.engine import submit
+ calcjob = submit(builder)
 
 The first line stores the calculation and all of its inputs. The seconds line mark our calculation for submission.
-The acutal submission is handled by one of AiiDA's daemon process, so you need to have it running in the background.
+The actual submission is handled by one of AiiDA's daemon process, so you need to have it running in the background.
 
 Monitoring
 ==========
 
-Monitoring the state of calculations can be done using ``verdi calculations list``. 
+Monitoring the state of calculations can be done using ``verdi process list``. 
 Inside a interactive shell, the state of a calculation may be checked with
-``calc.get_state()``.
+``calcjob.get_process_state()``.
+
+Once the calculation is finished, the state can be access with ``calcjob.exit_status`` and ``calcjob.exit_message``.
+If the calculation has finished without error then the ``exit_status`` should be 0.
 
 
 Accessing Results
 =================
 
 A series of node will be created when the calculation is finished and parsed.
-Use ``calc.get_outputs_dict()`` to access the output nodes. 
-Alternatively, the main ``ParameterData`` node's content can be return using ``calc.res.<tab completion>``. 
-Other nodes can be access using ``calc.out.<tab completion>``. 
+Use ``calc.get_outgoing().all()`` to access the output nodes. 
+Alternatively, the main ``Dict`` node's content can be return using ``calc.res.<tab completion>``. 
+Other nodes can be access using ``calc.outputs.<tab completion>``. 
 The calculation's state is set to "FINISHED" after it is completed without error.
 This does not mean that the underlying task has succeeded.
-For example, an unconverged geometry optimization due to the maximum iteration being reached is still an "FINISHED" calculation,
-as CASTEP has completed what the user has requested.
-On the other hand, if the calculation is terminated due to the time limit (cleanly exited or not), it will be set to the "FAILED" state.
+For example, an unconverged geometry optimization due to the maximum iteration being reached is still a successful  calculation,
+as CASTEP has done  what the user requested.
+On the other hand, if the calculation is terminated due to the time limit (cleanly exited or not), it will have an none-zero exit_status.

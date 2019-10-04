@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
 import subprocess
 import os
 from os.path import abspath, dirname, join
 from setuptools import setup, find_packages
 import json
+
 
 def git_version():
     def _minimal_ext_cmd(cmd):
@@ -18,7 +20,8 @@ def git_version():
         env['LANGUAGE'] = 'C'
         env['LANG'] = 'C'
         env['LC_ALL'] = 'C'
-        out = subprocess.Popen(cmd, stdout=subprocess.PIPE, env=env).communicate()[0]
+        out = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, env=env).communicate()[0]
         return out
 
     try:
@@ -29,19 +32,35 @@ def git_version():
 
     return GIT_REVISION
 
+
 if __name__ == '__main__':
+
     # Provide static information in setup.json
     # such that it can be discovered automatically
     ROOT = abspath(dirname(__file__))
     with open(join(ROOT, 'setup.json'), 'r') as info:
         kwargs = json.load(info)
 
-    # Determine if we are install in the git repository
-#    GIT_VERSION = git_version()
-#    if GIT_VERSION != "Unkown":
-#        kwargs["version"] = kwargs["version"] + "-" + GIT_VERSION
+    # Check if in a CI environment
+    is_tagged = False
+    if os.environ.get('CI_COMMIT_TAG'):
+        ci_version = os.environ['CI_COMMIT_TAG']
+        is_tagged = True
+    elif os.environ.get('CI_JOB_ID'):
+        ci_version = os.environ['CI_JOB_ID']
+    else:
+        # Note in CI
+        ci_version = None
 
-    # Included the README.md as the long description
+    if ci_version:
+        # If this a release, check the consistency
+        if is_tagged:
+            assert ci_version == kwargs[
+                'version'], 'Inonsistency between versions'
+        else:
+            kwargs['version'] = ci_version
+
+# Included the README.md as the long description
     with open(join(ROOT, 'README.md'), 'r') as f:
         long_desc = f.read()
     setup(
@@ -49,5 +68,12 @@ if __name__ == '__main__':
         long_description=long_desc,
         long_description_content_type='text/markdown',
         include_package_data=True,
-        **kwargs
-    )
+        extras_require={
+            "pre-commit": [
+                "pre-commit==1.11.0", "yapf==0.24.0", "prospector==0.12.11",
+                "pylint==1.9.3"
+            ],
+            "testing": ["pytest", "pgtest==1.2.0"],
+            "docs": ["sphinx", "sphinx_rtd_theme"],
+        },
+        **kwargs)

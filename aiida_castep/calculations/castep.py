@@ -2,39 +2,77 @@
 Calculations of CASTEP
 """
 from __future__ import print_function
-import warnings
+from __future__ import absolute_import
+import six
+from six.moves import zip
 
-import aiida
-from aiida.common.exceptions import InputValidationError
-from aiida.common.utils import classproperty
-from aiida.orm import CalculationFactory, DataFactory
-from aiida_castep.calculations.base import BaseCastepInputGenerator
-from aiida_castep.calculations.base import __version__ as base_version
+from aiida.common import InputValidationError
+from aiida.common import CalcInfo, CodeInfo
+from aiida.plugins import DataFactory
+from aiida.engine import ProcessBuilder
+from aiida.orm.nodes.data.base import to_aiida_type
 
+from aiida.orm import UpfData, User
+from aiida.engine import CalcJob
+
+from ..common import INPUT_LINKNAMES, OUTPUT_LINKNAMES, EXIT_CODES_SPEC
+from .inpgen import CastepInputGenerator
+from ..data.otfg import OTFGData
+from ..data.usp import UspData
 from .utils import get_castep_ion_line
+from .tools import (castep_input_summary, update_parameters,
+                    use_pseudos_from_family, input_param_validator)
 
-from .._version import calc_parser_version
-__version__ = calc_parser_version
-
-
-if aiida.__version__.startswith("0"):
-    JobCalculation = CalculationFactory("job", True)
-else:
-    JobCalculation = CalculationFactory("job")
+from .._version import CALC_PARSER_VERSION
+__version__ = CALC_PARSER_VERSION
 
 KpointsData = DataFactory("array.kpoints")
 StructureData = DataFactory("structure")
-ParameterData = DataFactory("parameter")
+Dict = DataFactory("dict")
+
+inp_ln = INPUT_LINKNAMES
+out_ln = OUTPUT_LINKNAMES
+ecodes = EXIT_CODES_SPEC
 
 # Define the version of the calculation
 
-class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
+__all__ = ['CastepCalculation', 'submit_test']
+
+
+class CastepCalculation(CalcJob, CastepInputGenerator):
     """
     Class representing a generic CASTEP calculation -
     This class should work for all types of calculations.
     """
 
-    _default_symlink_usage = True
+    # Create a dict of the defaults
+    _DEFAULTS = {
+        "seedname": 'aiida',
+        'symlink_usage': True,
+        'parent_folder_name': 'parent',
+        'parser_name': 'castep.castep',
+        'use_kpoints': True,
+        'withmpi': True,
+    }
+    _DEFAULTS['input_filename'] = _DEFAULTS['seedname'] + '.cell'
+    _DEFAULTS['output_filename'] = _DEFAULTS['seedname'] + '.castep'
+
+    _default_retrieve_list = [
+        "*.err", "*.den_fmt", "*.elf_fmt", "*-out.cell", "*.pdos_bin"
+    ]
+
+    # Some class methods
+    retrieve_dict = {
+        "phonon": [".phonon"],
+        "phonon+efield": [".phonon", ".efield"],
+        "magres": [".magres"],
+        "transitionstatesearch": [".ts"],
+        "molecular dynamics": [".md"],
+        "moleculardynamics": [".md"],
+        "geometryoptimisation": [".geom"],
+        "geometryoptimization": [".geom"],
+        "spectral": [".ome_bin", ".dome_bin"],
+    }
 
     # NOT CURRENTLY USED
     _acceptable_tasks = [
@@ -43,110 +81,256 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
         "geometryoptimisation",
     ]
 
-    _copied_attributes = ["jobresource_param", 
-                          "custom_scheduler_commands", 
-                          "max_wallclock_seconds"]
+    _copied_attributes = [
+        "jobresource_param", "custom_scheduler_commands",
+        "max_wallclock_seconds"
+    ]
+    _write_headers = True
 
-    def _init_internal_params(self):
+    _cell_links = [
+        inp_ln['parameters'], inp_ln['structure'], inp_ln['settings'],
+        inp_ln['kpoints']
+    ]
 
-        super(CastepCalculation, self)._init_internal_params()
-        self._default_parser = "castep.castep"
-        self._use_kpoints = True
-        self._SEED_NAME = "aiida"
-        self._DEFAULT_INPUT_FILE = "aiida.cell"
-        self._DEFAULT_OUTPUT_FILE = "aiida.castep"
+    _param_links = [inp_ln['parameters']]
 
-    @classproperty
-    def _use_methods(cls):
+    @classmethod
+    def define(cls, spec):
+        import aiida.orm as orm
+        super(CastepCalculation, cls).define(spec)
+
+        # Initialise interal params, saved as metadata.options
+        for key, value in cls._DEFAULTS.items():
+            port_name = 'metadata.options.' + key
+            spec.input(port_name, default=value)
+
+        spec.input(
+            'metadata.options.retrieve_list',
+            valid_type=list,
+            default=cls._default_retrieve_list)
+
+        # Begin defining the input nodes
+        spec.input(
+            inp_ln['structure'],
+            valid_type=orm.StructureData,
+            help="Defines the input structure")
+        spec.input(
+            inp_ln['settings'],
+            valid_type=orm.Dict,
+            serializer=to_aiida_type,
+            required=False,
+            help="Use an additional node for sepcial settings")
+        spec.input(
+            inp_ln['parameters'],
+            valid_type=orm.Dict,
+            serializer=to_aiida_type,
+            validator=input_param_validator,
+            help="Use a node that sepcifies the input parameters")
+        spec.input(
+            inp_ln['parent_calc_folder'],
+            valid_type=orm.RemoteData,
+            help=
+            'Use a remote folder as the parent folder. Useful for restarts.',
+            required=False)
+        spec.input_namespace(
+            'pseudos',
+            valid_type=(UspData, OTFGData, UpfData),
+            help=("Use nodes for the pseudopotentails of one of"
+                  "the element in the structure. You should pass a"
+                  "a dictionary specifying the pseudpotential node for"
+                  "each kind such as {O: <PsudoNode>}"),
+            dynamic=True)
+        spec.input(
+            inp_ln['kpoints'],
+            valid_type=KpointsData,
+            required=False,
+            help="Use a node defining the kpoints for the calculation")
+
+        # Define the exit codes
+        for smsg, (code, msg) in ecodes.items():
+            spec.exit_code(code, smsg, message=msg)
+
+        # Define the output nodes
+        spec.output(
+            out_ln['results'],
+            required=True,
+            valid_type=Dict,
+            help='Parsed results in a dictionary format.')
+
+        spec.outputs.dynamic = True
+        # Define the default inputs, enable CalcJobNode to use .res
+        spec.default_output_node = out_ln['results']
+
+    def prepare_for_submission(self, folder):
         """
-        Extend the parent _use_methods with further keys
+        Routine to be called when create the input files and other stuff
+
+        :param folder: a aiida.common.folders.Folder subclass where
+                           the plugin should put all its files.
+        :param inputdict: a dictionary with the input nodes, as they would
+                be returned by get_inputs_dict (without the Code!)
         """
+        self.prepare_inputs()
 
-        retdict = JobCalculation._use_methods
-        retdict.update(BaseCastepInputGenerator._baseclass_use_methods)
+        local_copy_list = []
+        remote_copy_list = []
+        remote_symlink_list = []
 
-        # Not all calculation need kpoints
-        retdict['kpoints'] = {
-            'valid_types': KpointsData,
-            'additional_parameter': None,
-            'linkname': 'kpoints',
-            'docstring': "Use the node defining the kpoint sampling to use",
-        }
+        # TODO allow checking of inputs
+        #if self.inputs.metadata.options._auto_input_validation is True:
+        #    self.check_castep_input(self.param_dict, auto_fix=False)
 
-        return retdict
+        # If requested to reuse, check if the parent_calc_folder is defined
+        require_parent = False
+        for k in self.param_dict:
+            if str(k).lower() in ["reuse", "continuation"]:
+                require_parent = True
+                break
 
-    def submit_test(self,
-                    dryrun=False,
-                    restart_check=False,
-                    verbose=True,
-                    castep_exe="castep.serial",
-                    **kwargs):
-        """
-        Test submission. Optionally do a local dryrun.
-        Return and dictionary as the third item
-        * num_kpoints: number of kpoints used.
-        * memory_MB: memory usage estimated MB
-        * disk_MB: disk space usage estimated in MB
-        """
-        outcome = super(CastepCalculation, self).submit_test(**kwargs)
-        outinfo = {}
-        outinfo["_submit_test"] = outcome
-        if dryrun:
-            folder, dryrun_results = self._dryrun_test(outcome[0], castep_exe,
-                                                       verbose)
-            outinfo["dryrun_results"] = dryrun_results
-
-        if restart_check:
-            self.check_restart(verbose)
-        return outcome
-
-    def _check_restart(self, verbose=True):
-        """
-        Check the existence of restart file if requested
-        """
-        import os
-        from .utils import _lowercase_dict
-
-        def _print(inp):
-            if verbose:
-                print(inp)
-
-        inps = self.get_inputs_dict()
-        paramdict = inps[self.get_linkname("parameters")].get_dict()["PARAM"]
-
-        paramdict = _lowercase_dict(paramdict, "paramdict")
-        stemp = paramdict.get("reuse", None)
-        if not stemp:
-            stemp = paramdict.get("continuation", None)
-
-        if stemp is not None:
-            fname = os.path.split(stemp)[-1]
-        else:
-            # No restart file needed
-            _print("This calculation does not require a restart file.")
-            return
-
-        # Now check if the remote folder has this file
-        remote_data = inps.get(self.get_linkname("parent_folder"), None)
-        if not remote_data:
+        parent_calc_folder = self.inputs.get('parent_calc_folder')
+        if parent_calc_folder is None and require_parent:
             raise InputValidationError(
-                "Restart requires "
-                "parent_folder to be specified".format(fname))
-        else:
-            folder_list = remote_data.listdir()
-            if fname not in folder_list:
-                raise InputValidationError(
-                    "Restart file {}"
-                    " is not in the remote folder".format(fname))
-            else:
-                _print("Check finished, restart file '{}' exists.".format(fname))
+                "No parent calculation folder passed"
+                " for restart calculation using reuse/continuation")
 
-    def _dryrun_test(self, folder, castep_exe, verbose=True):
+        ##############################
+        # END OF INITIAL INPUT CHECK #
+        ##############################
+
+        # Generate input file
+        self.prepare_inputs(reset=True)
+
+        if self._write_headers is True:
+            cell_nodes = []
+            for name, inp in self.inputs.items():
+                if name in self._cell_links and inp:
+                    cell_nodes.append([name, inp])
+
+            # process pseudos
+            for name, pseudo in self.inputs.pseudos.items():
+                cell_nodes.append(['pseudo__{}'.format(name), pseudo])
+
+            self.cell_file.header = self._generate_header_lines(cell_nodes)
+
+            param_nodes = []
+            for name, inp in self.inputs.items():
+                if name in self._param_links and inp:
+                    param_nodes.append([name, inp])
+
+            self.param_file.header = self._generate_header_lines(param_nodes)
+
+        local_copy_list.extend(self.local_copy_list_to_append)
+        seedname = self.inputs.metadata.options.seedname
+
+        cell_fn = seedname + ".cell"
+        param_fn = seedname + ".param"
+
+        with folder.open(cell_fn, mode='w') as incell:
+            incell.write(six.text_type(self.cell_file.get_string()))
+
+        with folder.open(param_fn, mode="w") as inparam:
+            inparam.write(six.text_type(self.param_file.get_string()))
+
+        # IMPLEMENT OPERATIONS FOR RESTART
+
+        symlink = self.inputs.metadata.options.symlink_usage
+        parent_calc_folder = self.inputs.get('parent_calc_folder', None)
+        if parent_calc_folder:
+            comp_uuid = parent_calc_folder.computer.uuid
+            remote_path = parent_calc_folder.get_remote_path()
+            if symlink:
+                remote_list = remote_symlink_list
+            else:
+                remote_list = remote_copy_list
+            remote_list.append(
+                (comp_uuid, remote_path,
+                 self.inputs.metadata.options.parent_folder_name))
+
+        calcinfo = CalcInfo()
+        calcinfo.uuid = self.uuid
+
+        # COPY/SYMLINK LISTS
+        calcinfo.local_copy_list = local_copy_list
+        calcinfo.remote_copy_list = remote_copy_list
+        calcinfo.remote_symlink_list = remote_symlink_list
+
+        # SET UP extra CMDLINE arguments
+        cmdline_params = self.settings_dict.pop("CMDLINE", [])
+
+        # Extra parameters are added after the seed for CASTEP
+        calcinfo.cmdline_params = [seedname] + list(cmdline_params)
+
+        # CASTEP don't have any STDOUT etc when running calculations
+        # Error is shown in the *.err file
+
+        # Construct codeinfo instance
+        codeinfo = CodeInfo()
+        codeinfo.cmdline_params = [seedname] + list(cmdline_params)
+        codeinfo.code_uuid = self.inputs.code.uuid
+        calcinfo.codes_info = [codeinfo]
+
+        # Retrieve by default the .castep file and the bands file
+        calcinfo.retrieve_list = []
+        calcinfo.retrieve_list.append(seedname + ".castep")
+        calcinfo.retrieve_list.append(seedname + ".bands")
+
+        settings_retrieve_list = self.settings_dict.pop(
+            "ADDITIONAL_RETRIEVE_LIST", [])
+        calcinfo.retrieve_list.extend(settings_retrieve_list)
+
+        calculation_mode = self.param_file.get("task", "singlepoint")
+
+        # If we are doing geometryoptimisation retrieved the geom file and -out.cell file
+        # dictionary for task specific file retrieve
+        task_extra = self.retrieve_dict.get(calculation_mode.lower(), [])
+        for suffix in task_extra:
+            settings_retrieve_list.append(seedname + suffix)
+
+        # Retrieve output cell  file if requested
+        if self.param_file.get("write_cell_structure"):
+            settings_retrieve_list.append(seedname + "-out.cell")
+
+        calcinfo.retrieve_list += settings_retrieve_list
+        calcinfo.retrieve_list += self._default_retrieve_list
+
+        # Remove parser options in the setting dictionary
+        # At the moment parser options are not used here
+
+        if self.settings_dict:
+            raise InputValidationError(
+                "The following keys have been found in "
+                "the settings input node, but were not understood: {}".format(
+                    ",".join(list(self.settings_dict.keys()))))
+
+        return calcinfo
+
+    # Attach the input summary method
+    @staticmethod
+    def get_castep_input_summary(builder):
+        """Summarize the input for a builder"""
+        return castep_input_summary(builder)
+
+    @classmethod
+    def submit_test(cls, *args, **kwargs):
+        """Test submission with a builder of inputs"""
+        if args and isinstance(args[0], ProcessBuilder):
+            return submit_test(args[0], inputs=kwargs)
+        else:
+            return submit_test(cls, inputs=kwargs)
+
+    @classmethod
+    def dryrun_test(cls, inputs, castep_exe='castep.serial', verbose=True):
         """
-        Do a dryrun test in a folder with prepared inputs
+        Do a dryrun test in a folder with prepared builder or inputs
         """
 
         from fnmatch import fnmatch
+        if isinstance(inputs, ProcessBuilder):
+            inputs = dict(inputs)
+
+        res = cls.submit_test(**inputs)
+        folder = res[1]
+        cinfo = res[0]
 
         def _print(inp):
             if verbose:
@@ -166,7 +350,9 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
         _print(output)
 
         _print("Starting dryrun...")
-        call([castep_exe, "--dryrun", self._SEED_NAME], cwd=folder.abspath)
+        call(
+            [castep_exe, "--dryrun"] + cinfo.cmdline_params,
+            cwd=folder.abspath)
 
         # Check if any *err files
         contents = folder.get_content_list()
@@ -180,7 +366,8 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
         # Gather information from the dryrun file
         import re
         dryrun_results = {}
-        with folder.open(self._DEFAULT_OUTPUT_FILE) as fh:
+        out_file = cinfo.cmdline_params[0] + '.castep'
+        with folder.open(out_file) as fh:
             for line in fh:
                 mth = re.match(r"\s*k-Points For SCF Sampling:\s+(\d+)\s*",
                                line)
@@ -202,196 +389,69 @@ class CastepCalculation(BaseCastepInputGenerator, JobCalculation):
 
         return folder, dryrun_results
 
+    @staticmethod
+    def update_paraemters(inputs, *args, **kwargs):
+        """Update the paramters for a given input dictionary/builder"""
+        return update_parameters(inputs, *args, **kwargs)
 
-    def duplicate(self):
+    @staticmethod
+    def use_pseudos_from_family(inputs, family_name):
+        use_pseudos_from_family(inputs, family_name)
+
+    def _generate_header_lines(self, other_nodes=None):
         """
-        Duplicate this calculation return an new, unstore calculation with
-        the same attributes but no links attached. label and descriptions
-        are also copied.
+        Generate header lines to go into param and cell files
+        :param other_nodes: A list of pairs of (linkname, node)
+
         """
-        new = type(self)()
+        from textwrap import TextWrapper
+        import time
+        from aiida.manage.manager import get_manager
+        profile = get_manager().get_profile()
+        if not profile:
+            return
 
-        attrs = self.get_attrs()
-        if attrs:
-            for k, v in attrs.items():
-                if k not in self._updatable_attributes:
-                    new._set_attr(k, v)
+        wrapper = TextWrapper(initial_indent="# ", subsequent_indent="# ")
+        time_str = time.strftime("%H:%M:%S %d/%m/%Y %Z")
+        lines = [
+            "##### Generated by aiida_castep {} #####".format(time_str),
+            "#         author: Bonan Zhu (bz240@cam.ac.uk)",
+            "# "
+            "# AiiDA User: {}".format(
+                User.objects.get_default().get_full_name()),
+            "# AiiDA profile: {}".format(profile.name),
+            "# Information of the calculation node",
+            #"# type: {}".format(self.get_name()),
+            #"# pk: {}".format(self.pk),
+            #"# uuid: {}".format(self.uuid),
+            "# label: {}".format(self.inputs.metadata.get('label')),
+            "# description:",
+        ]
 
-        new.label = self.label
-        new.description = self.description
-        # Set the computer as well
-        new.set_computer(self.get_computer())
+        description = self.inputs.metadata.get('description')
+        if description:
+            lines.extend(wrapper.wrap(description))
+        lines.append("")
 
-        return new
+        # additional information of the input nodes
+        if other_nodes:
+            lines.append("## Information of input nodes used:")
 
-    def compare_with(self, the_other_calc, reverse=False):
-        """
-        Compare with another calculation
-        Look for difference in get_castep_input_summary functions
-        :params node: pk or uuid or node
-        :params reverse: reverse the comparison, by default this node
-        is the "new" and the one compared with is "old".
-        """
-        if isinstance(the_other_calc, (int, basestring)):
-            from aiida.orm import load_node
-            calc2 = load_node(the_other_calc)
-        else:
-            calc2 = the_other_calc
+        for name, node in other_nodes:
+            node_lines = [
+                "# ", "# type: {}".format(node), "# pk: {}".format(node.pk),
+                "# linkname: {}".format(name), "# uuid: {}".format(node.uuid),
+                "# label: {}".format(node.label), "# description:"
+            ]
+            _desc = node.description
+            if _desc:
+                node_lines.extend(wrapper.wrap(_desc))
+            node_lines.append("")
+            lines.extend(node_lines)
 
-        from deepdiff import DeepDiff
-        this_param = self.get_castep_input_summary()
-        other_param = calc2.get_castep_input_summary()
-        if reverse is True:
-            res = DeepDiff(this_param, other_param)
-        else:
-            res = DeepDiff(other_param, this_param)
+        lines.append("# END OF HEADER")
 
-        # Compare the kpoints
-
-
-#        this_kpt = self.get_inputs_dict()[self.get_linkname('kpoints')]
-#        other_kpy = calc2.get_inputs_dict()[calc2.get_linkname('kpoints')]
-
-# Compare psudo
-        return res
-
-    def get_castep_input_summary(self):
-        """
-        Convenient fuction for getting a summary of the
-        input of this calculation
-        """
-
-        from aiida_castep.data import get_pseudos_from_structure
-        UpfData = DataFactory("upf")
-        OTFGData = DataFactory("castep.otfgdata")
-        UspData = DataFactory("castep.uspdata")
-
-        out_info = {}
-
-        inp_dict = self.get_inputs_dict()
-        in_param = inp_dict[self.get_linkname('parameters')]
-        in_kpn = inp_dict[self.get_linkname('kpoints')]
-        in_settings = inp_dict.get(self.get_linkname('settings'), None)
-        in_structure = inp_dict[self.get_linkname('structure')]
-        in_code = inp_dict[self.get_linkname('code')]
-        in_remote = inp_dict.get(self.get_linkname('parent_folder'), None)
-
-        # Snippet from Pseudos calculation
-        pseudos = {}
-        # A dictionary that associates each kind name to a pseudo
-        for link in inp_dict.keys():
-            if link.startswith(self._get_linkname_pseudo_prefix()):
-                kindstring = link[len(self._get_linkname_pseudo_prefix()):]
-                kinds = kindstring.split('_')
-                the_pseudo = inp_dict.pop(link)
-                if not isinstance(the_pseudo, (UpfData, UspData, OTFGData)):
-                    raise InputValidationError(
-                        "Pseudo for kind(s) {} is not of "
-                        "supoorted ".format(",".join(kinds)))
-                for kind in kinds:
-                    if kind in pseudos:
-                        raise InputValidationError(
-                            "Pseudo for kind {} passed "
-                            "more than one time".format(kind))
-                    if isinstance(the_pseudo, OTFGData):
-                        pseudos[kind] = the_pseudo.string
-                    elif isinstance(the_pseudo, (UspData, UpfData)):
-                        pseudos[kind] = the_pseudo.filename
-
-
-        param_dict = in_param.get_dict()
-        out_info.update(param_dict)
-
-        out_info["kpoints"] = in_kpn.get_desc()
-        out_info["structure"] = {
-            "formula": in_structure.get_formula(),
-            "cell": in_structure.cell,
-            "label": in_structure.label
-        }
-
-        out_info["code"] = in_code
-        out_info["computer"] = self.get_computer()
-        out_info["resources"] = self.get_resources()
-        out_info["custom_scheduler_commands"] = self.get_custom_scheduler_commands()
-        out_info["wallclock"] = self.get_max_wallclock_seconds()
-
-        # Show the parent calculation whose RemoteData is linked to the node
-        if in_remote is not None:
-            input_calc = in_remote.get_inputs(node_type=JobCalculation)
-            assert len(input_calc) < 2, "More than one JobCalculation found, something seriously wrong"
-            if input_calc:
-                input_calc = input_calc[0]
-                out_info["parent_calc"] = {"pk": input_calc.pk,
-                                           "label": input_calc.label}
-            out_info["parent_calc_folder"] = in_remote
-
-        if in_settings is not None:
-            out_info["settings"] = in_settings.get_dict()
-        out_info["label"] = self.label
-        out_info["pseudos"] = pseudos
-        return out_info
-
-
-    def update_parameters(self, force=False, delete=None, **kwargs):
-        """
-        Convenient function to update the parameters of the calculation.
-        Will atomiatically set the PARAM or CELL field in unstored
-        ParaemterData linked to the calculation.
-        If no ``ParameterData`` is linked to the calculation, a new node will be
-        created.
-
-        ..note:
-          This method relies on the help information to check and assign
-          keywords to PARAM or CELL field of the ParameterData
-          (i.e for generating .param and .cell file)
-
-
-        calc.update_parameters(task="singlepoint")
-
-        :param force: flag to force the update even if the ParameterData node is stored.
-        :param delete: A list of the keywords to be deleted.
-        """
-        param_node = self.get_inputs_dict().get(self.get_linkname('parameters'), None)
-        # Create the node if none is found
-        if param_node is None:
-            warnings.warn("No existing ParameterData node found, creating a new one.")
-            param_node = ParameterData(dict={"CELL": {}, "PARAM": {}})
-            self.use_parameters(param_node)
-
-        if param_node.is_stored:
-           if force:
-               # Create a new node if the existing node is stored
-               param_node = ParameterData(dict=param_node.get_dict())
-               self.use_parameters(param_node)
-           else:
-            raise RuntimeError("The input ParameterData<{}> is already stored".format(param_node.pk))
-
-        param_dict = param_node.get_dict()
-
-        # Update the dictionary
-        from .helper import HelperCheckError
-        helper = self.get_input_helper()
-        dict_update, not_found = helper._from_flat_dict(kwargs)
-        if not_found:
-            suggest = [helper.get_suggestion(i) for i in not_found]
-            error_string = "Following keys are invalid -- "
-            for error_key, sug in zip(not_found, suggest):
-                error_string += "{}: {}; ".format(error_key, sug)
-            raise HelperCheckError(error_string)
-        else:
-            param_dict["PARAM"].update(dict_update["PARAM"])
-            param_dict["CELL"].update(dict_update["CELL"])
-
-        # Delete any keys as requested
-        if delete:
-            for key in delete:
-                tmp1 = param_dict["PARAM"].pop(key, None)
-                tmp2 = param_dict["CELL"].pop(key, None)
-                if (tmp1 is None) and (tmp2 is None):
-                    raise RuntimeError("Key {} not found".format(key))
-
-        # Apply the change to the node
-        param_node.set_dict(param_dict)
+        return lines
 
 
 class Pot1dCalculation(CastepCalculation):
@@ -399,44 +459,13 @@ class Pot1dCalculation(CastepCalculation):
     Class for pot1d Calculation
     """
 
-    _internal_retrieve_list = CastepCalculation.\
-                              _internal_retrieve_list + ["*.dat"]
-
-    def _init_internal_params(self):
-        super(Pot1dCalculation, self)._init_internal_params()
-        self._default_parser = "castep.pot1d"
-
-    @classmethod
-    def from_calculation(cls, calc, code, use_castep_bin=False, **kwargs):
-        """
-        Create pot1d calculation using existing calculation.
-        ``code`` must be specified as it is different from the original CASTEP code.
-        """
-
-        out_calc = cls.continue_from(
-            calc,
-            ignore_state=True,
-            restart_type="continuation",
-            use_output_structure=True,
-            use_castep_bin=use_castep_bin,
-            **kwargs)
-        out_calc.use_code(code)
-        return out_calc
-
-    def _generate_CASTEPinputdata(self, *args, **kwargs):
-        out = super(Pot1dCalculation, self).\
-              _generate_CASTEPinputdata(*args, **kwargs)
-        if out[1].get("continuation") is None:
-            raise InputValidationError("pot1d requires "
-                                       "continuation being set in .param")
-        return out
-
-    def get_withmpi(self):
-        """
-        pot1d is not compile with mpi.
-        Hence the default is changed to False instead.
-        """
-        return self.get_attr('withmpi', False)
+    def prepare_for_submission(self, folder):
+        if self.inputs.metadata.options.withmpi is True:
+            raise RuntimeError('Pot1D cannot run with mpi')
+        in_dict = self.inputs[INPUT_LINKNAMES['parameters']].get_dict()
+        if in_dict['PARAM'].get('continuation') is None:
+            raise InputValidationError('Pot1D must run as continuation')
+        super(Pot1dCalculation, self).prepare_for_submission(folder)
 
 
 class TaskSpecificCalculation(CastepCalculation):
@@ -446,17 +475,18 @@ class TaskSpecificCalculation(CastepCalculation):
 
     _acceptable_tasks = []
 
-    def _generate_CASTEPinputdata(self, *args, **kwargs):
-        param = args[0].get_dict()
+    def prepare_for_submission(self, folder):
+
+        in_dict = self.inputs[INPUT_LINKNAMES['parameters']].get_dict()
 
         # Check if task is correctly set
-        if param['PARAM']['task'].lower() not in map(str.lower,
-                                                     self._acceptable_tasks):
+        all_tasks = [t.lower() for t in self._acceptable_tasks]
+        if in_dict['PARAM']['task'].lower() not in all_tasks:
             raise InputValidationError("Wrong TASK value {}"
                                        " set in PARAM".format(
-                                           param['PARAM']['task'].lower()))
-        return super(TaskSpecificCalculation, self)._generate_CASTEPinputdata(
-            *args, **kwargs)
+                                           in_dict['PARAM']['task'].lower()))
+        return super(TaskSpecificCalculation,
+                     self).prepare_for_submission(folder)
 
 
 class CastepTSCalculation(TaskSpecificCalculation):
@@ -465,30 +495,23 @@ class CastepTSCalculation(TaskSpecificCalculation):
     """
     _acceptable_tasks = ["transitionstatesearch"]
 
-    @classproperty
-    def _use_methods(cls):
+    @classmethod
+    def define(cls, spec):
+        import aiida.orm as orm
+        super(CastepTSCalculation, cls).define(spec)
+        spec.input(
+            inp_ln['prod_structure'],
+            valid_type=orm.StructureData,
+            required=True,
+            help='Product structure for transition state search.')
 
-        retdict = super(CastepTSCalculation, cls)._use_methods
-        retdict['product_structure'] = {
-            'valid_types':
-            StructureData,
-            'additional_parameter':
-            None,
-            'linkname':
-            'product_structure',
-            'docstring':
-            "Use the node defining the structure as the product structure in transition state search."
-        }
-        return retdict
-
-    def _generate_CASTEPinputdata(self, *args, **kwargs):
+    def _prepare_cell_file(self):
         """
-        Override superclass methods
+        Extend the prepare_cell_filer method to include product
+        structure
         """
-        cell, param, local_copy = super(CastepTSCalculation, self).\
-                    _generate_CASTEPinputdata(*args, **kwargs)
-        p_structure = kwargs[self.get_linkname('product_structure')]
-
+        super(CastepTSCalculation, self)._prepare_cell_file()
+        p_structure = self.inputs[inp_ln['prod_structure']]
         pdt_position_list = []
         for site in p_structure.sites:
             kind = p_structure.get_kind(site.kind_name)
@@ -496,169 +519,97 @@ class CastepTSCalculation(TaskSpecificCalculation):
             line = get_castep_ion_line(name, site.position)
             pdt_position_list.append(line)
 
-        cell["POSITIONS_ABS_PRODUCT"] = pdt_position_list
-        return cell, param, local_copy
+        self.cell_file["POSITIONS_ABS_PRODUCT"] = pdt_position_list
 
 
 class CastepExtraKpnCalculation(TaskSpecificCalculation):
     """
     CASTEP calculation with extra kpoints (e.g SPEC, BS, PHONON, SPECTRAL)
     """
-    KPN_NAME = ""  # Alias of the name, e.g BS for bandstructure calculation
-    CHECK_EXTRA_KPN = False  # Check the existence of extra kpoints node
+    KPN_NAMES = []  # Alias of the name, e.g BS for bandstructure calculation
+    REQUIRE_EXTRA_KPN = False  # Check the existence of extra kpoints node
+    REQUIRE_WEIGHTS = True  # Require weights for explicit kpoints
 
-    @classproperty
-    def kpn_name(cls):
-        return cls.KPN_NAME.lower()
+    @classmethod
+    def define(cls, spec):
+        import aiida.orm as orm
+        super(CastepExtraKpnCalculation, cls).define(spec)
+        for required, kpn_name in cls.KPN_NAMES:
+            spec.input(
+                '{}_kpoints'.format(kpn_name.lower()),
+                valid_type=orm.KpointsData,
+                help='Additional kpoints for {}'.format(kpn_name),
+                required=required,
+            )
 
-    @classproperty
-    def _use_methods(cls):
-
-        retdict = CastepCalculation._use_methods
-
-        retdict['{}_kpoints'.format(cls.KPN_NAME.lower())] = {
-            'valid_types':
-            KpointsData,
-            'additional_parameter':
-            None,
-            'linkname':
-            '{}_kpoints'.format(cls.kpn_name),
-            'docstring':
-            "Use the node defining the kpoint sampling for band {}  calculation"
-            .format(cls.TASK.lower())
-        }
-        return retdict
-
-    def _generate_CASTEPinputdata(self, *args, **kwargs):
+    def _prepare_cell_file(self):
         """Add BS kpoints information to the calculation"""
+        super(CastepExtraKpnCalculation, self)._prepare_cell_file()
 
-        cell, param, local_copy = super(CastepExtraKpnCalculation,
-                                        self)._generate_CASTEPinputdata(
-                                            *args, **kwargs)
+        for _, kpn_name in self.KPN_NAMES:
+            extra_kpns = self.inputs.get('{}_kpoints'.format(kpn_name.lower()))
+            # If not defined, just return
+            if extra_kpns is None:
+                continue
 
-        # Check the existence of extra kpoints
-        try:
-            extra_kpns = kwargs[self.get_linkname('{}_kpoints'.format(
-                self.kpn_name))]
-        except KeyError:
-            if self.CHECK_EXTRA_KPN:
-                raise InputValidationError("{}_kpoints"
-                                           " node not found".format(
-                                               self.kpn_name))
-            else:
-                return cell, param, local_copy
-
-        # Add information in the node to cell file
-        try:
-            mesh, offset = extra_kpns.get_kpoints_mesh()
-            has_mesh = True
-        except AttributeError:
             try:
-                bs_kpts_list = extra_kpns.get_kpoints()
-                num_kpoints = len(bs_kpts_list)
-                has_mesh = False
-                if num_kpoints == 0:
+                mesh, offset = extra_kpns.get_kpoints_mesh()
+                has_mesh = True
+            except AttributeError:
+                # Not defined as mesh
+                try:
+                    bs_kpts_list = extra_kpns.get_kpoints()
+                    num_kpoints = len(bs_kpts_list)
+                    has_mesh = False
+                    if num_kpoints == 0:
+                        raise InputValidationError(
+                            "At least one k points must be provided")
+                except AttributeError:
                     raise InputValidationError(
-                        "At least one k points must be provided")
-            except AttributeError:
-                raise InputValidationError(
-                    "No valid {}_kpoints have been found".format(
-                        self.kpn_name))
+                        "No valid {}_kpoints have been found".format(
+                            kpn_name.lower()))
 
-            try:
-                _, weights = extra_kpns.get_kpoints(also_weights=True)
+                try:
+                    _, weights = extra_kpns.get_kpoints(also_weights=True)
 
-            except AttributeError:
-                import numpy as np
-                weights = np.ones(num_kpoints, dtype=float) / num_kpoints
+                except AttributeError:
+                    import numpy as np
+                    weights = np.ones(num_kpoints, dtype=float) / num_kpoints
 
-        if has_mesh is True:
-            mesh_name = "{}_kpoints_mp_grid".format(self.kpn_name)
-            cell[mesh_name] = "{} {} {}".format(*mesh)
-            if offset != [0., 0., 0.]:
-                cell[mesh_name.replace("grid",
-                                       "offset")] = "{} {} {}".format(*offset)
-        else:
-            bs_kpts_lines = []
-            for kpoint, weight in zip(bs_kpts_list, weights):
-                bs_kpts_lines.append("{:18.10f} {:18.10f} "
-                                     "{:18.10f} {:18.10f}".format(
-                                         kpoint[0], kpoint[1], kpoint[2],
-                                         weight))
-            bname = "{}_kpoints_list".format(self.kpn_name).upper()
-            cell[bname] = bs_kpts_lines
-        return cell, param, local_copy
+            # Add to the cell file
+            if has_mesh is True:
+                mesh_name = "{}_kpoints_mp_grid".format(kpn_name.lower())
+                self.cell_file[mesh_name] = "{} {} {}".format(*mesh)
+                if offset != [0., 0., 0.]:
+                    self.cell_file[mesh_name.replace(
+                        "grid", "offset")] = "{} {} {}".format(*offset)
+            else:
+                extra_kpts_lines = []
+                for kpoint, weight in zip(bs_kpts_list, weights):
+                    if self.REQUIRE_WEIGHTS:
+                        extra_kpts_lines.append("{:18.10f} {:18.10f} "
+                                                "{:18.10f} {:18.10f}".format(
+                                                    kpoint[0], kpoint[1],
+                                                    kpoint[2], weight))
+                    else:
+                        extra_kpts_lines.append("{:18.10f} {:18.10f} "
+                                                "{:18.10f}".format(
+                                                    kpoint[0], kpoint[1],
+                                                    kpoint[2]))
+                bname = "{}_kpoints_list".format(kpn_name).upper()
+                self.cell_file[bname] = extra_kpts_lines
 
-    def create_restart(self, *args, **kwargs):
-        """
-        Create a restart of the calculation
-        """
-        out_calc = super(CastepExtraKpnCalculation, self).create_restart(
-            *args, **kwargs)
-
-        # Attach the extra kpoints node if it is there
-        inp_name = "{}_kpoints".format(self.kpn_name)  # Name of the input
-        linkname = self.get_linkname(inp_name)  # Name of the link
-
-        extra_kpn_node = self.get_inputs_dict().get(linkname)
-        if extra_kpn_node:
-            getattr(out_calc, "use_" + inp_name)(extra_kpn_node)
-        return out_calc
-
-    def get_castep_input_summary(self):
+    @classmethod
+    def get_castep_input_summary(cls, builder):
         """
         Generate a dictionary to summarize the inputs to CASTEP
         """
 
-        inp_name = "{}_kpoints".format(self.kpn_name)  # Name of the input
-        linkname = self.get_linkname(inp_name)  # Name of the link
-
-        out_dict = super(CastepExtraKpnCalculation, self).get_castep_input_summary()
-        out_dict[inp_name] = self.get_inputs_dict().get(linkname)
+        inp_name = "{}_kpoints".format(cls.kpn_name)  # Name of the input
+        out_dict = super(CastepExtraKpnCalculation,
+                         cls).get_castep_input_summary(builder)
+        out_dict[inp_name] = builder.get(inp_name)
         return out_dict
-
-    @classmethod
-    def continue_from(cls, *args, **kwargs):
-        """
-        Create a new calculation as a continuation from a given calculation.
-        This is effectively an "restart" for CASTEP and a lot of the parameters
-        can be tweaked. For example, conducting bandstructure calculation from
-        finished geometry optimisation's.
-        :param bool ignore_state: Ignore the state of parent calculation
-        :param str restart_type: "continuation" or "restart".
-        If set to continuation the child calculation has keyword
-        'continuation' set.
-        :param bool reuse: Whether we want to reuse the previous calculation.
-        only applies for "restart" run
-        :param bool parent_folder_symlink: if True, symlink are used instead
-        of hard copies of the files. Default given be
-        self._default_symlink_usage
-        :param bool use_output_structure: if True, the output structure of
-        parent calculation is used as the input of the child calculation.
-        This is useful for photon/bs calculation.
-
-        See also: create_restart
-        """
-        cout = super(CastepExtraKpnCalculation, cls).continue_from(
-            *args, **kwargs)
-
-        # Check the task keyword
-        param = cout.get_inputs_dict()[cout.get_linkname('parameters')]
-        param_dict = param.get_dict()
-
-        task = param_dict['PARAM'].get('task')
-        if task and task == cls.TASK.lower():
-            pass
-        else:
-            # Replace task
-            param_dict['PARAM']['task'] = cls.TASK.lower()
-            from aiida.orm import DataFactory
-            ParameterData = DataFactory('parameter')
-            new_param = ParameterData(dict=param_dict)
-            cout._remove_link_from(cout.get_linkname('parameters'))
-            cout.use_parameters(new_param)
-
-        return cout
 
 
 class CastepBSCalculation(CastepExtraKpnCalculation):
@@ -668,7 +619,7 @@ class CastepBSCalculation(CastepExtraKpnCalculation):
 
     TASK = "BANDSTRUCTURE"
     _acceptable_tasks = [TASK]
-    KPN_NAME = "BS"
+    KPN_NAMES = ((True, "BS"), )
 
 
 class CastepSpectralCalculation(CastepExtraKpnCalculation):
@@ -677,7 +628,7 @@ class CastepSpectralCalculation(CastepExtraKpnCalculation):
     """
     TASK = "SPECTRAL"
     _acceptable_tasks = [TASK]
-    KPN_NAME = "SPECTRAL"
+    KPN_NAMES = ((True, "SPECTRAL"), )
 
 
 class CastepOpticsCalclulation(CastepExtraKpnCalculation):
@@ -686,4 +637,42 @@ class CastepOpticsCalclulation(CastepExtraKpnCalculation):
     """
     TASK = "OPTICS"
     _acceptable_tasks = [TASK]
-    KPN_NAME = "OPTICS"
+    KPN_NAMES = ((True, "OPTICS"), )
+
+
+class CastepPhononCalculation(CastepExtraKpnCalculation):
+    """
+    CASTEP Phonon calculation
+    """
+    TASK = "PHONON"
+    _acceptable_tasks = [TASK]
+    KPN_NAMES = ((True, "PHONON"), (False, "PHONON_FINE"))
+
+
+def submit_test(process_class, inputs=None):
+    """This essentially test the submition"""
+    from aiida.engine.utils import instantiate_process
+    from aiida.manage.manager import get_manager
+    from aiida.common.folders import SandboxFolder
+
+    if isinstance(process_class, ProcessBuilder):
+        inputs = dict(process_class)
+        process_class = process_class._process_class
+
+    upd = {'store_provenance': False, 'dry_run': True}
+    # Create copy so the original ones are not affected
+    inputs = dict(inputs)
+    if 'metadata' in inputs:
+        inputs['metadata'] = dict(inputs['metadata'])
+        inputs['metadata'].update(upd)
+    else:
+        inputs['metadata'] = upd
+    # In any case, we do not want to store the provenance
+
+    folder = SandboxFolder(sandbox_in_repo=False)
+    manager = get_manager()
+    runner = manager.get_runner()
+    process = instantiate_process(runner, process_class, **inputs)
+
+    calc_info = process.prepare_for_submission(folder)
+    return calc_info, folder, process

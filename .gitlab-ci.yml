@@ -1,47 +1,134 @@
-image: 
-  name: bonanzhu/aiida_core_base:0.12.2-dev
-  
+image:
+  name: phusion/baseimage:0.11
+
+stages:
+  - build
+  - test
+  - deploy
+
+services:
+  - postgres:10
+
+variables:
+  # set to aiida_core that the plugin is last known to work
+  AIIDA_DEVELOP_GIT_HASH: 1.0.0b5
+  AIIDA_VERSION: develop
+  TEST_AIIDA_BACKEND: django
+  DB_HOST: "postgres"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  PY_VERSION: "3"
+
+cache:
+  paths:
+    - .cache/pip
 
 before_script:
-    - apt-get update
-    - apt-get install make
-    # Disable interactive configuration of tzdata
-    #- DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql-all 
-    #- apt-get install -y mlocate && updatedb
-    - export HOME=/home/aiida
-    - export PATH=$HOME/.local/bin:$PATH
-    - pip install --upgrade --user pip
-    - pip install sphinx sphinx_rtd_theme
-    - pip install --user .
-    - reentry scan -r aiida
+  - apt-get update
+  - >-
+    DEBIAN_FRONTEND=noninteractive apt-get install -y
+    sudo tzdata postgresql-all mlocate git openssh-client postgresql-10
+    postgresql-server-dev-10 python2.7 python3.6
+    python-pip python3-pip virtualenv rabbitmq-server
+  - service rabbitmq-server start
+  - updatedb
+  # Add a  user set the upper directory as HOME
+  - useradd -d "$CI_PROJECT_DIR/../" -g users -M -N builder
+  # Install an virtual env
+  - virtualenv "--python=python$PY_VERSION" "venv-py$PY_VERSION"
+  # Set the HOME to be BUILD directory, essential for reentry to work
+  - export "HOME=$CI_PROJECT_DIR/../"
+  # Install aiida-core
+  - source "venv-py$PY_VERSION/bin/activate"
+  - pip install pip==18.1
+  - if [ "$AIIDA_VERSION" == "develop" ]; then .ci-data/install_aiida_github.sh ; fi 
+  - pip install -e .[testing,docs,pre-commit]
+  - reentry scan -r aiida
 
-pytest_tests:
-  variables:
-    DB_HOST: "postgres"
-  services:
-    - postgres:10
+pre_commit:
+  stage: build
   script:
-    - pip install --user pytest
-    - su -c '/home/aiida/.local/bin/pytest aiida_castep/tests' aiida
+    - pre-commit install; pre-commit run --all-files || ( git status --short; git diff ; exit 1 )
 
-doc_build:
+# Install and test under python3
+pytest_tests3_latest:
+  stage: test
   variables:
-    DB_HOST: "postgres"
-  services:
-    - postgres:10
+    PY_VERSION: "3"
+    AIIDA_DEVELOP_GIT_HASH: develop
   script:
-    # The profile needs to be there for the building of docs
-    - TEST_AIIDA_BACKEND="django" bash .ci-data/setup_profiles.sh
-    - cd docs
-    - make
-    
-db_tests:
+    # Acquire ownership of the CI_PROJECT FOLDER
+    - chown -R builder:users ..
+    - sudo -u builder -E bash -c "source venv-py$PY_VERSION/bin/activate; pytest ."
+
+pytest_tests3:
+  stage: test
   variables:
-    DB_HOST: "postgres"
-  services:
-    - postgres:10
+    PY_VERSION: "3"
   script:
-    - TEST_AIIDA_BACKEND="django" bash .ci-data/setup_profiles.sh
-    - verdi -p test_django devel tests db.castep
-    - TEST_AIIDA_BACKEND="sqlalchemy" bash .ci-data/setup_profiles.sh
-    - verdi -p test_sqlalchemy devel tests db.castep
+    # Acquire ownership of the CI_PROJECT FOLDER
+    - chown -R builder:users ..
+    - sudo -u builder -E bash -c "source venv-py$PY_VERSION/bin/activate; pytest ."
+
+pytest_tests2_latest:
+  stage: test
+  variables:
+    PY_VERSION: "2"
+    AIIDA_DEVELOP_GIT_HASH: develop
+  script:
+    # Acquire ownership of the CI_PROJECT FOLDER
+    - chown -R builder:users ..
+    - sudo -u builder -E bash -c "source venv-py$PY_VERSION/bin/activate; pytest ."
+
+pytest_tests2:
+  stage: test
+  variables:
+    PY_VERSION: "2"
+  script:
+    # Acquire ownership of the CI_PROJECT FOLDER
+    - chown -R builder:users ..
+    - sudo -u builder -E bash -c "source venv-py$PY_VERSION/bin/activate; pytest ."
+
+doc_build3:
+  stage: test
+  variables:
+    READTHEDOCS: "True"
+  script:
+      # The profile needs to be there for the building of docs
+      - cd docs
+      - make
+
+doc_build2:
+  stage: test
+  variables:
+    PY_VERSION: "2"
+    READTHEDOCS: "True"
+  script:
+      # The profile needs to be there for the building of docs
+      - cd docs
+      - make
+
+stage_production:
+  stage: deploy
+  variables:
+    TWINE_USERNAME: $STAGE_USERNAME
+    TWINE_PASSWORD: $STAGE_PASSWORD
+  script:
+    - python setup.py sdist
+    - pip install twine
+    - twine check dist/*
+    - twine upload --repository-url $PACKAGR_REPOSITORY_URL dist/*
+  except:
+    - tags
+
+deploy_production:
+  stage: deploy
+  variables:
+    TWINE_USERNAME: $PRODUCTION_USERNAME
+    TWINE_PASSWORD: $PRODUCTION_PASSWORD
+  script:
+    - python setup.py sdist
+    - pip install twine
+    - twine check dist/*
+    - twine upload dist/*
+  only:
+    - tags

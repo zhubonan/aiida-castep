@@ -1,8 +1,11 @@
 """
 Utility functions
 """
+from __future__ import absolute_import
 import numpy as np
-from aiida.parsers.exceptions import OutputParsingError
+from aiida.common import OutputParsingError
+from six.moves import zip
+
 
 class CASTEPOutputParsingError(OutputParsingError):
     pass
@@ -14,7 +17,7 @@ def structure_from_input(cell, positions, symbols):
     Convert it into an AiiDA structure object
     """
 
-    from aiida.orm import DataFactory
+    from aiida.plugins import DataFactory
     SructureData = DataFactory("structure")
 
     out_structure = SructureData(cell=cell)
@@ -59,9 +62,12 @@ def desort_structure(structure, original_structure):
         new_structure.append_site(s)
 
     # Check for sure
-    assert [s.kind_name for s in original_structure.sites] == [s.kind_name for s in new_structure.sites]
+    assert [s.kind_name for s in original_structure.sites] == [
+        s.kind_name for s in new_structure.sites
+    ]
 
     return new_structure
+
 
 def get_desort_args(original_structure):
     """
@@ -77,4 +83,3 @@ def get_desort_args(original_structure):
     assert -1 not in rsort
 
     return rsort
-

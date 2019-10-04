@@ -2,7 +2,7 @@
 Additional settings
 ===================
 
-An additional ``ParameterData`` node can be used by the calculation. The following fields can be used:
+An additional ``Dict`` node can be used by the calculation. The following fields can be used:
 
 * ``SPINS``: A list of initial spins for each atom.
 
@@ -23,3 +23,10 @@ Doing so will allow additional ``KpointsData`` for BZ sampling to be linked as t
 A similar classes is defined for *task: spectral* calculations.
 Classes to support *pot1d* utility which output formatted potentials and *transitionstatesearch* tasks are
 also implemented.
+
+Getting help about calculations
+===============================
+
+The ``verdi`` commandline interface provide a convient way to inspect the inputs and outputs of a ``CalcJob``.
+For example, the inputs and outputs can be listed using ``verdi plugins list aiida.calculations aiida.castep``.
+The definition of the exit codes can also be inspected this way.

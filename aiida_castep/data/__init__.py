@@ -1,6 +1,7 @@
+from __future__ import absolute_import
 from .otfg import OTFGData
 from .usp import UspData
-from aiida.orm.data.upf import UpfData
+from aiida.orm.nodes.data.upf import UpfData
 
 
 def get_pseudos_from_structure(structure, family_name):
@@ -13,8 +14,10 @@ def get_pseudos_from_structure(structure, family_name):
        found in the group.
     :raise NotExistent: if no UPF for an element in the group is
        found in the group.
+
+    :returns: A dictionary maps kind to the psueodpotential node
     """
-    from aiida.common.exceptions import NotExistent, MultipleObjectsError
+    from aiida.common import NotExistent, MultipleObjectsError
 
     family_pseudos = {}
 
@@ -38,7 +41,8 @@ def get_pseudos_from_structure(structure, family_name):
             family = f
 
     if valid_count == 0:
-        raise NotExistent("Cannot find matching group among UspData, UpfData and OTFGData")
+        raise NotExistent(
+            "Cannot find matching group among UspData, UpfData and OTFGData")
 
     # This is necessary?
     if valid_count > 1:
@@ -65,7 +69,8 @@ def get_pseudos_from_structure(structure, family_name):
                 pseudo_list[kind.name] = family_pseudos["LIBRARY"]
 
             except KeyError:
-                raise NotExistent("No pseudo for element {} found in family {}".format(
-                 symbol, family_pseudos))
+                raise NotExistent(
+                    "No pseudo for element {} found in family {}".format(
+                        symbol, family_pseudos))
 
     return pseudo_list

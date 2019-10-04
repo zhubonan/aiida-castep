@@ -1,12 +1,14 @@
 """
 Test for generating castep input
 """
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import unittest
 
-from aiida.common.exceptions import InputValidationError
+from aiida.common import InputValidationError
 from aiida.common.folders import SandboxFolder
-from aiida.orm import DataFactory, CalculationFactory
+from aiida.plugins import DataFactory, CalculationFactory
 from aiida.backends.testbase import AiidaTestCase
 from aiida.orm import Code
 from aiida_castep.calculations.castep import CastepTSCalculation as TSCalc
@@ -16,7 +18,7 @@ CasCalc = CalculationFactory("castep.castep")
 BSCalc = CalculationFactory("castep.bs")
 TSCalc = CalculationFactory("castep.ts")
 StructureData = DataFactory("structure")
-ParameterData = DataFactory("parameter")
+Dict = DataFactory("dict")
 KpointsData = DataFactory("array.kpoints")
 
 
@@ -64,7 +66,7 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
         c = CasCalc()
         pdict = self.get_default_input()
         # pdict["CELL"].pop("block species_pot")
-        p = ParameterData(dict=pdict).store()
+        p = Dict(dict=pdict).store()
         c.use_structure(STO)
         c.use_pseudos_from_family(full)
         c.use_pseudos_from_family(C9)
@@ -76,7 +78,7 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
         self.assertEqual(input_dict["pseudo_O"].entry, "C9")
 
         with SandboxFolder() as f:
-            p = ParameterData(dict=pdict)
+            p = Dict(dict=pdict)
             c.use_parameters(p)
             input_dict = c.get_inputs_dict()
             c._prepare_for_submission(f, input_dict)
@@ -115,14 +117,14 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
         s.append_atom(position=(1., 0., 0.), symbols=["Ba"])
         s.store()
 
-        p = ParameterData(dict=input_params).store()
+        p = Dict(dict=input_params).store()
 
         k = KpointsData()
         k.set_kpoints_mesh([4, 4, 4])
         k.store()
 
         settings_dict = {"SPINS": [0, 0]}
-        c.use_settings(ParameterData(dict=settings_dict))
+        c.use_settings(Dict(dict=settings_dict))
         c.label = "TEST CALC"
         c.description = "Test calculation for AiiDA CASTEP plugin."
         c.use_code(self.code)
@@ -143,7 +145,7 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
             },
             "CELL": {
                 "fix_all_cell": "true",
-                "species_pot": ("Ba Ba_00.usp",)
+                "species_pot": ("Ba Ba_00.usp", )
             }
         }
 
@@ -153,13 +155,13 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
         s.append_atom(position=(1., 0., 0.), symbols=["Ba"])
         s.store()
 
-        p = ParameterData(dict=input_params).store()
+        p = Dict(dict=input_params).store()
 
         k = KpointsData()
         k.set_kpoints_mesh([4, 4, 4], offset=(0.5, 0.5, 0.5))
 
         settings_dict = {"SPINS": [0, 0]}
-        c.use_settings(ParameterData(dict=settings_dict))
+        c.use_settings(Dict(dict=settings_dict))
         c.label = "TEST CALC"
         c.description = ("Test calculation for AiiDA CASTEP plugin. "
                          "Testing generation of inputs.")
@@ -190,7 +192,7 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
             # Continuation keywords present - should raise exception
             inputdict = c.get_inputs_dict()
             input_params["PARAM"]["continuation"] = "default"
-            p2 = ParameterData(dict=input_params)
+            p2 = Dict(dict=input_params)
             inputdict["parameters"] = p2
             with self.assertRaises(InputValidationError):
                 c._prepare_for_submission(f, inputdict)
@@ -201,7 +203,8 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
 
             # Check existenc of the file
             cell = f.get_abs_path(c._SEED_NAME + ".cell", check_existence=True)
-            param = f.get_abs_path(c._SEED_NAME + ".param", check_existence=True)
+            param = f.get_abs_path(
+                c._SEED_NAME + ".param", check_existence=True)
             print("\n" + "#" * 5 + "CONTENT OF CELL FILE: " + "#" * 5)
 
             # Check and print out the input files
@@ -218,7 +221,6 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
                 print(param_content)
                 self.assertIn("task", param_content)
 
-            
             k.set_kpoints_mesh((2, 2, 2), (0, 0, 0))
             c.use_kpoints(k)
             inputdict = c.get_inputs_dict()
@@ -227,8 +229,6 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
                 cell_content = p.read()
                 print(cell_content)
                 self.assertNotIn("kpoints_mp_offset", cell_content)
-
-
 
     @unittest.skip("Dry run test takes a long time.")
     def test_dryrun(self):
@@ -257,7 +257,6 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
 
 
 class TestRestartGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
-
     @classmethod
     def setUpClass(cls, *args, **kwargs):
         super(TestRestartGeneration, cls).setUpClass(*args, **kwargs)
@@ -296,7 +295,10 @@ class TestRestartGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
         c2_param = c2_inp[c2.get_linkname("parameters")].get_dict()['PARAM']
 
         reuse = c2_param.pop("reuse")
-        self.assertEqual(reuse, os.path.join(c2._restart_copy_to, "{}.check".format(c2._SEED_NAME)))
+        self.assertEqual(
+            reuse,
+            os.path.join(c2._restart_copy_to,
+                         "{}.check".format(c2._SEED_NAME)))
 
         with SandboxFolder() as f:
             print(c2._prepare_for_submission(f, c2_inp))
@@ -334,8 +336,6 @@ class TestRestartGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
 
 
 class TestTSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
-
-
     @classmethod
     def setUpClass(cls, *args, **kwargs):
         super(TestTSCalculation, cls).setUpClass(*args, **kwargs)
@@ -369,7 +369,7 @@ class TestTSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
             pdict = self.get_default_input()
 
         # pdict["CELL"].pop("block species_pot")
-        p = ParameterData(dict=pdict)
+        p = Dict(dict=pdict)
         c.use_structure(STO)
         c.use_product_structure(STO)
         c.use_pseudos_from_family(C9)
@@ -381,7 +381,6 @@ class TestTSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
 
         # Check mixing libray with acutal entry
         return c
-
 
     def test_input_validation(self):
         """Test input validation"""
@@ -411,7 +410,6 @@ class TestTSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
 
 
 class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
-
     @classmethod
     def setUpClass(cls, *args, **kwargs):
         super(TestBSCalculation, cls).setUpClass(*args, **kwargs)
@@ -450,7 +448,7 @@ class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
             pdict = self.get_default_input()
 
         # pdict["CELL"].pop("block species_pot")
-        p = ParameterData(dict=pdict)
+        p = Dict(dict=pdict)
         c.use_structure(STO)
         c.use_pseudos_from_family(C9)
         c.use_kpoints(self.get_kpoints_mesh())
@@ -494,8 +492,7 @@ class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
         new = c.create_restart(ignore_state=True)
         self.assertEqual(type(new), type(c))
         inpname = "{}_kpoints".format(c.kpn_name)
-        self.assertIn(new.get_linkname(inpname),
-                      new.get_inputs_dict())
+        self.assertIn(new.get_linkname(inpname), new.get_inputs_dict())
 
         # Extra kpn is not mandatory
         extra_kpn = c.get_inputs_dict()["bs_kpoints"]
@@ -503,8 +500,7 @@ class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
         self.assertNotIn(extra_kpn, c.get_inputs())
         # This should still succeed
         new = c.create_restart(ignore_state=True)
-        self.assertNotIn(extra_kpn,
-                         new.get_inputs())
+        self.assertNotIn(extra_kpn, new.get_inputs())
 
     def test_bs_kpoints(self):
 
@@ -529,10 +525,10 @@ class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
             with f.open("aiida.cell") as cell:
                 content = cell.read()
         self.assertIn("{:<20}: 2 2 2".format("bs_kpoints_mp_grid"), content)
-        self.assertIn("{:<20}: 0.1 0.1 0.1".format("bs_kpoints_mp_offset"), content)
+        self.assertIn("{:<20}: 0.1 0.1 0.1".format("bs_kpoints_mp_offset"),
+                      content)
 
 
 class TestPot1dCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
-
     def test_load_plugin(self):
         Pot1D = CalculationFactory("castep.pot1d")

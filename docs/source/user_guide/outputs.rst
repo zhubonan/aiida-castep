@@ -14,7 +14,7 @@ For geometric optimizations, a ``<seed>.geom`` files will also be written contai
 atomic configuration of each iteration and often has higher precision than those in
 ``<seed>.castep``.
 
-For each ``CastepCalcultion`` the parser plugin creates a ``ParameterData`` with link named
+For each ``CastepCalcultion`` the parser plugin creates a ``Dict`` with link named
 ``output_parameters`` for the single valued results. For example:
 
 * Final total/free/0K energy

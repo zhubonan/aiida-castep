@@ -28,7 +28,6 @@ Highlights of available features:
 * Preparing transition state search calculations
 * A `create_restart` method for easy creation of continuation/restart calculations. Input can be altered using `param_update` and `param_delete` keyword arguments. Automatic copying/linking of remote check files by AiiDA.
 * A `get_castep_inputs_summary` method to print a summary of inputs of a calculations.
-* Update parameters of a staged calculation with the `update_parameters` method.
 * A `compare_with` method to compare the inputs of two calculations.
 
 Documentation
@@ -38,33 +37,21 @@ Documentation is hosted at Read the Docs:
 [dev version](https://aiida-castep.readthedocs.io/en/dev/)  
 [master version](https://aiida-castep.readthedocs.io/en/master/)
 
-Examples
---------
-
-Static jupyter notebook examples are located at `examples` folder. The following link will launch the
-statically rendered online versions using [nbviewer](https://nbviewer.jupyter.org/):
-
-[Quick start](https://nbviewer.jupyter.org/urls/gitlab.com/bz1/aiida-castep/raw/dev/examples/aiida-castep-quick-start.ipynb)  
-[Demonstration of some features](https://nbviewer.jupyter.org/urls/gitlab.com/bz1/aiida-castep/raw/dev/examples/aiida-castep-features.ipynb)  
-[An example of band structure calculation](https://nbviewer.jupyter.org/urls/gitlab.com/bz1/aiida-castep/raw/dev/examples/aiida-castep-bs.ipynb)  
-
-These examples can also be run interactively with a complete up-and-running AiiDA enviroment.
-
 TODOS
 -----
 
 * Methods for importing existing calculations 
 * Support for submitting file based CASTEP calculations.
-* At the moment there is no enforcement on the type in `ParameterData` input node. For example, setting *smearing_width* to 0.1 and "0.1" is equivalent, but they will store differently in the database.
-* Update the plugin to work with AiiDA 1.0.0 - work-in-progress
-* WorkChain development for automated restart of calculations. (Waiting for AiiDA 1.0.0)
+* At the moment there is no enforcement on the type in `Dict` input node. For example, setting *smearing_width* to 0.1 and "0.1" is equivalent, but they will store differently in the database.
+* WorkChain developments for automated relaxation and bandstructure calculations.
 
 How to test
 -----------
 
-Use `verdi -p <test_profile> devel tests db.castep` to do tests.
-Make sure the plugin is installed and AiiDA is configured before this.  
-Tests are being migrated using the `pytest` interface provided by `aiida_core`.
-To check these tests, type `pytest` while inside the package folder.
-You may have to install additional dependencies, which can be done with
-`pip install aiida_core[testing]`.
+The tests uses the `pytest` framework. First, install with the dependencies
+```
+pip install aiida_core[testing]
+pip install aiida-castep[testing]
+```
+
+Then you can run the command `pytest` from the project directory.

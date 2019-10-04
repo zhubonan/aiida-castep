@@ -3,9 +3,12 @@ Command line interface for generating CASTEP help information
 """
 
 from __future__ import print_function
+from __future__ import absolute_import
 import click
 import sys
-from aiida.cmdline.commands import data_cmd
+from aiida.cmdline.commands.cmd_data import verdi_data
+from six.moves import map
+from six.moves import zip
 
 
 def dot_proc(iterable):
@@ -32,19 +35,20 @@ def progress(func, *args, **kwargs):
         return tqdm(func, *args, **kwargs)
 
 
-@data_cmd.group('castep-help')
+@verdi_data.group('castep-help')
 def helper_cmd():
     """Commandline interface for controlling helper information"""
     pass
 
 
 @helper_cmd.command(name="generate")
-@click.option("--castep-executable", "-e",
-              help="The executable of CASTEP to be used",
-              default="castep.serial")
-@click.option("--save-as", "-s",
-              help="override default path for saving file")
-def generate(castep_executable, save_as):
+@click.option(
+    "--castep-excutable",
+    "-e",
+    help="The excutable of CASTEP to be used",
+    default="castep.serial")
+@click.option("--save-as", "-s", help="override default path for saving file")
+def generate(castep_excutable, save_as):
     """
     Generate help information file.
 
@@ -52,14 +56,14 @@ def generate(castep_executable, save_as):
     at the $HOME by default.
     """
     from aiida_castep.calculations.helper.generate import (get_castep_commands,
-    parse_help_string)
+                                                           parse_help_string)
 
     import subprocess as sbp
     import os
     try:
-        castep_info = sbp.check_output([castep_executable, "--version"])
+        castep_info = sbp.check_output([castep_excutable, "--version"])
     except OSError:
-        print("Not a valid CASTEP executable. Aborted.")
+        print("Not a valid CASTEP excutable. Aborted.")
         return
 
     version_num = None
@@ -84,7 +88,7 @@ def generate(castep_executable, save_as):
     # Dictonary with short help lines
     all_keys = {}
     for key in ["basic", "inter", "expert"]:
-        c, p = get_castep_commands(castep_executable, key)
+        c, p = get_castep_commands(castep_excutable, key)
         all_keys.update(c)
         all_keys.update(p)
 
@@ -92,13 +96,13 @@ def generate(castep_executable, save_as):
     full_dict = {}
 
     for key in progress(all_keys):
-        lines, k_type, k_level, v_type = parse_help_string(key,
-                                                           castep_executable)
-        full_dict[key.lower()] = dict(help_short=all_keys[key],
-                                      help_full="\n".join(lines),
-                                      key_type=k_type,
-                                      key_level=k_level,
-                                      value_type=v_type)
+        lines, k_type, k_level, v_type = parse_help_string(key)
+        full_dict[key.lower()] = dict(
+            help_short=all_keys[key],
+            help_full="\n".join(lines),
+            key_type=k_type,
+            key_level=k_level,
+            value_type=v_type)
     full_dict["_CASTEP_VERSION"] = version_num
 
     import json
@@ -115,7 +119,6 @@ def show_help(keyword):
     Equivalent as castep -h <keyword> use the information previously saved.
     """
     helper = get_helper()
-    print("Using file: {}".format(helper._help_file_path))
     h_text = helper.help_dict[keyword]["help_full"]
     print("")
     print(h_text)
@@ -143,7 +146,6 @@ def list_keywords(filter):
 
         print("")
 
-    print("Using file: {}".format(helper._help_file_path))
     print_keys("CELL")
     print_keys("PARAM")
 
@@ -153,14 +155,19 @@ def list_file():
     """
     List files aviable to use.
     """
-    from aiida_castep.calculations.helper import find_help_info
 
-    tmp = find_help_info()
-    if not tmp:
+    from aiida_castep.calculations.helper import find_help_info
+    paths, versions = find_help_info()
+    if not versions:
         print("No avaliale file detected")
+
     print("Avaliable files:")
-    for path, version in tmp:
-        print("{} -- version: {}".format(path, version))
+    print("{:<67} | {:^10}".format('Path', 'version'))
+    print("-" * 80)
+    for path, version in zip(paths, versions):
+        if version is None:
+            version = 'NOT_SPECIFIED'
+        print("{:<30} | {:>10}".format(path, version))
 
 
 def get_helper(*args, **kwargs):

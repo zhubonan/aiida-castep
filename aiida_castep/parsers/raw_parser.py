@@ -1,30 +1,36 @@
 """
 Module for parsing .castep file
+This module should not rely on any of AiiDA modules
 """
 
+from __future__ import absolute_import
 import re
 import numpy as np
 from aiida_castep.parsers.utils import CASTEPOutputParsingError
+from aiida_castep.common import EXIT_CODES_SPEC
 
 import logging
+from six.moves import map
+from six.moves import range
 logger = logging.getLogger("aiida")
 
-from .._version import calc_parser_version
-__version__ = calc_parser_version
+from .._version import CALC_PARSER_VERSION
+__version__ = CALC_PARSER_VERSION
 
-# TODO update CODATA for castep 16.1 and above
+# TODO allow the CODATA sets to be selected
 
 # CODATA1986 (included herein for the sake of completeness)
 # taken from
 #    http://physics.nist.gov/cuu/Archive/1986RMP.pdf
 units_CODATA1986 = {
-    'hbar': 6.5821220E-16,      # eVs
-    'Eh': 27.2113961,           # eV
-    'kB': 8.617385E-5,          # eV/K
-    'a0': 0.529177249,          # A
-    'c': 299792458,             # m/s
-    'e': 1.60217733E-19,        # C
-    'me': 5.485799110E-4}       # u
+    'hbar': 6.5821220E-16,  # eVs
+    'Eh': 27.2113961,  # eV
+    'kB': 8.617385E-5,  # eV/K
+    'a0': 0.529177249,  # A
+    'c': 299792458,  # m/s
+    'e': 1.60217733E-19,  # C
+    'me': 5.485799110E-4
+}  # u
 
 # CODATA2002: default in CASTEP 5.01
 # (-> check in more recent CASTEP in case of numerical discrepancies?!)
@@ -32,172 +38,190 @@ units_CODATA1986 = {
 #    http://physics.nist.gov/cuu/Document/all_2002.pdf
 
 units_CODATA2002 = {
-    'hbar': 6.58211915E-16,     # eVs
-    'Eh': 27.2113845,           # eV
-    'kB': 8.617343E-5,          # eV/K
-    'a0': 0.5291772108,         # A
-    'c': 299792458,             # m/s
-    'e': 1.60217653E-19,        # C
-    'me': 5.4857990945E-4}      # u
+    'hbar': 6.58211915E-16,  # eVs
+    'Eh': 27.2113845,  # eV
+    'kB': 8.617343E-5,  # eV/K
+    'a0': 0.5291772108,  # A
+    'c': 299792458,  # m/s
+    'e': 1.60217653E-19,  # C
+    'me': 5.4857990945E-4
+}  # u
 
 units_CODATA2010 = {
     'c': 299792458,
     'hbar': 6.58211928e-16,  # eV
-    'e': 1.602176565e-19,    # C
-    'Av': 6.02214129e23,     # Avogadro constant
-    'R': 8.3144621,          # Gas constrant
-    'Eh': 27.21138505,       # eV
-    'a0': 0.52917721092,     # A - bohr radius
-    'me': 5.4857990946e-4,    # u
-    'kB': 8.6173324E-5          # eV/K
+    'e': 1.602176565e-19,  # C
+    'Av': 6.02214129e23,  # Avogadro constant
+    'R': 8.3144621,  # Gas constrant
+    'Eh': 27.21138505,  # eV
+    'a0': 0.52917721092,  # A - bohr radius
+    'me': 5.4857990946e-4,  # u
+    'kB': 8.6173324E-5  # eV/K
 }
 
 # (common) derived entries
 for d in (units_CODATA1986, units_CODATA2002, units_CODATA2010):
-    d['t0'] = d['hbar'] / d['Eh']     # s
-    d['Pascal'] = d['e'] * 1E30       # Pa
+    d['t0'] = d['hbar'] / d['Eh']  # s
+    d['Pascal'] = d['e'] * 1E30  # Pa
 units = units_CODATA2010
 
 unit_suffix = "_units"
 
-SCF_FAILURE_MESSAGE = "SCF cycles failed to converge"
+SCF_FAILURE_ERROR = "ERROR_SCF_NOT_CONVERGED"
 GEOM_FAILURE_MESSAGE = "Maximum geometry optimization cycle has been reached"
-END_NOT_FOUND_MESSAGE = "CASTEP run did not reach the end of execution."
-INSUFFICENT_TIME_MESSAGE = "CASTEP run terminated due to insufficient run time left."
-STOP_REQUESTED_MESSAGE = "CASTEP run terminated due to requested STOP in param file."
+END_NOT_FOUND_ERROR = "ERROR_NO_END_OF_CALCULATION"
+INSUFFICENT_TIME_ERROR = "ERROR_TIMELIMIT_REACHED"
+STOP_REQUESTED_ERROR = "ERROR_STOP_REQUESTED"
 
 
-def parse_raw_ouput(outfile, input_dict,
-                    parser_opts=None, md_geom_file=None,
-                    bands_file=None):
-    """
-    Parse an dot_castep file
-    :param outfile: path to .castep file
-    :param md_geom_file: path to the .geom file or .md file
-    :return: A list of:
+class RawParser(object):
+    """An raw parser object to parse the output of CASTEP"""
 
-     * out_dict: a dictionary with parsed data.
-     * trajectory_data: dictionary of trajectory data.
-     * structure data: dictionary of cell, positions and symbols.
-     * successful: a boolean that is False in case of failed calculations.
+    def __init__(self, out_lines, input_dict, md_geom_info, bands_lines,
+                 **parser_opts):
+        """Instantiate the parser by passing list of the lines"""
 
-    2 different keys to check in out_dict: *parser_warning* and *warnings*.
-    """
+        self.dot_castep_lines = out_lines
+        self.input_dict = input_dict
+        self.md_geom_info = md_geom_info
+        self.bands_lines = bands_lines
+        self.parser_opts = parser_opts
 
-    parser_version = __version__
-    parser_info = {}
-    parser_info["parser_warnings"] = []
-    parser_info["parser_info"] = "AiiDA CASTEP basic Parser v{}".format(
-        parser_version)
-    parser_info["warnings"] = []
+    def parse(self):
+        """
+        :return: A list of:
 
-    job_successful = True
+         * out_dict: a dictionary with parsed data.
 
-    try:
-        with open(outfile, "r") as f:
-            # Store ouput lines in list
-            # OK if the file is not huge
-            out_lines = f.readlines()
-    except IOError:
-        raise CASTEPOutputParsingError(
-            "Failed to open file: {}".format(outfile))
+         * trajectory_data: dictionary of trajectory data.
 
-    if not out_lines:  # The file is empty
-        job_successful = False
+         * structure data: dictionary of cell, positions and symbols.
 
-    finished_run = False
+         * exit_code: exit code indicating potential problems of the run
+           2 different keys to check in out_dict: *parser_warning* and *warnings*.
 
-    # Use Total time as a mark for completed run
-    for i, line in enumerate(out_lines[-20:]):
-        # Check only the last 20 lines
-        # Otherwise unfinished restarts may be seen as finished
-        if "Total time" in line:
-            finished_run = True
-            break
+        """
+        parser_version = __version__
+        parser_info = {}
+        parser_info["parser_warnings"] = []
+        parser_info["parser_info"] = "AiiDA CASTEP basic Parser v{}".format(
+            parser_version)
+        parser_info["warnings"] = []
 
-    # Warn if the run is not finished
-    if not finished_run:
-        warning = END_NOT_FOUND_MESSAGE
-        parser_info["warnings"].append(warning)
-        job_successful = False
+        exit_code = 'UNKOWN_ERROR'
+        finished_run = False
 
-    # Parse the data and store
-    try:
-        out_data, trajectory_data, critical_messages = parse_castep_text_output(
-            out_lines, input_dict)
+        # Use Total time as a mark for completed run
+        for i, line in enumerate(self.dot_castep_lines[-20:]):
+            # Check only the last 20 lines
+            # Otherwise unfinished restarts may be seen as finished
+            if "Total time" in line:
+                finished_run = True
+                break
 
-        # Use data from geom file if avaliable.
-        if md_geom_file is not None:
-            with open(md_geom_file) as gfile:
-                glines = gfile.readlines()
-            geom_data = parse_geom_text_output(glines, None)
+        self.parse_dot_castep()
+
+        # Warn if the run is not finished
+        if self.md_geom_info is not None:
+            glines = self.md_geom_info[1]
+            geom_data = self.parse_geom(glines)
             # For geom file the second energy is the enthalpy while
             # for MD it is the approx hamiltonian (etotal + ek)
-            if "geom" in md_geom_file:
+            if "geom" in self.md_geom_info[0]:
                 geom_data["geom_enthalpy"] = geom_data["hamilt_energy"]
-            trajectory_data.update(geom_data)
 
-
-        if bands_file is not None:
-            bands_data = parse_dot_bands(bands_file)
+        # Parse the bands file
+        if self.bands_lines is not None:
+            bands_res = self.parse_dot_bands()
         else:
-            bands_data = None
+            bands_res = None
 
-    except CASTEPOutputParsingError as e:
-        if not finished_run:
-            parser_info["parser_warnings"].append(
-                "Error while parsing the output file")
-            out_data = {}
-            trajectory_data = {}
-            critical_messages = []
+        # Return the most 'specific' error. For example one calculation
+        # may not terminate correctly due unconverged SCF.
+        # In this case, we set the exit code to SCF unconverged.
+        if finished_run:
+            exit_code = 'CALC_FINISHED'
+        else:
+            exit_code = 'ERROR_NO_END_OF_CALCULATION'
+            for code in EXIT_CODES_SPEC:
+                if code in self.warnings:
+                    exit_code = code
+                    break
 
-        else:  # Run finished but I have still have an error here
-            raise CASTEPOutputParsingError(
-                "Error while parsing ouput. Exception message: {}".format(e.message))
+        # Pick out trajectory data and structure data
+        if self.dot_castep_traj:
+            traj_data = dict(self.dot_castep_traj)
+            self.traj_data = traj_data
+            if self.md_geom_info is not None:
+                # Use the geom file's trajectory instead
+                # some the files are overwritten
+                traj_data.update(geom_data)
 
-    # Check if any critical messages has been passed
-    # If there is any cricial message we should make the run marked as FAILED
-    for w in out_data["warnings"]:
-        if w in critical_messages:
-            job_successful = False
-            break
+            try:
+                last_cell = traj_data["cells"][-1]
+                last_positions = traj_data["positions"][-1]
+                symbols = traj_data["symbols"]
 
-    # Construct a structure data from the last frame
-    try:
-        last_cell = trajectory_data["cells"][-1]
-        last_positions = trajectory_data["positions"][-1]
-        symbols = trajectory_data["symbols"]
+            except (KeyError, IndexError):
+                # Cannot find the last geometry data
+                structure_data = {}
+            else:
+                structure_data = dict(
+                    cell=last_cell, positions=last_positions, symbols=symbols)
+        else:
+            traj_data = {}
+            structure_data = {}
 
-    except (KeyError, IndexError):
-        # Cannot find the last geometry data
-        structure_data = {}
-    else:
-        structure_data = dict(
-            cell=last_cell, positions=last_positions, symbols=symbols)
+        # A dictionry for the results to be returned
+        results_dict = dict(self.dot_castep_data)
+        results_dict.update(parser_info)
 
-    # Parameter data to be returned
-    parameter_data = dict(out_data.items() + parser_info.items())
+        # Combine the warnings
+        all_warnings = results_dict["warnings"] + parser_info[
+            "warnings"] + self.warnings
 
-    # Combine the warnings
-    all_warnings = out_data["warnings"] + parser_info["warnings"]
+        # Make the warnings set-like e.g we don't want to repeat messages
+        # Save a bit of the storage space
+        all_warnings = list(set(all_warnings))
+        results_dict['warnings'] = all_warnings
 
-    # Make the warnings set-like e.g we don't want to repeat messages
-    # Save a bit of the storage space
-    all_warnings = list(set(all_warnings))
-    parameter_data['warnings'] = all_warnings
+        # Todo Validation of ouput data
+        return [results_dict, traj_data, structure_data, bands_res, exit_code]
 
-    # Todo Validation of ouput data
-    return [parameter_data,
-            trajectory_data, structure_data,
-            bands_data, job_successful]
+    def parse_dot_bands(self):
+        """Parse the dot_bands"""
+        bands_info, kpoints, bands = parse_dot_bands(self.bands_lines)
+        self.bands_res = {
+            'bands_info': bands_info,
+            'kpoints': kpoints,
+            'bands': bands
+        }
+        return self.bands_res
+
+    def parse_geom(self, glines=None):
+        """Parse the geom lines"""
+        if glines is None:
+            glines = self.md_geom_info[1]
+        self.geom_data = parse_geom_text_output(self.md_geom_info[1], {})
+        return self.geom_data
+
+    def parse_dot_castep(self):
+        """Parse the dot-castep file"""
+        parsed_data, trajectory_data, critical_message = parse_castep_text_output(
+            self.dot_castep_lines, {})
+        self.dot_castep_data = parsed_data
+        self.dot_castep_traj = trajectory_data
+        self.dot_castep_critical_message = critical_message
+        self.warnings = parsed_data['warnings']
+        return parsed_data, trajectory_data, critical_message
 
 
 # Re for getting unit
-unit_re = re.compile("^ output\s+(\w+) unit *: *([^\s]+)")
-time_re = re.compile("^(\w+) time += +([0-9.]+) s$")
+unit_re = re.compile(r"^ output\s+(\w+) unit *: *([^\s]+)")
+time_re = re.compile(r"^(\w+) time += +([0-9.]+) s$")
 parallel_re = re.compile(
-    "^Overall parallel efficiency rating: [\w ]+ \(([0-9]+)%\)")
-version_re = re.compile("CASTEP version ([0-9.]+)")
+    r"^Overall parallel efficiency rating: [\w ]+ \(([0-9]+)%\)")
+version_re = re.compile(r"CASTEP version ([0-9.]+)")
 
 
 def parse_castep_text_output(out_lines, input_dict):
@@ -206,8 +230,7 @@ def parse_castep_text_output(out_lines, input_dict):
     :param out_lines: a list of lines from readlines function
 
     :param input_dict: Control some variables. Currently support
-
-    'n_warning_lines'- number of the lines to include for a general warning.
+      'n_warning_lines'- number of the lines to include for a general warning.
 
     :return: A list of parsed_data, trajectory_data and critical_messages:
 
@@ -237,21 +260,28 @@ def parse_castep_text_output(out_lines, input_dict):
     # Not all is needed. But we parse as much as we can here
     trajectory_data = defaultdict(list)
 
-    # In the format {<keywords in line>:<message to pass>}
+    # For the warnings I use dictionary in the format of
+    # format {<keywords in line>:<message to pass>}, the message to pass
+    # is save in the dictionary and used to set the exit code
     critical_warnings = {
-        "SCF cycles performed but system has not reached the groundstate": SCF_FAILURE_MESSAGE,
-        "NOSTART": "Can not find start of the calculation.",
-        "STOP keyword detected in parameter file. Stop execution.": STOP_REQUESTED_MESSAGE,
-        }
+        "SCF cycles performed but system has not reached the groundstate":
+        SCF_FAILURE_ERROR,
+        "STOP keyword detected in parameter file. Stop execution.":
+        STOP_REQUESTED_ERROR,
+        "Insufficient time for another iteration":
+        INSUFFICENT_TIME_ERROR,
+    }
 
     # Warnings that won't result in a calculation in FAILED state
-    minor_warnings = {"Warning": None,
-                     "Geometry optimization failed to converge": GEOM_FAILURE_MESSAGE,
-                     "Insufficient time for another iteration": INSUFFICENT_TIME_MESSAGE}
-
+    minor_warnings = {
+        "Warning": None,
+        "Geometry optimization failed to converge": GEOM_FAILURE_MESSAGE,
+    }
 
     # A dictionary witch keys we should check at each line
-    all_warnings = dict(critical_warnings.items() + minor_warnings.items())
+    all_warnings = dict(critical_warnings)
+    all_warnings.update(minor_warnings)
+
     # Create a list of keys, the order is important here
     # specific warnings can be matched first
 
@@ -305,8 +335,8 @@ def parse_castep_text_output(out_lines, input_dict):
             continue
 
         if "Cell constraints" in line:
-            parsed_data["cell_constraints"] = line.strip().split(":")[
-                1].strip()
+            parsed_data["cell_constraints"] = line.strip().split(
+                ":")[1].strip()
             continue
 
         if "Number of kpoints used" in line:
@@ -316,11 +346,6 @@ def parse_castep_text_output(out_lines, input_dict):
         if "MEMORY AND SCRATCH DISK ESTIMATES" in line:
             body_start = i
             break
-
-    # If we don't find a start of body then there is something wrong
-    if body_start is None:
-        parsed_data["warnings"].append(critical_warnings["NOSTART"])
-        return parsed_data, {}, critical_warnings.values()
 
     parsed_data.update(pseudo_pots=pseudo_files)
 
@@ -369,7 +394,7 @@ def parse_castep_text_output(out_lines, input_dict):
 
         if "Forces *******" in line:
             num_lines = parsed_data["num_ions"] + 10
-            box = body_lines[count: (count + num_lines)]
+            box = body_lines[count:(count + num_lines)]
             i, forces = parse_force_box(box)
 
             if "Constrained" in line:
@@ -382,18 +407,17 @@ def parse_castep_text_output(out_lines, input_dict):
             skip = i
             continue
 
-        if any(i in line for i in all_warnings):
-            message = [all_warnings[k] for k in all_warnings_keys
-                       if k in line][0]
-            if message is None:
-                # CASTEP often have multiline warnings
-                # Add extra lines for detail
-                message = body_lines[count:count + n_warning_lines]
-                message = "\n".join(message)
-            parsed_data["warnings"].append(message)
+        for warn_key in all_warnings:
+            if warn_key in line:
+                message = all_warnings[warn_key]
+                if message is None:
+                    message = body_lines[count:count + n_warning_lines]
+                    message = "\n".join(message)
+                parsed_data["warnings"].append(message)
 
+    # Parse the end a few lines
+    for line in body_lines[-50:]:
         time_line = time_re.match(line)
-
         # Save information about time usage
         if time_line:
             time_name = time_line.group(1).lower() + "_time"
@@ -401,9 +425,17 @@ def parse_castep_text_output(out_lines, input_dict):
             continue
 
         para_line = parallel_re.match(line)
-
         if para_line:
             parsed_data["parallel_efficiency"] = int(para_line.group(1))
+            continue
+
+        for warn_key in all_warnings:
+            if warn_key in line:
+                message = all_warnings[warn_key]
+                if message is None:
+                    message = body_lines[count:count + n_warning_lines]
+                    message = "\n".join(message)
+                parsed_data["warnings"].append(message)
 
     #### END OF LINE BY LINE PARSING ITERATION ####
 
@@ -438,7 +470,7 @@ def parse_castep_text_output(out_lines, input_dict):
     else:
         parsed_data["geom_unconverged"] = None
 
-    return parsed_data, trajectory_data, critical_warnings.values()
+    return parsed_data, trajectory_data, list(critical_warnings.values())
 
 
 class LineParser(object):
@@ -480,7 +512,6 @@ class Matcher(object):
         self.convfunc = convfunc
         self.name = name
 
-
     def match_pattern(self, line):
         """
         Match pattern
@@ -489,7 +520,7 @@ class Matcher(object):
           and match is a re.MatchObject or None
         """
 
-        match =  self.regex.match(line)
+        match = self.regex.match(line)
         if match:
             value = match.group(1)
             if self.convfunc:
@@ -498,6 +529,7 @@ class Matcher(object):
         else:
             out = None
         return out, match
+
 
 class UnitMatcher(Matcher):
     """
@@ -513,8 +545,9 @@ class UnitMatcher(Matcher):
         if out:
             unit = match.group(2)
             conv = self.convfunc if self.convfunc else float
-            out = (out[0],conv(out[1]), unit)
+            out = (out[0], conv(out[1]), unit)
         return out, match
+
 
 def get_iter_parser():
     """
@@ -524,12 +557,17 @@ def get_iter_parser():
     mfree = UnitMatcher(r'^Final free energy \(E-TS\)' + tail1, "free_energy")
     mtotal = UnitMatcher(r'^Final energy, E' + tail1, "total_energy")
     mtotal2 = UnitMatcher(r'^Final energy' + tail1, "total_energy")
-    mzeroK = UnitMatcher(r'^NB est. 0K energy \(E-0.5TS\)' + tail1, "zero_K_energy")
+    mzeroK = UnitMatcher(r'^NB est. 0K energy \(E-0.5TS\)' + tail1,
+                         "zero_K_energy")
     spin = UnitMatcher(r'^Integrated Spin Density' + tail1, "spin_density")
-    absspin = UnitMatcher(r'^Integrated \|Spin Density\|' + tail1, "abs_spin_density")
-    enthalpy = UnitMatcher(r'^ *\w+: finished iteration +\d+ +with enthalpy' + tail1, "enthalpy")
-    parser = LineParser([mfree, mtotal, mtotal2, mzeroK, spin, absspin, enthalpy])
+    absspin = UnitMatcher(r'^Integrated \|Spin Density\|' + tail1,
+                          "abs_spin_density")
+    enthalpy = UnitMatcher(
+        r'^ *\w+: finished iteration +\d+ +with enthalpy' + tail1, "enthalpy")
+    parser = LineParser(
+        [mfree, mtotal, mtotal2, mzeroK, spin, absspin, enthalpy])
     return parser
+
 
 def parse_geom_text_output(out_lines, input_dict):
     """
@@ -541,12 +579,11 @@ def parse_geom_text_output(out_lines, input_dict):
     :return: key, value of the trajectories of cell, atoms, force etc
     """
     txt = out_lines
-    Hartree = units['Eh'] # eV
-    Bohr = units['a0'] # A
-    kB = units['kB'] # eV/K
-    hBar = units['hbar'] # in eV
+    Hartree = units['Eh']  # eV
+    Bohr = units['a0']  # A
+    kB = units['kB']  # eV/K
+    hBar = units['hbar']  # in eV
     eV = units["e"]  # in J
-
 
     cell_list = []
     species_list = []
@@ -584,11 +621,11 @@ def parse_geom_text_output(out_lines, input_dict):
             except ValueError:
                 continue
         elif '<-- E' in line:
-            energy_list.append(float(sline[0])) # Total energy
-            hamilt_list.append(float(sline[1])) # Hamitonian (MD)
+            energy_list.append(float(sline[0]))  # Total energy
+            hamilt_list.append(float(sline[1]))  # Hamitonian (MD)
             # Kinetic energy is not blank in GEOM OPT runs
             if len(sline) == 5:
-                kinetic_list.append(float(sline[2])) # Kinetic (MD)
+                kinetic_list.append(float(sline[2]))  # Kinetic (MD)
             continue
         elif '<-- h' in line:
             current_cell.append(list(map(float, sline[:3])))
@@ -620,25 +657,27 @@ def parse_geom_text_output(out_lines, input_dict):
     if len(species_list) == 0:
         raise CASTEPOutputParsingError("No data found in geom file")
 
-    out =  dict(cells=np.array(cell_list) * Bohr,
-                positions=np.array(geom_list) * Bohr,
-                forces=np.array(forces_list) * Hartree / Bohr,
-                geom_total_energy=np.array(energy_list) * Hartree,
-                symbols=species_list[0],
-                )
+    out = dict(
+        cells=np.array(cell_list) * Bohr,
+        positions=np.array(geom_list) * Bohr,
+        forces=np.array(forces_list) * Hartree / Bohr,
+        geom_total_energy=np.array(energy_list) * Hartree,
+        symbols=species_list[0],
+    )
 
     # optional lists
     unit_V = Hartree * Bohr / hBar
     unit_K = Hartree / kB  # temperature in K
-    unit_P = Hartree / (Bohr * 1e-10) ** 3 * eV
+    unit_P = Hartree / (Bohr * 1e-10)**3 * eV
     unit_s = hBar / Hartree
-    opt = {"velocities": (velocity_list, unit_V),
-           "temperatures": (temperature_list, unit_K),
-           "pressures": (pressure_list, unit_P),
-           "hamilt_energy": (hamilt_list, Hartree),
-           "times": (time_list, unit_s),
-           "kinetic_energy": (kinetic_list, Hartree)
-           }
+    opt = {
+        "velocities": (velocity_list, unit_V),
+        "temperatures": (temperature_list, unit_K),
+        "pressures": (pressure_list, unit_P),
+        "hamilt_energy": (hamilt_list, Hartree),
+        "times": (time_list, unit_s),
+        "kinetic_energy": (kinetic_list, Hartree)
+    }
     for key, value in opt.items():
         if value[0]:
             out.update({key: np.array(value[0]) * value[1]})
@@ -646,9 +685,9 @@ def parse_geom_text_output(out_lines, input_dict):
 
 
 force_match = re.compile(
-    "^ +\* +(\w+) +([0-9]+) +([0-9.\-+]+) +([0-9.\-+]+) +([0-9.\-+]+) +\*")
+    r"^ +\* +(\w+) +([0-9]+) +([0-9.\-+]+) +([0-9.\-+]+) +([0-9.\-+]+) +\*")
 stress_match = re.compile(
-    "^ +\* +(\w+) +([0-9.\-+]+) +([0-9.\-+]+) +([0-9.\-+]+) +\*")
+    r"^ +\* +(\w+) +([0-9.\-+]+) +([0-9.\-+]+) +([0-9.\-+]+) +\*")
 
 
 def parse_force_box(lines):
@@ -667,6 +706,8 @@ def parse_force_box(lines):
 
         if "***********************" in line:
             break
+        # remove the cons'd tags
+        line = line.replace('(cons\'d)', '        ')
 
         match = force_match.match(line)
         if match:
@@ -698,7 +739,7 @@ def parse_stress_box(lines):
             break
 
         match = stress_match.match(line)
-        if  match:
+        if match:
             stress.append([float(match.group(i)) for i in range(2, 5)])
         elif "Pressure" in line:
             lsplit = line.strip().split()
@@ -707,30 +748,34 @@ def parse_stress_box(lines):
     return i, stress, pressure
 
 
-def parse_dot_bands(file_path):
+def parse_dot_bands(bands_lines):
     """
     Parse an CASTEP bands file
     Extract Kpoints and each bands for each kpoints.
     This is a generic parsing function. Return python builtin types.
 
-    :param str file_path: Path of the file to parse
+    The problems is the order of the kpoints written is parallelisation
+    dependent and may not be the same as that specified in *kpoints_list*.
+    However, CASTEP does write the index of the kpoints.
+    We reorder the kpoints and the bands to match the original order in
+    the input file.
+
+
+    :param bands_lines: A list of lines to be parsed parse
     :return: A list of bands_info, kpoints and bands:
 
      * bands_info: A dictionary for information of bands.
-
-     * kpoints: A list of kpoints. In the format [kpoint index, coordinats x 3 kpoint weight]
-
+     * kpoints: A list of kpoints. In the format [kpoint index,
+         coordinats x 3 kpoint weight]
      * bands: A list of bands. Each band has a list of actual
        eigenvalues for each spin components. E.g nkpoints, nspins, neigns.
 
     Note that the atomic units are used in the bands file
     """
-    fh = open(file_path)
-
     i_finish = None
     cell = []
     bands_info = {}
-    for i, line in enumerate(fh):
+    for i, line in enumerate(bands_lines):
         if not line.strip():
             continue
         if "Number of k-points" in line:
@@ -764,12 +809,12 @@ def parse_dot_bands(file_path):
             break
     bands_info['cell'] = cell
 
-    # Now parser the body
+    # Now parse the body
     kpoints = []
     bands = []
     this_band = []
     this_spin = []
-    for line in fh:
+    for line in bands_lines[i + 1:]:
         if "K-point" in line:
             # We are not at the first kpoints
             if kpoints:
@@ -793,8 +838,6 @@ def parse_dot_bands(file_path):
             continue
         this_spin.append(float(ls))
 
-    fh.close()
-
     # Save the last set of results
     this_band.append(this_spin)
     bands.append(this_band)
@@ -804,10 +847,134 @@ def parse_dot_bands(file_path):
     assert len(bands) == len(kpoints), "Missing bands for certain kpoints"
 
     for n, b in enumerate(bands):
-        assert len(b) == int(
-            nspin), "Missing spins for kpoint {}".format(n + 1)
+        assert len(b) == int(nspin), "Missing spins for kpoint {}".format(n +
+                                                                          1)
         for i, s in enumerate(b):
             assert len(s) == int(neigns), ("Missing eigenvalues "
-                                           "for kpoint {} spin {}".format(n + 1, i + 1))
+                                           "for kpoint {} spin {}".format(
+                                               n + 1, i + 1))
 
     return bands_info, kpoints, bands
+
+
+def parse_raw_ouput(out_lines,
+                    input_dict,
+                    parser_opts=None,
+                    md_geom_lines=None,
+                    bands_lines=None):
+    """
+    Parse an dot_castep file
+
+    :param out_lines: A list of lines  handle to the \*.castep file
+    :param md_geom_lines: (name, lines) A list of lines of the .geom file or .md file
+    :param bands_lines: A list of lines to the .bands file
+
+    :return: A list of:
+
+     * out_dict: a dictionary with parsed data.
+
+     * trajectory_data: dictionary of trajectory data.
+
+     * structure data: dictionary of cell, positions and symbols.
+
+     * exit code: exit code indicating potential problems of the run
+
+    2 different keys to check in out_dict: *parser_warning* and *warnings*.
+    """
+    from warnings import warn
+
+    warn('This function has been depricated')
+
+    parser_version = __version__
+    parser_info = {}
+    parser_info["parser_warnings"] = []
+    parser_info["parser_info"] = "AiiDA CASTEP basic Parser v{}".format(
+        parser_version)
+    parser_info["warnings"] = []
+
+    exit_code = 'UNKOWN_ERROR'
+    finished_run = False
+
+    # Use Total time as a mark for completed run
+    for i, line in enumerate(out_lines[-20:]):
+        # Check only the last 20 lines
+        # Otherwise unfinished restarts may be seen as finished
+        if "Total time" in line:
+            finished_run = True
+            break
+
+    # Warn if the run is not finished
+
+    try:
+        out_data, trajectory_data, critical_messages = parse_castep_text_output(
+            out_lines, input_dict)
+
+        # Use data from geom file if avaliable.
+        if md_geom_lines is not None:
+            glines = md_geom_lines[1]
+            geom_data = parse_geom_text_output(glines, None)
+            # For geom file the second energy is the enthalpy while
+            # for MD it is the approx hamiltonian (etotal + ek)
+            if "geom" in md_geom_lines[0]:
+                geom_data["geom_enthalpy"] = geom_data["hamilt_energy"]
+            trajectory_data.update(geom_data)
+
+        if bands_lines is not None:
+            bands_data = parse_dot_bands(bands_lines)
+        else:
+            bands_data = None
+
+    except CASTEPOutputParsingError as e:
+        if not finished_run:
+            parser_info["parser_warnings"].append(
+                "Error while parsing the output file")
+            out_data = {}
+            trajectory_data = {}
+            critical_messages = []
+
+        else:  # Run finished but I have still have an error here
+            raise CASTEPOutputParsingError(
+                "Error while parsing ouput. Exception message: {}".format(
+                    e.message))
+
+    # Return the most 'specific' error. For example one calculation
+    # may not terminate correctly due unconverged SCF.
+    # In this case, we set the exit code to SCF unconverged.
+    if finished_run:
+        exit_code = 'CALC_FINISHED'
+    else:
+        exit_code = 'ERROR_NO_END_OF_CALCULATION'
+        for code in EXIT_CODES_SPEC:
+            if code in out_data["warnings"]:
+                exit_code = code
+                break
+
+    # Construct a structure data from the last frame
+    try:
+        last_cell = trajectory_data["cells"][-1]
+        last_positions = trajectory_data["positions"][-1]
+        symbols = trajectory_data["symbols"]
+
+    except (KeyError, IndexError):
+        # Cannot find the last geometry data
+        structure_data = {}
+    else:
+        structure_data = dict(
+            cell=last_cell, positions=last_positions, symbols=symbols)
+
+    # Parameter data to be returned, combine both out_data and parser_info
+    parameter_data = dict(out_data)
+    parameter_data.update(parser_info)
+
+    # Combine the warnings
+    all_warnings = out_data["warnings"] + parser_info["warnings"]
+
+    # Make the warnings set-like e.g we don't want to repeat messages
+    # Save a bit of the storage space
+    all_warnings = list(set(all_warnings))
+    parameter_data['warnings'] = all_warnings
+
+    # Todo Validation of ouput data
+    return [
+        parameter_data, trajectory_data, structure_data, bands_data, exit_code
+    ]

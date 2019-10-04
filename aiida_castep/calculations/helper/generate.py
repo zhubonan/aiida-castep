@@ -1,8 +1,9 @@
 """
 Module for generation HELP information using CASTEP
-executable.
+excutable.
 """
 from __future__ import print_function
+from __future__ import absolute_import
 import subprocess as sbp
 import re
 import sys
@@ -62,16 +63,16 @@ def get_castep_commands(castep_command="castep.serial", key="all"):
     return cell, param
 
 
-allowed_value_re = re.compile(r"Allow values: ([^.\n]+)[.\n]")
-default_value_re = re.compile(r"Default value: ([^.\n]+)[.\n]")
-type_re = re.compile(r"Type: (\w+)")
-level_re = re.compile(r"Level: (\w+)")
+allowed_value_re = re.compile("Allow values: ([^.\n]+)[.\n]")
+default_value_re = re.compile("Default value: ([^.\n]+)[.\n]")
+type_re = re.compile("Type: (\w+)")
+level_re = re.compile("Level: (\w+)")
 
 
-def parse_help_string(key, executable):
+def parse_help_string(key, excutable="castep.serial"):
     """Capture help string, determine if it is for PARAM or CELL"""
 
-    out = sbp.check_output([executable, "-h", key])
+    out = sbp.check_output([excutable, "-h", key])
     lines = out.split("\n")
     value_type = None
     key_level = None
