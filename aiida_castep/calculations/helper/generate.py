@@ -34,7 +34,8 @@ def progress(func, *args, **kwargs):
 
 def get_castep_commands(castep_command="castep.serial", key="all"):
 
-    outlines = sbp.check_output([castep_command, "-h", key])
+    outlines = sbp.check_output([castep_command, "-h", key],
+                                universal_newlines=True)
     lines = outlines.split("\n")
 
     cell = {}
@@ -72,7 +73,7 @@ level_re = re.compile("Level: (\w+)")
 def parse_help_string(key, excutable="castep.serial"):
     """Capture help string, determine if it is for PARAM or CELL"""
 
-    out = sbp.check_output([excutable, "-h", key])
+    out = sbp.check_output([excutable, "-h", key], universal_newlines=True)
     lines = out.split("\n")
     value_type = None
     key_level = None

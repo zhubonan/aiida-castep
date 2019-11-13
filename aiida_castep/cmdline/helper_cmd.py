@@ -42,11 +42,10 @@ def helper_cmd():
 
 
 @helper_cmd.command(name="generate")
-@click.option(
-    "--castep-excutable",
-    "-e",
-    help="The excutable of CASTEP to be used",
-    default="castep.serial")
+@click.option("--castep-excutable",
+              "-e",
+              help="The excutable of CASTEP to be used",
+              default="castep.serial")
 @click.option("--save-as", "-s", help="override default path for saving file")
 def generate(castep_excutable, save_as):
     """
@@ -61,7 +60,8 @@ def generate(castep_excutable, save_as):
     import subprocess as sbp
     import os
     try:
-        castep_info = sbp.check_output([castep_excutable, "--version"])
+        castep_info = sbp.check_output([castep_excutable, "--version"],
+                                       universal_newlines=True)
     except OSError:
         print("Not a valid CASTEP excutable. Aborted.")
         return
@@ -97,12 +97,11 @@ def generate(castep_excutable, save_as):
 
     for key in progress(all_keys):
         lines, k_type, k_level, v_type = parse_help_string(key)
-        full_dict[key.lower()] = dict(
-            help_short=all_keys[key],
-            help_full="\n".join(lines),
-            key_type=k_type,
-            key_level=k_level,
-            value_type=v_type)
+        full_dict[key.lower()] = dict(help_short=all_keys[key],
+                                      help_full="\n".join(lines),
+                                      key_type=k_type,
+                                      key_level=k_level,
+                                      value_type=v_type)
     full_dict["_CASTEP_VERSION"] = version_num
 
     import json
@@ -157,15 +156,15 @@ def list_file():
     """
 
     from aiida_castep.calculations.helper import find_help_info
-    paths, versions = find_help_info()
-    if not versions:
+    pairs = find_help_info()
+    if not pairs:
         print("No avaliale file detected")
 
     print("Avaliable files:")
     print("{:<67} | {:^10}".format('Path', 'version'))
     print("-" * 80)
-    for path, version in zip(paths, versions):
-        if version is None:
+    for path, version in pairs:
+        if version == 0:
             version = 'NOT_SPECIFIED'
         print("{:<30} | {:>10}".format(path, version))
 
