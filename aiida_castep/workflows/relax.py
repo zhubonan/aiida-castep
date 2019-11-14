@@ -33,35 +33,33 @@ class CastepRelaxWorkChain(WorkChain):
 
         # Apply superclass specifications
         super(CastepRelaxWorkChain, cls).define(spec)
-        spec.expose_inputs(
-            CastepBaseWorkChain, namespace='base', exclude=('calc', ))
-        spec.expose_inputs(
-            CastepBaseWorkChain._calculation_class,
-            namespace='calc',
-            exclude=['structure'])
+        spec.expose_inputs(CastepBaseWorkChain,
+                           namespace='base',
+                           exclude=('calc', ))
+        spec.expose_inputs(CastepBaseWorkChain._calculation_class,
+                           namespace='calc',
+                           exclude=['structure'])
 
-        spec.input(
-            'calc.parameters',
-            valid_type=orm.Dict,
-            serializer=to_aiida_type,
-            help='Input parameters, flat format is allowed.',
-            validator=flat_input_param_validator)
+        spec.input('calc.parameters',
+                   valid_type=orm.Dict,
+                   serializer=to_aiida_type,
+                   help='Input parameters, flat format is allowed.',
+                   validator=flat_input_param_validator)
 
-        spec.input(
-            'structure',
-            valid_type=orm.StructureData,
-            help='Structure to be used for relxation',
-            required=True)
-        spec.input(
-            'relax_options',
-            valid_type=orm.Dict,
-            serializer=to_aiida_type,
-            required=False,
-            help='Options for relaxation')
+        spec.input('structure',
+                   valid_type=orm.StructureData,
+                   help='Structure to be used for relxation',
+                   required=True)
+        spec.input('relax_options',
+                   valid_type=orm.Dict,
+                   serializer=to_aiida_type,
+                   required=False,
+                   help='Options for relaxation')
 
         spec.expose_outputs(CastepBaseWorkChain, exclude=['output_structure'])
-        spec.output(
-            'output_structure', valid_type=orm.StructureData, required=True)
+        spec.output('output_structure',
+                    valid_type=orm.StructureData,
+                    required=True)
 
         spec.outline(
             cls.setup,
@@ -108,11 +106,12 @@ class CastepRelaxWorkChain(WorkChain):
         link_label = 'iteration_{}'.format(self.ctx.iteration)
         # Assemble the inputs
         inputs = AttributeDict(
-            self.exposed_inputs(
-                CastepBaseWorkChain, namespace='base', agglomerate=False))
+            self.exposed_inputs(CastepBaseWorkChain,
+                                namespace='base',
+                                agglomerate=False))
         inputs.calc = AttributeDict(
-            self.exposed_inputs(
-                CastepBaseWorkChain._calculation_class, namespace='calc'))
+            self.exposed_inputs(CastepBaseWorkChain._calculation_class,
+                                namespace='calc'))
         inputs.calc.structure = self.ctx.current_structure
 
         # Update the inputs
@@ -205,21 +204,18 @@ class CastepRelaxWorkChain(WorkChain):
         from aiida_castep.calculations.helper import CastepHelper
         query = QueryBuilder()
         query.append(WorkChainNode, filters={'id': workchain.pk}, tag='work')
-        query.append(
-            Dict,
-            with_incoming='work',
-            tag='output_dict',
-            edge_filters={'label': OUT_LINKS['results']})
-        query.append(
-            CalcJobNode,
-            with_outgoing='output_dict',
-            filters={'attributes.exit_status': 0},
-            tag='final_calc')
-        query.append(
-            Dict,
-            with_outgoing='final_calc',
-            edge_filters={'label': IN_LINKS['parameters']},
-            project=['attributes'])
+        query.append(Dict,
+                     with_incoming='work',
+                     tag='output_dict',
+                     edge_filters={'label': OUT_LINKS['results']})
+        query.append(CalcJobNode,
+                     with_outgoing='output_dict',
+                     filters={'attributes.exit_status': 0},
+                     tag='final_calc')
+        query.append(Dict,
+                     with_outgoing='final_calc',
+                     edge_filters={'label': IN_LINKS['parameters']},
+                     project=['attributes'])
 
         try:
             last_param = query.one()[0]

@@ -31,8 +31,11 @@ def get_castep_ion_line(name,
     if isinstance(name, (tuple, list)):
 
         lines = [
-            "{n:18} {x:18.10f} {y:18.10f} {z:18.10f}".format(
-                n=n, x=pos[0], y=pos[1], z=pos[2]) for n in name
+            "{n:18} {x:18.10f} {y:18.10f} {z:18.10f}".format(n=n,
+                                                             x=pos[0],
+                                                             y=pos[1],
+                                                             z=pos[2])
+            for n in name
         ]
 
         assert sum(occupation) == 1, "Occupation need to sum up to 1"
@@ -69,8 +72,10 @@ def get_castep_ion_line(name,
         return "\n".join(lines)
 
     else:
-        line = "{name:18} {x:18.10f} {y:18.10f} {z:18.10f}".format(
-            name=name, x=pos[0], y=pos[1], z=pos[2])
+        line = "{name:18} {x:18.10f} {y:18.10f} {z:18.10f}".format(name=name,
+                                                                   x=pos[0],
+                                                                   y=pos[1],
+                                                                   z=pos[2])
 
         if spin is not None:
 

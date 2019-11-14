@@ -78,7 +78,6 @@ class CastepTestApp(object):
     A collection of methods to
     control the test
     """
-
     def __init__(self, profile, workdir):
         self._profile = profile
         self._workdir = Path(workdir)
@@ -89,12 +88,11 @@ class CastepTestApp(object):
         Return a generator for the Computers
         """
         from aiida.orm import Computer
-        defaults = dict(
-            name='localhost',
-            hostname='localhost',
-            transport_type='local',
-            scheduler_type='direct',
-            workdir=str(self._workdir))
+        defaults = dict(name='localhost',
+                        hostname='localhost',
+                        transport_type='local',
+                        scheduler_type='direct',
+                        workdir=str(self._workdir))
 
         kwargs.update(defaults)
         computer = Computer(**kwargs).store()
@@ -380,8 +378,9 @@ def generate_calc_job_node(db_test_app):
                 if isinstance(v, Node):
                     if not v.is_stored:
                         v.store()
-                    node.add_incoming(
-                        v, link_type=LinkType.INPUT_CALC, link_label=k)
+                    node.add_incoming(v,
+                                      link_type=LinkType.INPUT_CALC,
+                                      link_label=k)
 
         options = builder.metadata.options
         node.set_attribute('input_filename', options.input_filename)
@@ -398,14 +397,16 @@ def generate_calc_job_node(db_test_app):
         filepath = this_folder.parent / 'data' / results_folder
         retrieved = FolderData()
         retrieved.put_object_from_tree(str(filepath.resolve()))
-        retrieved.add_incoming(
-            node, link_type=LinkType.CREATE, link_label='retrieved')
+        retrieved.add_incoming(node,
+                               link_type=LinkType.CREATE,
+                               link_label='retrieved')
         retrieved.store()
 
         if outputs is not None:
             for label, out_node in outputs.items():
-                out_node.add_incoming(
-                    node, link_type=LinkType.CREATE, link_label=label)
+                out_node.add_incoming(node,
+                                      link_type=LinkType.CREATE,
+                                      link_label=label)
                 if not out_node.is_stored:
                     out_node.store()
 

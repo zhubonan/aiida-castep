@@ -128,8 +128,10 @@ def test_set_up_family_from_string(new_database, imps, otfg_nodes, otfgdata):
         entry, uploaded = imps.otfg.upload_otfg_family(text_entries, "Test",
                                                        "Test")
 
-    entry, uploaded = imps.otfg.upload_otfg_family(
-        text_entries, "Test", "Test", stop_if_existing=False)
+    entry, uploaded = imps.otfg.upload_otfg_family(text_entries,
+                                                   "Test",
+                                                   "Test",
+                                                   stop_if_existing=False)
 
     assert (entry, uploaded) == (3, 2)
 
@@ -143,19 +145,25 @@ def test_set_up_family_from_string(new_database, imps, otfg_nodes, otfgdata):
 
 def test_set_up_family_from_nodes(new_database, otfg, otfg_nodes, otfgdata):
 
-    entry, uploaded = otfg.upload_otfg_family(
-        otfg_nodes[:1], "Test", "Test", stop_if_existing=True)
+    entry, uploaded = otfg.upload_otfg_family(otfg_nodes[:1],
+                                              "Test",
+                                              "Test",
+                                              stop_if_existing=True)
 
     groups = otfgdata.get_otfg_groups()
     assert len(groups) == 1
     assert len(groups[0].nodes) == 1
 
     with pytest.raises(ValidationError):
-        entry, uploaded = otfg.upload_otfg_family(
-            otfg_nodes, "Test", "Test", stop_if_existing=True)
+        entry, uploaded = otfg.upload_otfg_family(otfg_nodes,
+                                                  "Test",
+                                                  "Test",
+                                                  stop_if_existing=True)
 
-    entry, uploaded = otfg.upload_otfg_family(
-        otfg_nodes, "Test", "Test", stop_if_existing=False)
+    entry, uploaded = otfg.upload_otfg_family(otfg_nodes,
+                                              "Test",
+                                              "Test",
+                                              stop_if_existing=False)
     groups = otfgdata.get_otfg_groups()
     assert len(groups) == 1
     assert len(groups[0].nodes) == 3
@@ -163,8 +171,10 @@ def test_set_up_family_from_nodes(new_database, otfg, otfg_nodes, otfgdata):
     Ce = otfgdata()
     Ce.set_string("Ce BLA")
 
-    entry, uploaded = otfg.upload_otfg_family(
-        otfg_nodes + [Ce], "Test", "Test", stop_if_existing=False)
+    entry, uploaded = otfg.upload_otfg_family(otfg_nodes + [Ce],
+                                              "Test",
+                                              "Test",
+                                              stop_if_existing=False)
 
     group = otfgdata.get_otfg_group("Test")
 
@@ -228,8 +238,10 @@ def test_usp_upload_family(new_database, usp_folder):
     new.write_text(six.text_type("asdfgghhd"))
     # This will raise an exception as the same file is being uploaded
     with pytest.raises(ValueError):
-        upload_usp_family(
-            str(usp_folder), "Test", "Test", stop_if_existing=True)
+        upload_usp_family(str(usp_folder),
+                          "Test",
+                          "Test",
+                          stop_if_existing=True)
     # This should be OK
     upload_usp_family(str(usp_folder), "Test", "Test", stop_if_existing=False)
 

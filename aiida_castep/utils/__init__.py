@@ -184,14 +184,13 @@ def reuse_kpoints_grid(grid, lowest_pk=False):
     from aiida.orm.querybuilder import QueryBuilder
     from aiida.orm.nodes.data.array.kpoints import KpointsData
     q = QueryBuilder()
-    q.append(
-        KpointsData,
-        tag="kpoints",
-        filters={
-            "attributes.mesh.0": grid[0],
-            "attributes.mesh.1": grid[1],
-            "attributes.mesh.2": grid[2]
-        })
+    q.append(KpointsData,
+             tag="kpoints",
+             filters={
+                 "attributes.mesh.0": grid[0],
+                 "attributes.mesh.1": grid[1],
+                 "attributes.mesh.2": grid[2]
+             })
     if lowest_pk:
         order = "asc"
     else:
@@ -226,10 +225,10 @@ def traj_to_atoms(traj, combine_ancesters=False, eng_key="enthalpy"):
         atoms_list = []
         for c in calcs:
             atoms_list.extend(
-                traj_to_atoms(
-                    c.outputs.__getattr__(OUTPUT_LINKNAMES['trajectory']),
-                    combine_ancesters=False,
-                    eng_key=eng_key))
+                traj_to_atoms(c.outputs.__getattr__(
+                    OUTPUT_LINKNAMES['trajectory']),
+                              combine_ancesters=False,
+                              eng_key=eng_key))
         return atoms_list
     forces = traj.get_array("forces")
     symbols = traj.get_array("symbols")
@@ -299,8 +298,11 @@ def take_popn(seed):
 def read_popn(fn):
     """Read population file into pandas dataframe"""
     import pandas as pd
-    table = pd.read_table(
-        fn, sep=r"\s\s+", header=2, comment="=", engine="python")
+    table = pd.read_table(fn,
+                          sep=r"\s\s+",
+                          header=2,
+                          comment="=",
+                          engine="python")
     return table
 
 

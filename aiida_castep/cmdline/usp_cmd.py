@@ -32,12 +32,11 @@ def listfamilies(element, with_description):
     q.append(UspData, tag="uspdata")
     if element:
         q.add_filter("uspdata", {"attributes.element": {'in': element}})
-    q.append(
-        Group,
-        tag='group',
-        with_node=UspData,
-        filters={'type_string': USPGROUP_TYPE},
-        project=['label', 'description'])
+    q.append(Group,
+             tag='group',
+             with_node=UspData,
+             filters={'type_string': USPGROUP_TYPE},
+             project=['label', 'description'])
     q.distinct()
     if q.count() > 0:
         for res in q.dict():
@@ -45,12 +44,11 @@ def listfamilies(element, with_description):
             group_desc = res.get("group").get("description")
             # Count the number of pseudos in this group
             q = QueryBuilder()
-            q.append(
-                Group,
-                tag='thisgroup',
-                filters={"label": {
-                    'like': group_label
-                }})
+            q.append(Group,
+                     tag='thisgroup',
+                     filters={"label": {
+                         'like': group_label
+                     }})
             q.append(UspData, project=["id"], member_of='thisgroup')
 
             if with_description:

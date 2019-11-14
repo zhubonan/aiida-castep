@@ -104,28 +104,24 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
             port_name = 'metadata.options.' + key
             spec.input(port_name, default=value)
 
-        spec.input(
-            'metadata.options.retrieve_list',
-            valid_type=list,
-            default=cls._default_retrieve_list)
+        spec.input('metadata.options.retrieve_list',
+                   valid_type=list,
+                   default=cls._default_retrieve_list)
 
         # Begin defining the input nodes
-        spec.input(
-            inp_ln['structure'],
-            valid_type=orm.StructureData,
-            help="Defines the input structure")
-        spec.input(
-            inp_ln['settings'],
-            valid_type=orm.Dict,
-            serializer=to_aiida_type,
-            required=False,
-            help="Use an additional node for sepcial settings")
-        spec.input(
-            inp_ln['parameters'],
-            valid_type=orm.Dict,
-            serializer=to_aiida_type,
-            validator=input_param_validator,
-            help="Use a node that sepcifies the input parameters")
+        spec.input(inp_ln['structure'],
+                   valid_type=orm.StructureData,
+                   help="Defines the input structure")
+        spec.input(inp_ln['settings'],
+                   valid_type=orm.Dict,
+                   serializer=to_aiida_type,
+                   required=False,
+                   help="Use an additional node for sepcial settings")
+        spec.input(inp_ln['parameters'],
+                   valid_type=orm.Dict,
+                   serializer=to_aiida_type,
+                   validator=input_param_validator,
+                   help="Use a node that sepcifies the input parameters")
         spec.input(
             inp_ln['parent_calc_folder'],
             valid_type=orm.RemoteData,
@@ -140,22 +136,20 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
                   "a dictionary specifying the pseudpotential node for"
                   "each kind such as {O: <PsudoNode>}"),
             dynamic=True)
-        spec.input(
-            inp_ln['kpoints'],
-            valid_type=KpointsData,
-            required=False,
-            help="Use a node defining the kpoints for the calculation")
+        spec.input(inp_ln['kpoints'],
+                   valid_type=KpointsData,
+                   required=False,
+                   help="Use a node defining the kpoints for the calculation")
 
         # Define the exit codes
         for smsg, (code, msg) in ecodes.items():
             spec.exit_code(code, smsg, message=msg)
 
         # Define the output nodes
-        spec.output(
-            out_ln['results'],
-            required=True,
-            valid_type=Dict,
-            help='Parsed results in a dictionary format.')
+        spec.output(out_ln['results'],
+                    required=True,
+                    valid_type=Dict,
+                    help='Parsed results in a dictionary format.')
 
         spec.outputs.dynamic = True
         # Define the default inputs, enable CalcJobNode to use .res
@@ -350,9 +344,8 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         _print(output)
 
         _print("Starting dryrun...")
-        call(
-            [castep_exe, "--dryrun"] + cinfo.cmdline_params,
-            cwd=folder.abspath)
+        call([castep_exe, "--dryrun"] + cinfo.cmdline_params,
+             cwd=folder.abspath)
 
         # Check if any *err files
         contents = folder.get_content_list()
@@ -458,7 +451,6 @@ class Pot1dCalculation(CastepCalculation):
     """
     Class for pot1d Calculation
     """
-
     def prepare_for_submission(self, folder):
         if self.inputs.metadata.options.withmpi is True:
             raise RuntimeError('Pot1D cannot run with mpi')
@@ -499,11 +491,10 @@ class CastepTSCalculation(TaskSpecificCalculation):
     def define(cls, spec):
         import aiida.orm as orm
         super(CastepTSCalculation, cls).define(spec)
-        spec.input(
-            inp_ln['prod_structure'],
-            valid_type=orm.StructureData,
-            required=True,
-            help='Product structure for transition state search.')
+        spec.input(inp_ln['prod_structure'],
+                   valid_type=orm.StructureData,
+                   required=True,
+                   help='Product structure for transition state search.')
 
     def _prepare_cell_file(self):
         """

@@ -48,16 +48,15 @@ def upload_otfg_family(entries,
             element, setting = split_otfg_entry(s)
 
         qb = QueryBuilder()
-        qb.append(
-            OTFGData,
-            filters={
-                'attributes.otfg_entry': {
-                    "==": setting
-                },
-                'attributes.element': {
-                    "==": element
-                }
-            })
+        qb.append(OTFGData,
+                  filters={
+                      'attributes.otfg_entry': {
+                          "==": setting
+                      },
+                      'attributes.element': {
+                          "==": element
+                      }
+                  })
         existing_otfg = qb.first()
 
         if existing_otfg is None:
@@ -65,8 +64,9 @@ def upload_otfg_family(entries,
             if isinstance(s, OTFGData):
                 otfg_and_created.append((s, True))
             else:
-                otfg, created = OTFGData.get_or_create(
-                    s, use_first=True, store_otfg=False)
+                otfg, created = OTFGData.get_or_create(s,
+                                                       use_first=True,
+                                                       store_otfg=False)
                 otfg_and_created.append((otfg, created))
 
         else:
@@ -132,7 +132,6 @@ class OTFGData(Data):
     string: string to be put into the cell file
     element: element that this setting is for - may not exist if we are dealing with a library.
     """
-
     def __init__(self, **kwargs):
         """
         Store a string for on-the-fly generation of pseudopoentials
@@ -230,16 +229,15 @@ class OTFGData(Data):
 
         element, string = split_otfg_entry(entry)
         qb = QueryBuilder()
-        qb.append(
-            cls,
-            filters={
-                'attributes.otfg_entry': {
-                    '==': string
-                },
-                'attributes.element': {
-                    '==': element
-                }
-            })
+        qb.append(cls,
+                  filters={
+                      'attributes.otfg_entry': {
+                          '==': string
+                      },
+                      'attributes.element': {
+                          '==': element
+                      }
+                  })
 
         return [i[0] for i in qb.all()]
 
@@ -262,8 +260,8 @@ class OTFGData(Data):
         """
         from aiida.orm import Group
 
-        return Group.objects.get(
-            label=group_label, type_string=cls.otfg_family_type_string)
+        return Group.objects.get(label=group_label,
+                                 type_string=cls.otfg_family_type_string)
 
     @classmethod
     def get_otfg_groups(cls, filter_elements=None, user=None):
@@ -288,10 +286,11 @@ class OTFGData(Data):
         query.append(Group, filters=filters, tag='group', project='*')
 
         if user:
-            query.append(
-                User, filters={'email': {
-                    '==': user
-                }}, with_group='group')
+            query.append(User,
+                         filters={'email': {
+                             '==': user
+                         }},
+                         with_group='group')
 
         if isinstance(filter_elements, six.string_types):
             filter_elements = [filter_elements]

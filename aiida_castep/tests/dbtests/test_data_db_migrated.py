@@ -173,8 +173,10 @@ class TestOTFGData(BaseDataCase):
             entry, uploaded = self.otf.upload_otfg_family(
                 otfgs, "Test", "Test")
 
-        entry, uploaded = self.otf.upload_otfg_family(
-            [O.entry] + otfgs, "Test", "Test", stop_if_existing=False)
+        entry, uploaded = self.otf.upload_otfg_family([O.entry] + otfgs,
+                                                      "Test",
+                                                      "Test",
+                                                      stop_if_existing=False)
 
         groups = self.otfg.get_otfg_groups()
         self.assertEqual(len(groups), 1)
@@ -236,15 +238,16 @@ class TestUspData(BaseDataCase):
             sub = f.get_subfolder("pseudo", create=True)
             for element in ["Sr", "Ti", "O"]:
                 fp = io.StringIO(u"foo bla 42")
-                sub.create_file_from_filelike(
-                    fp, "{}_00.usp".format(element), mode='w')
+                sub.create_file_from_filelike(fp,
+                                              "{}_00.usp".format(element),
+                                              mode='w')
 
-            self.usp.upload_usp_family(
-                os.path.join(f.abspath, "pseudo"), "STO", "")
+            self.usp.upload_usp_family(os.path.join(f.abspath, "pseudo"),
+                                       "STO", "")
 
             with self.assertRaises(ValueError):
-                self.usp.upload_usp_family(
-                    os.path.join(f.abspath, "pseudo"), "STO", "")
+                self.usp.upload_usp_family(os.path.join(f.abspath, "pseudo"),
+                                           "STO", "")
 
     def get_usp_node(self, element):
         """
@@ -276,12 +279,12 @@ class TestUspData(BaseDataCase):
 
             # Now having two files - should raise an exception
             with self.assertRaises(ValueError):
-                node3, create = self.usp.UspData.get_or_create(
-                    fpath, use_first=False)
+                node3, create = self.usp.UspData.get_or_create(fpath,
+                                                               use_first=False)
 
             # This should work now
-            node4, create = self.usp.UspData.get_or_create(
-                fpath, use_first=True)
+            node4, create = self.usp.UspData.get_or_create(fpath,
+                                                           use_first=True)
             self.assertFalse(create)
             self.assertIn(node4.pk, (node1.pk, node2.pk))
 

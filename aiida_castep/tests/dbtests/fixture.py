@@ -14,7 +14,6 @@ class ExistingProfileFixtureManager(FixtureManager):
     """
     A fixture manager that reuses the existing profile
     """
-
     def __init__(self):
         super(ExistingProfileFixtureManager, self).__init__()
         self._is_running_on_test_profile = False

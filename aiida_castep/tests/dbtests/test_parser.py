@@ -113,11 +113,10 @@ def test_parsing_geom(new_database, db_test_app, generate_calc_job_node,
     Test if geom is converted to trajectory data
     """
     from aiida_castep.calculations.castep import CastepCalculation
-    node = generate_calc_job_node(
-        'castep.castep',
-        'H2-geom',
-        inputs=h2_calc_inputs,
-        computer=db_test_app.localhost)
+    node = generate_calc_job_node('castep.castep',
+                                  'H2-geom',
+                                  inputs=h2_calc_inputs,
+                                  computer=db_test_app.localhost)
     parser = generate_parser('castep.castep')
     results, _ = parser.parse_from_node(node, store_provenance=False)
     assert 'forces' in results['output_trajectory'].get_arraynames()

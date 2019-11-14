@@ -26,7 +26,6 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
     """
     Test if the input is correctly generated
     """
-
     @classmethod
     def setUpClass(cls):
         super(TestCastepInputGeneration, cls).setUpClass()
@@ -93,7 +92,6 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
         """
         Test using UpfData
         """
-
     def generate_test_calc(self):
         """
         Return a defined Calculation
@@ -203,8 +201,8 @@ class TestCastepInputGeneration(AiidaTestCase, BaseCalcCase, BaseDataCase):
 
             # Check existenc of the file
             cell = f.get_abs_path(c._SEED_NAME + ".cell", check_existence=True)
-            param = f.get_abs_path(
-                c._SEED_NAME + ".param", check_existence=True)
+            param = f.get_abs_path(c._SEED_NAME + ".param",
+                                   check_existence=True)
             print("\n" + "#" * 5 + "CONTENT OF CELL FILE: " + "#" * 5)
 
             # Check and print out the input files

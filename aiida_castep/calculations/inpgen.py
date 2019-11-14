@@ -21,7 +21,6 @@ class CastepInputGenerator(object):
     """
     Class for generating CASTEP inputs
     """
-
     def __init__(self):
         """
         Initialise the object
@@ -61,8 +60,8 @@ class CastepInputGenerator(object):
         run_time = self.inputs.metadata.options.get('max_wallclock_seconds')
         if run_time:
             n_seconds = run_time * 0.95
-            n_seconds = (
-                n_seconds // 60) * 60  # Round down to the nearest minutes
+            n_seconds = (n_seconds //
+                         60) * 60  # Round down to the nearest minutes
             # Do not do any thing if calculated time is less than 1 hour
             if n_seconds < 180:
                 pass
@@ -141,13 +140,12 @@ class CastepInputGenerator(object):
                 label = None
 
             # Get the line of positions_abs block
-            line = get_castep_ion_line(
-                name,
-                pos,
-                label=label,
-                spin=spin,
-                occupation=kind.weights,
-                mix_num=mixture_count)
+            line = get_castep_ion_line(name,
+                                       pos,
+                                       label=label,
+                                       spin=spin,
+                                       occupation=kind.weights,
+                                       mix_num=mixture_count)
 
             # Append the line to the list
             atomic_position_list.append(line)
@@ -266,8 +264,8 @@ class CastepInputGenerator(object):
                     species_pot_map[pseudo_name] = "{:5} {}".format(
                         pseudo_name, ps.filename)
                     # Add to the copy list
-                    self.local_copy_list_to_append.add((ps.uuid, ps.filename,
-                                                        ps.filename))
+                    self.local_copy_list_to_append.add(
+                        (ps.uuid, ps.filename, ps.filename))
                 # If we are using OTFG, just add the string property of it
                 elif isinstance(ps, OTFGData):
                     species_pot_map[pseudo_name] = "{:5} {}".format(

@@ -187,17 +187,20 @@ class MockOutput(object):
         known_result = reg.get(hash_, None)
         if known_result:
             self.copy_results(known_result)
-            print('Returning results from {}'.format(
-                self.base_dir / known_result))
+            print('Returning results from {}'.format(self.base_dir /
+                                                     known_result))
         else:
             raise RuntimeError('Results not registered')
 
 
 @click.command('mock')
-@click.option(
-    '--reg', default=False, is_flag=True, help='Register the calculation')
-@click.option(
-    '--tag', help='Tag for the folder when registering results', default=None)
+@click.option('--reg',
+              default=False,
+              is_flag=True,
+              help='Register the calculation')
+@click.option('--tag',
+              help='Tag for the folder when registering results',
+              default=None)
 @click.argument('seed')
 def main(seed, reg, tag):
     runner = MockOutput()

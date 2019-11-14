@@ -21,7 +21,6 @@ class CastepInputFile(OrderedDict):
     * ``header`` a list of lines to be put into the header
     * ``units`` a dictionary of the units
     """
-
     def __init__(self, *args, **kwargs):
         super(CastepInputFile, self).__init__(*args, **kwargs)
         self.header = []

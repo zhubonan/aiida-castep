@@ -47,10 +47,9 @@ def test_castep_summary_calcjob(sto_calc_inputs, generate_calc_job_node):
     """Test the summary method works for CalcJobNode"""
     from aiida_castep.calculations.tools import castep_input_summary
     from tempfile import mkdtemp
-    calcjobnode = generate_calc_job_node(
-        entry_point_name='castep.castep',
-        results_folder=mkdtemp(),
-        inputs=sto_calc_inputs)
+    calcjobnode = generate_calc_job_node(entry_point_name='castep.castep',
+                                         results_folder=mkdtemp(),
+                                         inputs=sto_calc_inputs)
     out_dict = castep_input_summary(calcjobnode)
 
     keys = [
@@ -90,10 +89,9 @@ def test_create_restart_builder(sto_calc_inputs):
     from aiida_castep.calculations.tools import create_restart
     new_builder = create_restart(sto_calc_inputs, entry_point='castep.castep')
 
-    new_builder = create_restart(
-        sto_calc_inputs,
-        entry_point='castep.castep',
-        param_update={'fix_all_cell': True})
+    new_builder = create_restart(sto_calc_inputs,
+                                 entry_point='castep.castep',
+                                 param_update={'fix_all_cell': True})
     assert new_builder.parameters.get_dict()['CELL']['fix_all_cell'] is True
 
     # Test deletion
@@ -112,8 +110,8 @@ def test_create_restart_node(calcjobnode):
         True, param_update={'fix_all_cell': True})
     assert new_builder.parameters.get_dict()['CELL']['fix_all_cell'] is True
 
-    new_builder = calcjobnode.tools.create_restart(
-        True, use_output_structure=True)
+    new_builder = calcjobnode.tools.create_restart(True,
+                                                   use_output_structure=True)
     assert new_builder[
         INPUT_LINKNAMES['structure']].uuid == calcjobnode.outputs.__getattr__(
             OUTPUT_LINKNAMES['structure']).uuid

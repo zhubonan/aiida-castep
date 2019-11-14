@@ -62,9 +62,8 @@ def desort_structure(structure, original_structure):
         new_structure.append_site(s)
 
     # Check for sure
-    assert [s.kind_name for s in original_structure.sites] == [
-        s.kind_name for s in new_structure.sites
-    ]
+    assert [s.kind_name for s in original_structure.sites
+            ] == [s.kind_name for s in new_structure.sites]
 
     return new_structure
 

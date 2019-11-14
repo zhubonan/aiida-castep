@@ -71,7 +71,6 @@ def register_error_handler(cls, priority):
     :param priority: an integer that defines the order in which registered handlers will be called
         during the handling of a failed calculation. Higher priorities will be handled first
     """
-
     def error_handler_decorator(handler):
         @wraps(handler)
         def error_handler(self, calculation):

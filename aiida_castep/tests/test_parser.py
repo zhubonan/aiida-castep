@@ -106,8 +106,8 @@ class TestParsers(unittest.TestCase):
 
     def test_parser_class(self):
         """Test the classfor RawParser"""
-        bands = self.get_lines(
-            self.data_abs_path / 'Si-geom-stress/aiida.bands')
+        bands = self.get_lines(self.data_abs_path /
+                               'Si-geom-stress/aiida.bands')
         parser = RawParser(self.castep_lines, {},
                            ['aiida.geom', self.geom_lines], bands)
         res = parser.parse()

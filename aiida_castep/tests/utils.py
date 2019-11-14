@@ -50,11 +50,10 @@ def get_mixture_cell():
 
     cell = ((a, 0., 0.), (0., a, 0.), (0., 0., a))
     s = StructureData(cell=cell)
-    s.append_atom(
-        position=(0., 0., 0.),
-        symbols=["Sr", "Ti"],
-        weights=(0.5, 0.5),
-        name='SrTi')
+    s.append_atom(position=(0., 0., 0.),
+                  symbols=["Sr", "Ti"],
+                  weights=(0.5, 0.5),
+                  name='SrTi')
     s.append_atom(position=(a / 2, a / 2, a / 2), symbols=["Ti"])
     s.append_atom(position=(a / 2, a / 2, 0.), symbols=["O"])
     s.append_atom(position=(a / 2, 0., a / 2), symbols=["O"], name='O1')

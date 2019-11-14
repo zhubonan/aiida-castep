@@ -76,7 +76,6 @@ STOP_REQUESTED_ERROR = "ERROR_STOP_REQUESTED"
 
 class RawParser(object):
     """An raw parser object to parse the output of CASTEP"""
-
     def __init__(self, out_lines, input_dict, md_geom_info, bands_lines,
                  **parser_opts):
         """Instantiate the parser by passing list of the lines"""
@@ -166,8 +165,9 @@ class RawParser(object):
                 # Cannot find the last geometry data
                 structure_data = {}
             else:
-                structure_data = dict(
-                    cell=last_cell, positions=last_positions, symbols=symbols)
+                structure_data = dict(cell=last_cell,
+                                      positions=last_positions,
+                                      symbols=symbols)
         else:
             traj_data = {}
             structure_data = {}
@@ -268,8 +268,7 @@ def parse_castep_text_output(out_lines, input_dict):
         SCF_FAILURE_ERROR,
         "STOP keyword detected in parameter file. Stop execution.":
         STOP_REQUESTED_ERROR,
-        "Insufficient time for another iteration":
-        INSUFFICENT_TIME_ERROR,
+        "Insufficient time for another iteration": INSUFFICENT_TIME_ERROR,
     }
 
     # Warnings that won't result in a calculation in FAILED state
@@ -381,8 +380,8 @@ def parse_castep_text_output(out_lines, input_dict):
             continue
 
         if "Stress Tensor" in line:
-            i, stress, pressure = parse_stress_box(
-                body_lines[count:count + 20])
+            i, stress, pressure = parse_stress_box(body_lines[count:count +
+                                                              20])
             assert len(stress) == 3
             if "Symmetrised" in line:
                 prefix = "symm_"
@@ -477,7 +476,6 @@ class LineParser(object):
     """
     Parser for a line
     """
-
     def __init__(self, conditions):
         """initialize the Parser by passing the conditions"""
         self._cond = conditions
@@ -500,7 +498,6 @@ class Matcher(object):
     """
     Class of the condition to match the line
     """
-
     def __init__(self, regex, name, convfunc=None):
         """
         Initialize a Matcher object.
@@ -536,7 +533,6 @@ class UnitMatcher(Matcher):
     The pattern of a UnitMatcher should have two groups with second group
     being the unit. The first group will be converted to float
     """
-
     def match_pattern(self, line):
         """
         Match the pattern
@@ -959,8 +955,9 @@ def parse_raw_ouput(out_lines,
         # Cannot find the last geometry data
         structure_data = {}
     else:
-        structure_data = dict(
-            cell=last_cell, positions=last_positions, symbols=symbols)
+        structure_data = dict(cell=last_cell,
+                              positions=last_positions,
+                              symbols=symbols)
 
     # Parameter data to be returned, combine both out_data and parser_info
     parameter_data = dict(out_data)

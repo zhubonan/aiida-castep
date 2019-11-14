@@ -77,8 +77,9 @@ def upload_usp_family(folder,
 
         # Add the file if it is in the database
         if existing_usp is None:
-            pseudo, created = UspData.get_or_create(
-                f, use_first=True, store_usp=False)
+            pseudo, created = UspData.get_or_create(f,
+                                                    use_first=True,
+                                                    store_usp=False)
             pseudo_and_created.append((pseudo, created))
 
         # The same file is there already
@@ -143,7 +144,6 @@ class UspData(SinglefileData):
     Class for a single usp file
     These usp files are stored as individual file nodes in the database
     """
-
     def __init__(self, **kwargs):
         """
         Initialize a UspData node
@@ -281,8 +281,8 @@ class UspData(SinglefileData):
         """
         from aiida.orm import Group
 
-        return Group.objects.get(
-            label=group_label, type_string=cls.uspfamily_type_string)
+        return Group.objects.get(label=group_label,
+                                 type_string=cls.uspfamily_type_string)
 
     @classmethod
     def get_usp_groups(cls, filter_elements=None, user=None):
@@ -307,10 +307,11 @@ class UspData(SinglefileData):
         query.append(Group, filters=filters, tag='group', project='*')
 
         if user:
-            query.append(
-                User, filters={'email': {
-                    '==': user
-                }}, with_group='group')
+            query.append(User,
+                         filters={'email': {
+                             '==': user
+                         }},
+                         with_group='group')
 
         if isinstance(filter_elements, six.string_types):
             filter_elements = [filter_elements]

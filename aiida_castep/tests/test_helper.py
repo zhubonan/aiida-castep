@@ -8,17 +8,15 @@ no_info = helper.BY_PASS
 
 class TestHelper(unittest.TestCase):
     """class  TestHelper for test CastepHepler"""
-
     @classmethod
     def setUpClass(cls):
         cls.helper = CastepHelper()
 
     @property
     def flat_dict(self):
-        return dict(
-            fix_all_cell="true",
-            cut_off_energy="true",
-            kpoints_mp_grid="0 0 0")
+        return dict(fix_all_cell="true",
+                    cut_off_energy="true",
+                    kpoints_mp_grid="0 0 0")
 
     @property
     def only_param_dict(self):

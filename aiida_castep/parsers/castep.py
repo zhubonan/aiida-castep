@@ -110,12 +110,11 @@ class CastepParser(Parser):
         #                       md_geom_lines=out_md_geom_name_content,
         #                       bands_lines=out_bands_content)
 
-        raw_parser = RawParser(
-            out_lines=out_file_content,
-            input_dict=input_dict,
-            md_geom_info=out_md_geom_name_content,
-            bands_lines=out_bands_content,
-            **parser_opts)
+        raw_parser = RawParser(out_lines=out_file_content,
+                               input_dict=input_dict,
+                               md_geom_info=out_md_geom_name_content,
+                               bands_lines=out_bands_content,
+                               **parser_opts)
         out_dict, trajectory_data, structure_data, bands_data, exit_code_2\
             = raw_parser.parse()
 
@@ -155,8 +154,9 @@ class CastepParser(Parser):
             # No final structure can be used - that is OK
             pass
         else:
-            structure_node = structure_from_input(
-                cell=cell, positions=positions, symbols=symbols)
+            structure_node = structure_from_input(cell=cell,
+                                                  positions=positions,
+                                                  symbols=symbols)
             calc_in = self.node
             # Use the output label as the input label
             input_structure = calc_in.inputs.structure
@@ -191,11 +191,10 @@ class CastepParser(Parser):
 
                 else:
                     traj = TrajectoryData()
-                    traj.set_trajectory(
-                        stepids=np.asarray(stepids),
-                        cells=np.asarray(cells),
-                        symbols=np.asarray(symbols),
-                        positions=np.asarray(positions))
+                    traj.set_trajectory(stepids=np.asarray(stepids),
+                                        cells=np.asarray(cells),
+                                        symbols=np.asarray(symbols),
+                                        positions=np.asarray(positions))
                     # Save the rest
                     for name, value in six.iteritems(trajectory_data):
                         # Skip saving empty arrays
@@ -225,7 +224,6 @@ class Pot1dParser(Parser):
     """
     Parser for Pot1d
     """
-
     def parse_with_retrieved(self, retrieved):
         # NOT READLLY IN USE
 
