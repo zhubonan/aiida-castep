@@ -67,7 +67,10 @@
             "castep-helper = aiida_castep.cmdline.helper_cmd:helper_cmd"
         ],
         "aiida.tools.calculations": [
-            "castep.castep = aiida_castep.calculations.tools:CastepCalcTools"
+            "castep.castep = aiida_castep.calculations.tools:CastepCalcTools",
+            "castep.spec = aiida_castep.calculations.tools:CastepCalcTools",
+            "castep.phonon = aiida_castep.calculations.tools:CastepCalcTools",
+            "castep.bs = aiida_castep.calculations.tools:CastepCalcTools"
         ],
         "aiida.workflows": [
             "castep.base = aiida_castep.workflows.base:CastepBaseWorkChain",
