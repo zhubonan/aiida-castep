@@ -308,9 +308,9 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
     def submit_test(cls, *args, **kwargs):
         """Test submission with a builder of inputs"""
         if args and isinstance(args[0], ProcessBuilder):
-            return submit_test(args[0], inputs=kwargs)
+            return submit_test(args[0])
         else:
-            return submit_test(cls, inputs=kwargs)
+            return submit_test(cls, **kwargs)
 
     @classmethod
     def dryrun_test(cls, inputs, castep_exe='castep.serial', verbose=True):
@@ -319,12 +319,14 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         """
 
         from fnmatch import fnmatch
+        from aiida.common.folders import Folder
         if isinstance(inputs, ProcessBuilder):
-            inputs = dict(inputs)
-
-        res = cls.submit_test(**inputs)
-        folder = res[1]
-        cinfo = res[0]
+            res = cls.submit_test(inputs)
+        else:
+            res = cls.submit_test(cls, **inputs)
+        folder = Folder(res[1])
+        dry_run_node = res[0]
+        seedname = dry_run_node.get_option('seedname')
 
         def _print(inp):
             if verbose:
@@ -333,19 +335,18 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         # Do a dryrun
         from subprocess import call, check_output
         try:
-            output = check_output([castep_exe, "-v"]).decode()
+            output = check_output([castep_exe, "-v"], universal_newlines=True)
         except OSError:
             _print("CASTEP executable '{}' is not found".format(castep_exe))
             return
 
         # Now start dryrun
         _print("Running with {}".format(
-            check_output(["which", castep_exe]).decode()))
+            check_output(["which", castep_exe], universal_newlines=True)))
         _print(output)
 
         _print("Starting dryrun...")
-        call([castep_exe, "--dryrun"] + cinfo.cmdline_params,
-             cwd=folder.abspath)
+        call([castep_exe, "--dryrun", seedname], cwd=folder.abspath)
 
         # Check if any *err files
         contents = folder.get_content_list()
@@ -359,7 +360,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         # Gather information from the dryrun file
         import re
         dryrun_results = {}
-        out_file = cinfo.cmdline_params[0] + '.castep'
+        out_file = seedname + '.castep'
         with folder.open(out_file) as fh:
             for line in fh:
                 mth = re.match(r"\s*k-Points For SCF Sampling:\s+(\d+)\s*",
@@ -640,30 +641,26 @@ class CastepPhononCalculation(CastepExtraKpnCalculation):
     KPN_NAMES = ((True, "PHONON"), (False, "PHONON_FINE"))
 
 
-def submit_test(process_class, inputs=None):
+def submit_test(arg, **kwargs):
     """This essentially test the submition"""
-    from aiida.engine.utils import instantiate_process
-    from aiida.manage.manager import get_manager
-    from aiida.common.folders import SandboxFolder
+    from aiida.engine import run_get_node
 
-    if isinstance(process_class, ProcessBuilder):
-        inputs = dict(process_class)
-        process_class = process_class._process_class
+    # Deal with passing an process builder
+    if isinstance(arg, ProcessBuilder):
+        inputs = arg
 
-    upd = {'store_provenance': False, 'dry_run': True}
-    # Create copy so the original ones are not affected
-    inputs = dict(inputs)
-    if 'metadata' in inputs:
-        inputs['metadata'] = dict(inputs['metadata'])
-        inputs['metadata'].update(upd)
+        inputs['metadata']['store_provenance'] = False
+        inputs['metadata']['dry_run'] = True
+
+        output_node = run_get_node(inputs).node
+        inputs['metadata']['store_provenance'] = True
+        inputs['metadata']['dry_run'] = False
     else:
-        inputs['metadata'] = upd
-    # In any case, we do not want to store the provenance
+        inputs = kwargs
+        inputs['metadata']['store_provenance'] = False
+        inputs['metadata']['dry_run'] = True
+        output_node = run_get_node(arg, **inputs).node
+        inputs['metadata']['store_provenance'] = True
+        inputs['metadata']['dry_run'] = False
 
-    folder = SandboxFolder(sandbox_in_repo=False)
-    manager = get_manager()
-    runner = manager.get_runner()
-    process = instantiate_process(runner, process_class, **inputs)
-
-    calc_info = process.prepare_for_submission(folder)
-    return calc_info, folder, process
+    return output_node, output_node.dry_run_info['folder']

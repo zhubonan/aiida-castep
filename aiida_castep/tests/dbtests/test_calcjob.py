@@ -113,8 +113,11 @@ def test_submit_test(new_database, sto_calc_inputs):
     Test the ``submit_test`` method
     """
     from aiida_castep.calculations.castep import CastepCalculation
-    res = CastepCalculation.submit_test(**sto_calc_inputs)
-    fcontent = res[1].get_content_list()
+    from aiida.common.folders import Folder
+    builder = CastepCalculation.get_builder()
+    builder._update(sto_calc_inputs)
+    res = CastepCalculation.submit_test(builder)
+    fcontent = Folder(res[1]).get_content_list()
     assert 'aiida.cell' in fcontent
     assert 'aiida.param' in fcontent
 
@@ -124,10 +127,11 @@ def test_submit_test_function(new_database, sto_calc_inputs):
     Test the ``submit_test`` method
     """
     from aiida_castep.calculations.castep import CastepCalculation, submit_test
+    from aiida.common.folders import Folder
 
     # Test with process class and inputs
-    res = submit_test(CastepCalculation, inputs=sto_calc_inputs)
-    fcontent = res[1].get_content_list()
+    res = submit_test(CastepCalculation, **sto_calc_inputs)
+    fcontent = Folder(res[1]).get_content_list()
     assert 'aiida.cell' in fcontent
     assert 'aiida.param' in fcontent
     # Nothing should change for the nested dic
@@ -138,7 +142,7 @@ def test_submit_test_function(new_database, sto_calc_inputs):
     builder = CastepCalculation.get_builder()
     builder._data = sto_calc_inputs
     res = submit_test(builder)
-    fcontent = res[1].get_content_list()
+    fcontent = Folder(res[1]).get_content_list()
     assert 'aiida.cell' in fcontent
     assert 'aiida.param' in fcontent
 
