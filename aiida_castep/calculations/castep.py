@@ -21,7 +21,8 @@ from ..data.otfg import OTFGData
 from ..data.usp import UspData
 from .utils import get_castep_ion_line
 from .tools import (castep_input_summary, update_parameters,
-                    use_pseudos_from_family, input_param_validator)
+                    use_pseudos_from_family, input_param_validator,
+                    check_restart)
 
 from .._version import CALC_PARSER_VERSION
 __version__ = CALC_PARSER_VERSION
@@ -311,6 +312,11 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
             return submit_test(args[0])
         else:
             return submit_test(cls, **kwargs)
+
+    @classmethod
+    def check_restart(cls, builder, verbose=False):
+        """Check the existence of restart file is needed"""
+        check_restart(builder, verbose)
 
     @classmethod
     def dryrun_test(cls, inputs, castep_exe='castep.serial', verbose=True):

@@ -23,48 +23,6 @@ __all__ = [
 
 
 class CastepCalcTools(CalculationTools):
-    def check_restart(self, verbose=True):
-        """
-        Check the existence of restart file if requested
-        """
-        import os
-        from .utils import _lowercase_dict
-
-        def _print(inp):
-            if verbose:
-                print(inp)
-
-        paramdict = self._node.get_incoming(
-            link_label_filter=INPUT_LINKNAMES['parameters']).one.node.get_dict(
-            )
-        paramdict = _lowercase_dict(paramdict, "paramdict")
-        stemp = paramdict.get("reuse", None)
-        if not stemp:
-            stemp = paramdict.get("continuation", None)
-
-        if stemp is not None:
-            fname = os.path.split(stemp)[-1]
-        else:
-            # No restart file needed
-            _print("This calculation does not require a restart file.")
-            return
-
-        # Now check if the remote folder has this file
-        remote_data = inps.get(self.get_linkname("parent_folder"), None)
-        if not remote_data:
-            raise InputValidationError(
-                "Restart requires "
-                "parent_folder to be specified".format(fname))
-        else:
-            folder_list = remote_data.listdir()
-            if fname not in folder_list:
-                raise InputValidationError(
-                    "Restart file {}"
-                    " is not in the remote folder".format(fname))
-            else:
-                _print(
-                    "Check finished, restart file '{}' exists.".format(fname))
-
     def get_castep_input_summary(self):
         return castep_input_summary(self._node)
 
@@ -156,21 +114,28 @@ def castep_input_summary(calc):
     """
 
     out_info = {}
+    # Check what is passed
     if isinstance(calc, CalcJobNode):
         inp_dict = calc.get_incoming(link_type=(LinkType.INPUT_CALC,
                                                 LinkType.INPUT_WORK)).nested()
         options = calc.get_options()
+        metadata = {}  # Metadata is empty when Node is passed
         is_node = True
     elif isinstance(calc, ProcessBuilder):
+        # Case of builder
         inp_dict = calc._data
+        metadata = calc.metadata._data
         options = calc.metadata.get('options', {})
         is_node = False
     elif isinstance(calc, dict):
+        # Case of a input dictionary
         inp_dict = calc
-        options = calc['metadata'].get('options', {})
+        metadata = calc.get('metadata', {})
+        options = metadata.get('options', {})
         is_node = False
 
     def get_node(label):
+        """Get node from input dictionary"""
         return inp_dict.get(INPUT_LINKNAMES[label])
 
     in_param = get_node('parameters')
@@ -196,8 +161,12 @@ def castep_input_summary(calc):
     out_info["resources"] = options.get('resources')
     out_info["custom_scheduler_commands"] = options.get(
         'custom_scheduler_commands')
-
+    out_info["qos"] = options.get('qos')
+    out_info["account"] = options.get('account')
     out_info["wallclock"] = options.get('max_wallclock_seconds')
+    out_info["label"] = calc.label if is_node else metadata.get('label')
+    out_info["description"] = calc.description if is_node else metadata.get(
+        'description')
 
     # Show the parent calculation whose RemoteData is linked to the node
     if in_remote is not None:
@@ -217,7 +186,6 @@ def castep_input_summary(calc):
 
     if in_settings is not None:
         out_info["settings"] = in_settings.get_dict()
-    out_info["label"] = calc.label if is_node else options.get('label')
     out_info["pseudos"] = pseudos
     return out_info
 
@@ -397,3 +365,47 @@ def flat_input_param_validator(input_dict):
         validate_input_param(input_dict, allow_flat=True)
     except HelperCheckError as error:
         return error.args[0]
+
+
+def check_restart(builder, verbose=False):
+    """
+    Check the RemoteData reference by the builder is satisfied
+    :returns: True if OK
+    :raises: InputValidationError if error is found
+    """
+    import os
+    from .utils import _lowercase_dict
+
+    def _print(inp):
+        if verbose:
+            print(inp)
+
+    paramdict = builder[INPUT_LINKNAMES['parameters']].get_dict()['PARAM']
+    paramdict = _lowercase_dict(paramdict, "paramdict")
+    stemp = paramdict.get("reuse", None)
+    if not stemp:
+        stemp = paramdict.get("continuation", None)
+    if stemp is not None:
+        fname = os.path.split(stemp)[-1]
+        _print("This calculation requires a restart file: '{}'".format(fname))
+    else:
+        # No restart file needed
+        _print("This calculation does not require a restart file.")
+        return True
+
+    # Now check if the remote folder has this file
+    remote_data = builder.get(INPUT_LINKNAMES["parent_calc_folder"])
+    if not remote_data:
+        raise InputValidationError(
+            "Restart requires "
+            "parent_folder to be specified".format(fname))
+    else:
+        _print("Checking remote directory")
+        folder_list = remote_data.listdir()
+        if fname not in folder_list:
+            raise InputValidationError(
+                "Restart file {}"
+                " is not in the remote folder".format(fname))
+        else:
+            _print("Check finished, restart file '{}' exists.".format(fname))
+            return True
