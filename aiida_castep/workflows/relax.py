@@ -79,7 +79,6 @@ class CastepRelaxWorkChain(WorkChain):
         self.ctx.is_converged = 0
         self.ctx.current_cell_volume = None
         self.ctx.current_structure = self.inputs.structure
-        self.ctx.restart_mode = 'reuse'
         # A dictionary used to update the default inputs
         self.ctx.calc_update = {}  # Update to the calc namespace
         self.ctx.base_update = {}  # Update to the baes namespace
@@ -93,7 +92,11 @@ class CastepRelaxWorkChain(WorkChain):
 
         self.ctx.max_meta_iterations = relax_options.pop(
             'max_meta_iterations', self._max_meta_iterations)
-        self.ctx.restart_mode = relax_options.pop('restart_mode', 'reuse')
+        restart_mode = relax_options.pop('restart_mode', 'reuse')
+        assert restart_mode in [
+            "reuse", "continuation", "structure"
+        ], "Invalid restart mode: {}".format(restart_mode)
+        self.ctx.restart_mode = restart_mode
         self.ctx.relax_options = relax_options
 
     def should_run_relax(self):
@@ -158,6 +161,8 @@ class CastepRelaxWorkChain(WorkChain):
         if output_parameters.get('geom_unconverged') is True:
             # Assign restart mode and folder
             if self.ctx.restart_mode in ['reuse', 'continuation']:
+                # The input link to the Base WorkChain determine to mode of continuation
+                # Parameters are updated automatically
                 self.ctx.base_update['{}_folder'.format(
                     self.ctx.restart_mode)] = workchain.outputs.remote_folder
                 # Unless we use the continuation mode, the structure should be set to the output structure
