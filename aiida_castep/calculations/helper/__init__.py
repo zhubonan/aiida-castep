@@ -44,6 +44,7 @@ class CastepHelper(object):
     """
     A class for helping castep inputs
     """
+
     def __init__(self, version=None):
         # Instance level parameter for by passing any check at all
         self.BY_PASS = False
@@ -150,8 +151,10 @@ class CastepHelper(object):
 
     def _from_flat_dict(self, input_dict):
         """
-        Construct a {"PARAM":{}, "CELL":{}} dictionary from a flat dictionary
-        :returns: a list of [out_dict, keys_not_found]"""
+        Construct a {"PARAM":{}, "CELL":{}} dictionary from dictionary with top-level keys other
+        than PARAM and CELL
+        :returns: a list of [out_dict, keys_not_found]
+        """
 
         if self.BY_PASS:
             raise RuntimeError(
@@ -159,11 +162,9 @@ class CastepHelper(object):
 
         hinfo = self.help_dict
 
-        # Check if we are indeed dealing with a flat dictionary
-        assert "PARAM" not in input_dict and "CELL" not in input_dict
-
-        cell_dict = {}
-        param_dict = {}
+        # extract copies of CELL and PARAM fields from the input
+        cell_dict = dict(input_dict.get("CELL", {}))
+        param_dict = dict(input_dict.get("PARAM", {}))
         not_found = []
         for key in input_dict:
             key_entry = hinfo.get(key, None)

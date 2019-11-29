@@ -171,7 +171,7 @@ class CastepRelaxWorkChain(WorkChain):
 
             self._push_parameters(workchain)
             self.report(
-                'Relaxation CastepBaseWorkChain finished not not converged')
+                'Relaxation CastepBaseWorkChain finished but not converged')
         else:
             self.ctx.is_converged = True
             self.report('Geometry optimisation is converged')
