@@ -7,14 +7,20 @@ AiiDA plugin for working with CASTEP
 [![pipeline status](https://gitlab.com/bz1/aiida-castep/badges/dev/pipeline.svg)](https://gitlab.com/bz1/aiida-castep/commits/dev)
 (dev)  
 
-This is a  plugin for using CASTEP in AiiDA.
-The plugin is OK for production use, but improvement will be made from time to time.
+A plugin for [AiiDA](www.aiida.net) to work with plane-wave pseudopotential DFT code [CASTEP](www.castep.org).
 CASTEP has a single binary executable and calculation is primarily controlled by the *task* keyword.
 The generic `CastepCalculation` should work with all tasks, at least in terms of generating input files.
 Likewise a generic `CastepParser` class is implemented and can handle parsing most information we are interested in *singlepoint*, *geometryoptimisation*, *bandstructure/spectral* tasks.
-Most output files are retrieved if present and if there is any missing it is possible to explicitly request retrieval from the remote computer. 
-The goal of this plugin is not to provide a comprehensive parser of the CASTEP results, but to build a logical
-network of calculations performed for provenance preservation and workflow automation.
+Most output files are retrieved if present, and it is possible to explicitly request retrieval from the remote computer. 
+The goal of this plugin is not to provide a comprehensive parser of the CASTEP results, but to build a graph of calculations performed for provenance preservation and workflow automation.
+Input and output of a simple calculation:
+
+![Asingle calculation](https://gitlab.com/bz1/aiida-castep/raw/dev/docs/source/images/Si_bs_example.png)
+
+or a series of operations and automated calculations:
+
+![A series of calculations](https://gitlab.com/bz1/aiida-castep/raw/dev/docs/source/images/calc_series_example.png)
+
 The raw files can always be extracted from the database and analysed by the post-processing tools of choice. 
 Even better, such tools may be integrated with the AiiDA framework and have the analysis appended to the provenance graph.
 
@@ -27,8 +33,8 @@ Highlights of available features:
 * Checking errors in .param and .cell files before submitting, using dictionaries shipped from built from CASTEP executable.
 * Extra KpointData input node for BS, SEPCTRAL and PHONON tasks.
 * Preparing transition state search calculations
-* A `create_restart` method for easy creation of continuation/restart calculations. Input can be altered using `param_update` and `param_delete` keyword arguments. Automatic copying/linking of remote check files by AiiDA.
-* A `get_castep_inputs_summary` method to print a summary of inputs of a calculations.
+* A `create_restart` function for easy creation of continuation/restart calculations. Input can be altered using `param_update` and `param_delete` keyword arguments. Automatic copying/linking of remote check files by AiiDA.
+* A `get_castep_inputs_summary` function to print a summary of inputs of a calculations.
 * A `compare_with` method to compare the inputs of two calculations.
 
 Dependencies
@@ -36,7 +42,7 @@ Dependencies
 
 The primary dependency is the `aiida_core` package. The dependencies are:
 
-* The plugin version 1.0 and above support only `aiida_core>=1.0.0`.
+* The plugin version 1.0 and above support only `aiida_core>=1.0.0b6`.
 * The plugin version 0.3 support only `aiida_core` 0.12.x versions.
 
 Due to major design and API changes in the `aiida_core`, scripts written are incompatible between and new versions.
@@ -50,7 +56,7 @@ Documentation is hosted at Read the Docs:
 [master version](https://aiida-castep.readthedocs.io/en/master/)
 
 Todos and nice-to-haves
------
+-----------------------
 
 * Methods for importing existing calculations 
 * Support for submitting file based CASTEP calculations.
