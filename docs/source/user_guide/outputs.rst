@@ -33,7 +33,7 @@ returns the free energy of the calculations and tab completion may be used in in
 Array-like properties such as forces and stresses are stored in dedicated ``ArrayData`` node with
 link ``output_array``.
 If there are multiple iterations, a ``TrajectoryData`` node is created instead with name ``output_trajectory``
-It also contains other arrays such as enthalpy/stress.
+It also contains other arrays for quantifies such as enthalpy/stress at each iteration.
 
 CASTEP writes Kohn-Sham eigenvalues in a ``<seed>.bands`` file which can be used for plotting
 band structure or density of states. The file is parsed by this plugin and a ``BandsData`` node will be created.
@@ -42,16 +42,16 @@ band structure or density of states. The file is parsed by this plugin and a ``B
 Restarting a calculation
 ------------------------
 
-Tracking lengthy calculations with multiple restarts can be frustrating.
+Tracking lengthy calculations with multiple restarts can be complicated.
 This is where AiiDA's ability of preserving provenance comes in.
 A ``create_restart`` method is available and for its capability please refer to the
 module document.
-For a continuations run, CASTEP reads in data from previous run from ``<seed>.check`` or <seed>.castep_bin`` files.
+For a continuations run, CASTEP reads in data from previous run from ``<seed>.check`` or ``<seed>.castep_bin`` files.
 The ``param`` and ``cell`` files are also read and some parameters can be changed at restart.
-When running under ``aiida_castep`` parent and children calculations will be linked via a ``RemoteData``.
+When running under ``aiida_castep`` parent and children calculations will be linked via a ``RemoteFolder`` node.
 
 .. note:: Parents and children may or may not share the same **parameters**.
    It depends on whether there is any change in parameters.
 
-The command ``verdi node tree`` is useful for drawing a tree of children in terminal.
+The command ``verdi node tree`` is useful for drawing a tree of children for visualisation in terminal.
 

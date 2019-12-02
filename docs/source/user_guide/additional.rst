@@ -12,21 +12,20 @@ An additional ``Dict`` node can be used by the calculation. The following fields
 
 * ``CMDLINE``: Additional parameters to be passed. By default we call ``<castep_excutable> <seed>`` but some times additional parameters may be useful, e.g when we use wrapping script.
 
-* ``ADDITIONAL_RETRIEVE_LIST``: A list for additional files to be retrieved from remove work directory. See also description in AiiDA's `tutorial <https://aiida-core.readthedocs.io/en/latest/developer_guide/devel_tutorial/code_plugin_int_sum.html>`__.
+* ``ADDITIONAL_RETRIEVE_LIST``: A list for additional files to be retrieved from remote work directory.
 
 Task specific calculations
 ==========================
 
 The genetic ``CastepCalculation`` can be used for any calculation but one may want to use subclasses for spefic tasks. 
-For example, ``CastepBSCalculation`` can be used for band structure runs.
-Doing so will allow additional ``KpointsData`` for BZ sampling to be linked as the input for the calculations.
+For example, ``CastepBSCalculation`` can be used for band structure and supports additional ``bs_kpoints`` inputs.
 A similar classes is defined for *task: spectral* calculations.
-Classes to support *pot1d* utility which output formatted potentials and *transitionstatesearch* tasks are
+There are also supports for *pot1d* utility which output formatted potentials and *transitionstatesearch* tasks.
 also implemented.
 
 Getting help about calculations
 ===============================
 
 The ``verdi`` commandline interface provide a convient way to inspect the inputs and outputs of a ``CalcJob``.
-For example, the inputs and outputs can be listed using ``verdi plugins list aiida.calculations aiida.castep``.
+For example, all possible the inputs and outputs nodes can be listed using ``verdi plugins list aiida.calculations castep.castep``.
 The definition of the exit codes can also be inspected this way.
