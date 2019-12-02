@@ -2,10 +2,6 @@
     "name": "aiida-castep",
     "author": "Bonan Zhu",
     "author_email": "bz240@cam.ac.uk",
-    "classifiers":[
-        "Programming Language:: Python :: 2.7",
-        "Development Status :: 4- Beta"
-    ],
     "description": "AiiDA plugin for CASTEP",
     "url": "https://gitlab.com/bz1/aiida-castep",
     "license": "MIT License",
@@ -15,7 +11,7 @@
         "Programming Language :: Python :: 3.5",
         "Framework :: AiiDA"
     ],
-    "version": "1.0.0b1",
+    "version": "1.0.0",
     "setup_requires": ["reentry"],
     "reentry_register": true,
     "extras_require":{
