@@ -44,7 +44,6 @@ class CastepHelper(object):
     """
     A class for helping castep inputs
     """
-
     def __init__(self, version=None):
         # Instance level parameter for by passing any check at all
         self.BY_PASS = False
