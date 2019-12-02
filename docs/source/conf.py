@@ -11,6 +11,9 @@
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
 import os
 import sys
@@ -20,8 +23,6 @@ import time
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 import aiida_castep
-from aiida.backends import settings
-settings.IN_DOC_MODE = True
 
 # -- General configuration ------------------------------------------------
 
@@ -64,8 +65,10 @@ copyright_first_year = 2017
 copyright_owners = "Bonan Zhu"
 
 current_year = time.localtime().tm_year
-copyright_year_string = current_year if current_year == copyright_first_year else "{}-{}".format(copyright_first_year, current_year)
-copyright = u'{}, {}. All rights reserved'.format(copyright_year_string, copyright_owners)
+copyright_year_string = current_year if current_year == copyright_first_year else "{}-{}".format(
+    copyright_first_year, current_year)
+copyright = u'{}, {}. All rights reserved'.format(copyright_year_string,
+                                                  copyright_owners)
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -118,7 +121,6 @@ pygments_style = 'sphinx'
 # If true, keep warnings as "system message" paragraphs in the built documents.
 #keep_warnings = False
 
-
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -130,9 +132,9 @@ pygments_style = 'sphinx'
 # further.  For a list of options available for each theme, see the
 # documentation.
 #~ html_theme_options = {
-  #~ 'inner_theme': True,
-  #~ 'inner_theme_name': 'bootswatch-darkly',
-  #~ 'nav_fixed_top': False
+#~ 'inner_theme': True,
+#~ 'inner_theme_name': 'bootswatch-darkly',
+#~ 'nav_fixed_top': False
 #~ }
 
 # Add any paths that contain custom themes here, relative to this directory.
@@ -225,17 +227,17 @@ htmlhelp_basename = 'aiida-castep-doc'
 # -- Options for LaTeX output ---------------------------------------------
 
 latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
+    # The paper size ('letterpaper' or 'a4paper').
+    #'papersize': 'letterpaper',
 
-# The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
+    # The font size ('10pt', '11pt' or '12pt').
+    #'pointsize': '10pt',
 
-# Additional stuff for the LaTeX preamble.
-#'preamble': '',
+    # Additional stuff for the LaTeX preamble.
+    #'preamble': '',
 
-# Latex figure (float) alignment
-#'figure_align': 'htbp',
+    # Latex figure (float) alignment
+    #'figure_align': 'htbp',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
@@ -264,7 +266,6 @@ latex_elements = {
 # If false, no module index is generated.
 #latex_domain_indices = True
 
-
 # -- Options for manual page output ---------------------------------------
 
 # One entry per manual page. List of tuples
@@ -274,7 +275,6 @@ latex_elements = {
 
 # If true, show URL addresses after external links.
 #man_show_urls = False
-
 
 # -- Options for Texinfo output -------------------------------------------
 
@@ -296,20 +296,15 @@ latex_elements = {
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
 
-
 ## BEFORE STARTING, LET'S LOAD THE CORRECT AIIDA DBENV
 # on_rtd is whether we are on readthedocs.org, this line of code grabbed
 # from docs.readthedocs.org
 # NOTE: it is needed to have these lines before load_dbenv()
+
+sys.path.append(os.path.join(os.path.split(__file__)[0], os.pardir, os.pardir))
+sys.path.append(os.path.join(os.path.split(__file__)[0], os.pardir))
+# Enable rtd mode via `export READTHEDOCS=True`
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
-#on_rtd = True  # Use RTD settings even we are not
-
-sys.path.append( os.path.join( os.path.split(__file__)[0],
-                                           os.pardir,os.pardir) )
-sys.path.append( os.path.join( os.path.split(__file__)[0],
-                                           os.pardir))
-
-os.environ['DJANGO_SETTINGS_MODULE'] = 'rtd_settings'
 
 if not on_rtd:  # only import and set the theme if we're building docs locally
     try:
@@ -319,21 +314,17 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
     except ImportError:
         # No sphinx_rtd_theme installed
         pass
-    # Loading the dbenv. The backend should be fixed before compiling the
-    # documentation.
-    from aiida.backends.utils import load_dbenv, is_dbenv_loaded
-    if not is_dbenv_loaded():
-        load_dbenv()
+    # Load the database environment by first loading the profile and then loading the backend through the manager
+    from aiida.manage.configuration import get_config, load_profile
+    from aiida.manage.manager import get_manager
+    config = get_config()
+    load_profile(config.default_profile_name)
+    get_manager().get_backend()
 else:
-    # Back-end settings for readthedocs online documentation -
-    # we don't want to create a profile there
-    #from aiida.backends import settings
-    settings.IN_RT_DOC_MODE = True
-    settings.BACKEND = "django"
-    settings.AIIDADB_PROFILE = "default"
-
-
-
+    # Back-end settings for readthedocs online documentation.
+    from aiida.manage import configuration
+    configuration.IN_RT_DOC_MODE = True
+    configuration.BACKEND = "django"
 
 # Warnings to ignore when using the -n (nitpicky) option
 # We should ignore any python built-in exception, for instance

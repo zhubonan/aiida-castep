@@ -1,36 +1,38 @@
 """
 Storing OTFG configuration as Data nodes
 """
+from __future__ import absolute_import
 import re
-from aiida.orm import Data
+from aiida.orm import Data, GroupTypeString
 from aiida.common.utils import classproperty
-from aiida.common.exceptions import ValidationError
+from aiida.common import ValidationError
+from .utils import split_otfg_entry
+import six
 
 OTFGGROUP_TYPE = "data.castep.otfg.family"
 
 
-
 def upload_otfg_family(entries,
-                       group_name,
+                       group_label,
                        group_description,
                        stop_if_existing=True):
     """
     Set a family for the OTFG pseudo potential strings
     """
     from aiida.orm import Group
-    from aiida.common.exceptions import UniquenessError, NotExistent
+    from aiida.common import UniquenessError, NotExistent
     from aiida.orm.querybuilder import QueryBuilder
-    from aiida.common import aiidalogger
+    #from aiida.common import aiidalogger
 
     # Try to retrieve a group if it exists
     try:
-        group = Group.get(name=group_name, type_string=OTFGGROUP_TYPE)
+        group = Group.get(label=group_label, type_string=OTFGGROUP_TYPE)
         group_created = False
     except NotExistent:
         group = Group(
-            name=group_name,
+            label=group_label,
             type_string=OTFGGROUP_TYPE,
-            )
+        )
         group_created = True
 
     group.description = group_description
@@ -46,16 +48,15 @@ def upload_otfg_family(entries,
             element, setting = split_otfg_entry(s)
 
         qb = QueryBuilder()
-        qb.append(
-            OTFGData,
-            filters={
-                'attributes.otfg_string': {
-                    "==": setting
-                },
-                'attributes.element': {
-                    "==": element
-                }
-            })
+        qb.append(OTFGData,
+                  filters={
+                      'attributes.otfg_entry': {
+                          "==": setting
+                      },
+                      'attributes.element': {
+                          "==": element
+                      }
+                  })
         existing_otfg = qb.first()
 
         if existing_otfg is None:
@@ -63,8 +64,9 @@ def upload_otfg_family(entries,
             if isinstance(s, OTFGData):
                 otfg_and_created.append((s, True))
             else:
-                otfg, created = OTFGData.get_or_create(
-                    s, use_first=True, store_otfg=False)
+                otfg, created = OTFGData.get_or_create(s,
+                                                       use_first=True,
+                                                       store_otfg=False)
                 otfg_and_created.append((otfg, created))
 
         else:
@@ -108,17 +110,18 @@ def upload_otfg_family(entries,
     for otfg, created in otfg_and_created:
         if created:
             otfg.store()
-            aiidalogger.debug("New node {} created for OTFG string {}".format(
-                otfg.uuid, otfg.string))
+            #aiidalogger.debug("New node {} created for OTFG string {}".format(
+            #otfg.uuid, otfg.string))
         else:
-            aiidalogger.debug("Reusing node {} for OTFG string {}".format(
-                otfg.uuid, otfg.string))
+            pass
+            #aiidalogger.debug("Reusing node {} for OTFG string {}".format(
+            #otfg.uuid, otfg.string))
 
-    group.add_nodes(otfg for otfg, _ in otfg_and_created)
+    nodes_add = [otfg for otfg, created in otfg_and_created]
+    nodes_new = [otfg for otfg, created in otfg_and_created if created is True]
+    group.add_nodes(nodes_add)
 
-    nuploaded = len([_ for _, created in otfg_and_created if created])
-
-    return nentries, nuploaded
+    return nentries, len(nodes_new)
 
 
 class OTFGData(Data):
@@ -129,6 +132,21 @@ class OTFGData(Data):
     string: string to be put into the cell file
     element: element that this setting is for - may not exist if we are dealing with a library.
     """
+    def __init__(self, **kwargs):
+        """
+        Store a string for on-the-fly generation of pseudopoentials
+
+        :param otfg_entry str: a string specifying the generation.
+        The element this  potential is for can also be included.
+        For example: 'O 2|1.1|15|18|20|20:21(qc=7)'
+        """
+        otfg_entry = kwargs.pop('otfg_entry', None)
+        super(OTFGData, self).__init__(**kwargs)
+        if otfg_entry:
+            element, entry = split_otfg_entry(otfg_entry)
+            self.set_string(entry)
+            if element:
+                self.set_element(element)
 
     @classmethod
     def get_or_create(cls, otfg_entry, use_first=False, store_otfg=True):
@@ -143,16 +161,17 @@ class OTFGData(Data):
 
         in_db = cls.from_entry(otfg_entry)
 
-        element, setting = split_otfg_entry(otfg_entry)
+        # No existing entry
         if len(in_db) == 0:
+            instance = cls(otfg_entry=otfg_entry)
             if store_otfg:
-                instance = cls(string=setting, element=element).store()
-            else:
-                instance = cls(string=setting, element=element)
+                instance.store()
+
             # Automatically set the label
             instance.label = otfg_entry
             return (instance, True)
 
+        # There is a existing identical enetry in the db
         else:
             if len(in_db) > 1:
                 if use_first:
@@ -165,15 +184,15 @@ class OTFGData(Data):
             else:
                 return (in_db[0], False)
 
-    def set_string(self, otfg_string):
+    def set_string(self, otfg_entry):
         """Set the full string of OTFGData instance"""
         if self.element is None:
             self.set_element("LIBRARY")
-        self._set_attr("otfg_string", str(otfg_string))
+        self.set_attribute("otfg_entry", str(otfg_entry))
 
     def set_element(self, element):
         """Set the element of OTFGData instance"""
-        self._set_attr("element", str(element))
+        self.set_attribute("element", str(element))
 
     def store(self, *args, **kwargs):
         self._validate()
@@ -181,12 +200,12 @@ class OTFGData(Data):
 
     @property
     def string(self):
-        return self.get_attr('otfg_string', None)
+        return self.get_attribute('otfg_entry', None)
 
     @property
     def element(self):
         """Element of the OTFG. May not be available"""
-        return self.get_attr('element', None)
+        return self.get_attribute('element', None)
 
     @property
     def entry(self):
@@ -206,19 +225,19 @@ class OTFGData(Data):
         """
 
         from aiida.orm.querybuilder import QueryBuilder
+        from .utils import split_otfg_entry
 
         element, string = split_otfg_entry(entry)
         qb = QueryBuilder()
-        qb.append(
-            cls,
-            filters={
-                'attributes.otfg_string': {
-                    '==': string
-                },
-                'attributes.element': {
-                    '==': element
-                }
-            })
+        qb.append(cls,
+                  filters={
+                      'attributes.otfg_entry': {
+                          '==': string
+                      },
+                      'attributes.element': {
+                          '==': element
+                      }
+                  })
 
         return [i[0] for i in qb.all()]
 
@@ -235,14 +254,14 @@ class OTFGData(Data):
         return OTFGGROUP_TYPE
 
     @classmethod
-    def get_otfg_group(cls, group_name):
+    def get_otfg_group(cls, group_label):
         """
         Return the OTFGData group with the given name.
         """
         from aiida.orm import Group
 
-        return Group.get(
-            name=group_name, type_string=cls.otfg_family_type_string)
+        return Group.objects.get(label=group_label,
+                                 type_string=cls.otfg_family_type_string)
 
     @classmethod
     def get_otfg_groups(cls, filter_elements=None, user=None):
@@ -257,15 +276,23 @@ class OTFGData(Data):
                If defined, it should be either a DbUser instance, or a string
                for the user name (that is, the user email).
         """
-
         from aiida.orm import Group
+        from aiida.orm import QueryBuilder
+        from aiida.orm import User
 
-        group_query_params = {"type_string": cls.otfg_family_type_string}
+        query = QueryBuilder()
+        filters = {'type_string': {'==': cls.otfg_family_type_string}}
 
-        if user is not None:
-            group_query_params['user'] = user
+        query.append(Group, filters=filters, tag='group', project='*')
 
-        if isinstance(filter_elements, basestring):
+        if user:
+            query.append(User,
+                         filters={'email': {
+                             '==': user
+                         }},
+                         with_group='group')
+
+        if isinstance(filter_elements, six.string_types):
             filter_elements = [filter_elements]
 
         if filter_elements is not None:
@@ -273,30 +300,12 @@ class OTFGData(Data):
             # LIBRARY is a wild card
             actual_filter_elements.add("LBIRARY")
 
-            group_query_params['node_attributes'] = {
-                'element': actual_filter_elements
-            }
+            query.append(
+                cls,
+                filters={'attributes.element': {
+                    'in': filter_elements
+                }},
+                with_group='group')
 
-        all_usp_groups = Group.query(**group_query_params)
-
-        groups = [(g.name, g) for g in all_usp_groups]
-        # Sort by name
-        groups.sort()
-        # Return the groups, without name
-        return [_[1] for _ in groups]
-
-
-def split_otfg_entry(otfg):
-    """
-    Split an entry of otfg in the form of element_settings
-    :returns (element, entry):
-    """
-    otfg = otfg.strip()
-    try:
-        element, setting = re.split("[ _]+", otfg, 1)
-    # Incase I pass a library e.g C9
-    except ValueError:
-        element = "LIBRARY"
-        setting = otfg
-
-    return element, setting
+        query.order_by({'group': {'id': 'asc'}})
+        return [_[0] for _ in query.all()]

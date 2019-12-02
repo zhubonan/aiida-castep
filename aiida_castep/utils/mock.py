@@ -13,8 +13,7 @@ import shutil
 
 import castepinput
 from aiida_castep import tests
-
-from pathlib2 import Path
+from aiida_castep.common import Path
 
 _TEST_BASE_FOLDER = Path(tests.__file__).parent
 _TEST_DATA_FOLDER = _TEST_BASE_FOLDER / 'data'
@@ -37,6 +36,20 @@ def get_hash(dict_obj):
     md5 = hashlib.md5()
     [md5.update(b) for b in base]
     return md5.hexdigest(), base
+
+
+def test_hash():
+    """Test hashing"""
+    exmp = {'a': 'b', 'b': 'a'}
+    get_hash(exmp)
+
+    exmp = {'a': 'b', 'b': ['a', 'c']}
+    h1, b1 = get_hash(exmp)
+
+    exmp = {'b': ['a', 'c'], 'a': 'b'}
+    h2, b2 = get_hash(exmp)
+    assert b1 == b2
+    assert h1 == h2
 
 
 class MockOutput(object):
@@ -141,20 +154,19 @@ class MockOutput(object):
         with open(str(self._reg_file), 'w') as fh:
             json.dump(reg, fh)
 
-    def copy_results(self, rel_path, dest=None):
+    def copy_results(self, rel_path):
         """
         Copy existing calculation to the folder
         """
         print('Selected path:', rel_path)
         import shutil
         res_files = (self.base_dir / rel_path).glob('*')
-        if dest is None:
-            dest = Path.cwd()
+        cwd = Path.cwd()
         for r in res_files:
-            shutil.copy(str(r), str(dest))
+            shutil.copy(str(r), str(cwd))
         return
 
-    def run(self, seedname, dest=None):
+    def run(self, seedname):
         """
         Run the 'Calculation', if the seed is known we just copy
         the results
@@ -164,7 +176,7 @@ class MockOutput(object):
         import os
         overide = os.environ.get('MOCK_CALC')
         if overide:
-            self.copy_results(overide, dest)
+            self.copy_results(overide)
             print('Overiden by MOCK_CALC')
             print('Returning results from {}'.format(Path(overide).resolve()))
             return
@@ -174,18 +186,21 @@ class MockOutput(object):
 
         known_result = reg.get(hash_, None)
         if known_result:
-            self.copy_results(known_result, dest)
-            print('Returning results from {}'.format(
-                self.base_dir / known_result))
+            self.copy_results(known_result)
+            print('Returning results from {}'.format(self.base_dir /
+                                                     known_result))
         else:
             raise RuntimeError('Results not registered')
 
 
-@click.command('castep.mock', help="A mock executable for CASTEP")
-@click.option(
-    '--reg', default=False, is_flag=True, help='Register the calculation')
-@click.option(
-    '--tag', help='Tag for the folder when registering results', default=None)
+@click.command('mock')
+@click.option('--reg',
+              default=False,
+              is_flag=True,
+              help='Register the calculation')
+@click.option('--tag',
+              help='Tag for the folder when registering results',
+              default=None)
 @click.argument('seed')
 def main(seed, reg, tag):
     runner = MockOutput()

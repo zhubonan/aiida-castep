@@ -2,13 +2,16 @@
 Tests for utils module
 """
 
+from __future__ import absolute_import
 import pytest
 from ..utils import *
+import numpy as np
 
 try:
     import ase
 except ImportError:
     ase = None
+
 
 @pytest.fixture
 def unsorted_atoms():
@@ -52,3 +55,11 @@ def test_desort_atoms(unsorted_atoms, sorted_atoms):
 def test_check_sorted(unsorted_atoms, sorted_atoms):
     assert is_castep_sorted(unsorted_atoms) == False
     assert is_castep_sorted(sorted_atoms) == True
+
+
+def test_k_spacing():
+    spacing = compute_kpoints_spacing([1, 1, 1], [1, 1, 1])
+    assert np.all(spacing == np.array([1, 1, 1]))
+
+    spacing = compute_kpoints_spacing([4, 4, 4], [2, 2, 2])
+    assert np.all(spacing == np.array([1. / 8, 1. / 8, 1. / 8]))

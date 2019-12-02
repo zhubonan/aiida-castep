@@ -2,13 +2,13 @@
 Commandline plugin module for aiida CASTEP plugin
 """
 from __future__ import print_function
+from __future__ import absolute_import
 import click
 
-from aiida.cmdline.commands import data_cmd
-from aiida.cmdline.dbenv_lazyloading import load_dbenv_if_not_loaded
+from aiida.cmdline.commands.cmd_data import verdi_data
 
 
-@data_cmd.group('castep-usp')
+@verdi_data.group('castep-usp')
 def usp_cmd():
     """Commandline interface for working with UspData"""
     pass
@@ -24,32 +24,31 @@ def usp_cmd():
 @click.option('--with_description', '-d', is_flag=True)
 def listfamilies(element, with_description):
     """List avaliable UspData families"""
-    load_dbenv_if_not_loaded()
-    from aiida.orm import QueryBuilder
+    from aiida.orm import QueryBuilder, Group
     from aiida_castep.data.usp import USPGROUP_TYPE
-    from aiida.orm import DataFactory, Group
+    from aiida.plugins import DataFactory
     UspData = DataFactory("castep.uspdata")
     q = QueryBuilder()
     q.append(UspData, tag="uspdata")
     if element:
         q.add_filter("uspdata", {"attributes.element": {'in': element}})
-    q.append(
-        Group,
-        tag='group',
-        group_of=UspData,
-        filters={'type': USPGROUP_TYPE},
-        project=['name', 'description'])
+    q.append(Group,
+             tag='group',
+             with_node=UspData,
+             filters={'type_string': USPGROUP_TYPE},
+             project=['label', 'description'])
     q.distinct()
     if q.count() > 0:
         for res in q.dict():
-            group_name = res.get("group").get("name")
+            group_label = res.get("group").get("label")
             group_desc = res.get("group").get("description")
             # Count the number of pseudos in this group
             q = QueryBuilder()
-            q.append(
-                Group, tag='thisgroup', filters={"name": {
-                    'like': group_name
-                }})
+            q.append(Group,
+                     tag='thisgroup',
+                     filters={"label": {
+                         'like': group_label
+                     }})
             q.append(UspData, project=["id"], member_of='thisgroup')
 
             if with_description:
@@ -57,7 +56,7 @@ def listfamilies(element, with_description):
             else:
                 description_string = ""
 
-            click.echo("* {} [{} pseudos]{}".format(group_name, q.count(),
+            click.echo("* {} [{} pseudos]{}".format(group_label, q.count(),
                                                     description_string))
 
     else:

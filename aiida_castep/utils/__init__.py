@@ -2,12 +2,12 @@
 Utility module with useful functions
 """
 
-
 from __future__ import division
 from __future__ import print_function
+from __future__ import absolute_import
 from copy import copy
 import numpy as np
-
+from six.moves import zip
 
 
 def atoms_to_castep(atoms, index):
@@ -64,13 +64,17 @@ def generate_ionic_fix_cons(atoms, indices, mask=None, count_start=1):
         mask = (1, 1, 1)
     for symbol, i in castep_indices:
         if mask[0]:
-            lines.append("{:<4d} {:<2}    {:<4d} 1 0 0".format(count, symbol, i))
+            lines.append("{:<4d} {:<2}    {:<4d} 1 0 0".format(
+                count, symbol, i))
         if mask[1]:
-            lines.append("{:<4d} {:<2}    {:<4d} 0 1 0".format(count+1, symbol, i))
+            lines.append("{:<4d} {:<2}    {:<4d} 0 1 0".format(
+                count + 1, symbol, i))
         if mask[2]:
-            lines.append("{:<4d} {:<2}    {:<4d} 0 0 1".format(count+2, symbol, i))
+            lines.append("{:<4d} {:<2}    {:<4d} 0 0 1".format(
+                count + 2, symbol, i))
         count += sum(mask)
     return lines, count
+
 
 def generate_rel_fix(atoms, indices, ref_index=0, count_start=1):
     """
@@ -98,18 +102,24 @@ def generate_rel_fix(atoms, indices, ref_index=0, count_start=1):
     symbol_ref, i_ref = castep_indices[ref_index]
     for symbol, i in castep_indices[1:]:
         lines.append("{:<4d} {:<2}    {:<4d} 1 0 0".format(count, symbol, i))
-        lines.append("{:<4d} {:<2}    {:<4d} -1 0 0".format(count, symbol_ref, i_ref))
-        lines.append("{:<4d} {:<2}    {:<4d} 0 1 0".format(count + 1, symbol, i))
-        lines.append("{:<4d} {:<2}    {:<4d} 0 -1 0".format(count + 1, symbol_ref, i_ref))
-        lines.append("{:<4d} {:<2}    {:<4d} 0 0 1".format(count + 2, symbol, i))
-        lines.append("{:<4d} {:<2}    {:<4d} 0 0 -1".format(count + 2, symbol_ref, i_ref))
+        lines.append("{:<4d} {:<2}    {:<4d} -1 0 0".format(
+            count, symbol_ref, i_ref))
+        lines.append("{:<4d} {:<2}    {:<4d} 0 1 0".format(
+            count + 1, symbol, i))
+        lines.append("{:<4d} {:<2}    {:<4d} 0 -1 0".format(
+            count + 1, symbol_ref, i_ref))
+        lines.append("{:<4d} {:<2}    {:<4d} 0 0 1".format(
+            count + 2, symbol, i))
+        lines.append("{:<4d} {:<2}    {:<4d} 0 0 -1".format(
+            count + 2, symbol_ref, i_ref))
 
         count += 3
     return lines, count
 
+
 def castep_to_atoms(atoms, specie, ion):
     """Convert castep like index to ase Atoms index"""
-    return [atom for atom in atoms if atom.symbol == specie][ion-1].index
+    return [atom for atom in atoms if atom.symbol == specie][ion - 1].index
 
 
 def sort_atoms_castep(atoms, copy=True, order=None):
@@ -172,21 +182,24 @@ def reuse_kpoints_grid(grid, lowest_pk=False):
     :returns: A KpointsData node representing the grid requested
     """
     from aiida.orm.querybuilder import QueryBuilder
-    from aiida.orm.data.array.kpoints import KpointsData
+    from aiida.orm.nodes.data.array.kpoints import KpointsData
     q = QueryBuilder()
-    q.append(KpointsData, tag="kpoints", filters={"attributes.mesh.0": grid[0],
-                                   "attributes.mesh.1": grid[1],
-                                   "attributes.mesh.2": grid[2]})
+    q.append(KpointsData,
+             tag="kpoints",
+             filters={
+                 "attributes.mesh.0": grid[0],
+                 "attributes.mesh.1": grid[1],
+                 "attributes.mesh.2": grid[2]
+             })
     if lowest_pk:
         order = "asc"
     else:
         order = "desc"
-    q.order_by({"kpoints":[{"id": {"order": order}}]})
+    q.order_by({"kpoints": [{"id": {"order": order}}]})
     return q.first()[0]
 
 
-def traj_to_atoms(traj, combine_ancesters=False,
-                  eng_key="enthalpy"):
+def traj_to_atoms(traj, combine_ancesters=False, eng_key="enthalpy"):
     """
     Generate a list of ASE Atoms given an AiiDA TrajectoryData object
     :param bool combine_ancesters: If true will try to combine trajectory
@@ -196,22 +209,24 @@ def traj_to_atoms(traj, combine_ancesters=False,
     """
     from ase import Atoms
     from ase.calculators.singlepoint import SinglePointCalculator
-    from aiida.orm import QueryBuilder, Node, JobCalculation
+    from aiida.orm import QueryBuilder, Node, CalcJobNode
+    from aiida_castep.common import OUTPUT_LINKNAMES
 
-    # If a JobCalculation is passed, select its output trajectory
-    if isinstance(traj, JobCalculation):
-        traj = traj.out.output_trajectory
+    # If a CalcJobNode is passed, select its output trajectory
+    if isinstance(traj, CalcJobNode):
+        traj = traj.outputs.__getattr__(OUTPUT_LINKNAMES['trajectory'])
     # Combine trajectory from ancesters
     if combine_ancesters is True:
         q = QueryBuilder()
         q.append(Node, filters={"uuid": traj.uuid})
-        q.append(JobCalculation, tag="ans", ancestor_of=Node)
+        q.append(CalcJobNode, tag="ans", ancestor_of=Node)
         q.order_by({"ans": "id"})
         calcs = [_[0] for _ in q.iterall()]
         atoms_list = []
         for c in calcs:
             atoms_list.extend(
-                traj_to_atoms(c.out.output_trajectory,
+                traj_to_atoms(c.outputs.__getattr__(
+                    OUTPUT_LINKNAMES['trajectory']),
                               combine_ancesters=False,
                               eng_key=eng_key))
         return atoms_list
@@ -224,7 +239,7 @@ def traj_to_atoms(traj, combine_ancesters=False,
         eng = None
     cells = traj.get_array("cells")
     atoms_traj = []
-    for c, p , e, f in zip(cells, positions, eng, forces):
+    for c, p, e, f in zip(cells, positions, eng, forces):
         atoms = Atoms(symbols=symbols, cell=c, pbc=True, positions=p)
         calc = SinglePointCalculator(atoms, energy=e, forces=f)
         atoms.set_calculator(calc)
@@ -232,21 +247,13 @@ def traj_to_atoms(traj, combine_ancesters=False,
     return atoms_traj
 
 
-def get_transport(calc):
-    """
-    Get a transport for the calculation node
-    """
-    from aiida.backends.utils import get_authinfo
-    authinfo = get_authinfo(calc.get_computer())
-    return authinfo.get_transport()
-
-
 def get_remote_folder_info(calc, transport):
     """Get the information of the remote folder of a calculation"""
-    path = calc.out.remote_folder.get_remote_path()
+    path = calc.outputs.remote_folder.get_remote_path()
     transport.chdir(path)
     lsattrs = transport.listdir_withattributes()
     return lsattrs
+
 
 def get_remote_folder_size(calc, transport):
     """
@@ -278,7 +285,7 @@ def take_popn(seed):
 
             # record information
             if rec is True:
-                if line.strip() is "":
+                if line.strip() == "":
                     rec = False
                     record.seek(0)
                     popns.append(record)
@@ -291,8 +298,11 @@ def take_popn(seed):
 def read_popn(fn):
     """Read population file into pandas dataframe"""
     import pandas as pd
-    table = pd.read_table(fn, sep="\s\s+", header=2,
-                          comment="=", engine="python")
+    table = pd.read_table(fn,
+                          sep=r"\s\s+",
+                          header=2,
+                          comment="=",
+                          engine="python")
     return table
 
 
@@ -300,27 +310,57 @@ def export_calculation(n, output_dir, prefix=None):
     """
     Export one calculation a a directory
     """
-    import os
-    import shutil
-    from glob import glob
-    paths = glob(os.path.join(n.out.retrieved.get_abs_path(), "path/*"))
+    from functools import partial
+    from aiida.orm.utils.repository import FileType
+    try:
+        from pathlib import Path
+    except ImportError:
+        from pathlib2 import Path
+
+    output_dir = Path(output_dir)
+    output_dir.mkdir(exist_ok=True)
+
+    def bwrite(node, outpath):
+        """Write the objects stored under a node to a certain path"""
+        for objname in node.list_object_names():
+            if node.get_object(objname).type != FileType.FILE:
+                continue
+            with node.open(objname, mode='rb') as fsource:
+                name, suffix = objname.split('.')
+                if prefix and name == n.get_option('seedname'):
+                    outname = prefix + '.' + suffix
+                else:
+                    outname = objname
+                fpath = str(outpath / outname)
+                with open(fpath, 'wb') as fout:
+                    readlength = 1024 * 512  # 1MB
+                    while True:
+                        buf = fsource.read(readlength)
+                        if buf:
+                            fout.write(buf)
+                        else:
+                            break
 
     #inputs
-    input_path = os.path.join(n.get_abs_path(), "raw_input/*")
-    paths.extend(glob(input_path))
+    bwrite(n, output_dir)
 
-    # Create the directory if necessary
-    if not os.path.isdir(output_dir):
-        os.mkdir(output_dir)
-
-    # Copy the files
-    for p in paths:
-        fname = os.path.split(p)[1]
-        if prefix and not fname.startswith("_"):
-            fname = fname.replace("aiida", prefix)
-        out_path = os.path.join(output_dir, fname)
-        shutil.copy(p, out_path)
-        print("Copied: {}".format(out_path))
+    # outputs
+    retrieved = n.outputs.retrieved
+    bwrite(retrieved, output_dir)
 
 
+def compute_kpoints_spacing(cell, grid, unit="2pi"):
+    """
+    Compute the spacing of the kpoints in the receprical space.
+    Spacing = 1 / cell_length / mesh for each dimension.
+    Assume orthogonal cell shape.
+    """
+    cell = np.asarray(cell, dtype=np.float)
+    grid = np.asarray(grid, dtype=np.float)
 
+    spacings = 1. / cell / grid
+    if unit == "1/A":
+        spacings *= 2 * np.pi
+    elif unit != "2pi":
+        raise ValueError("Unit {} is not unkown".format(unit))
+    return spacings

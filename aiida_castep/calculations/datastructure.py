@@ -1,6 +1,7 @@
 """
 Classes for .param and .cell files
 """
+from __future__ import absolute_import
 from collections import OrderedDict
 
 

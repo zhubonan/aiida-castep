@@ -10,6 +10,7 @@ User's guide
     outputs
     additional
     tips
+    workflows
 
 
 

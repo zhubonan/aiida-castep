@@ -1,25 +1,26 @@
 """
 Module for storing usp files into the database
-We take many things from upf.py here as usp is not too much different...
-TODO: Add function for usp file validation and parsing
 """
 
-import re
+from __future__ import absolute_import
 import os
 import warnings
-from aiida.orm import DataFactory
+from aiida.plugins import DataFactory
+from aiida.orm import GroupTypeString
 from aiida.common.utils import classproperty
+from aiida.common.files import md5_file
+from .utils import get_usp_element
+import six
 
 USPGROUP_TYPE = "data.castep.usp.family"
+
 SinglefileData = DataFactory("singlefile")
 
 # Extract element from filename
-re_fn = re.compile("^([a-z]+)[_-].+\.(usp|recpot)$",
-                   flags=re.IGNORECASE)
 
 
 def upload_usp_family(folder,
-                      group_name,
+                      group_label,
                       group_description,
                       stop_if_existing=True):
     """
@@ -27,7 +28,7 @@ def upload_usp_family(folder,
 
     :param folder: a path containing all UPF files to be added.
         Only files ending in .usp/.recpot are considered.
-    :param group_name: the name of the group to create. If it exists and is
+    :param group_label: the name of the group to create. If it exists and is
         non-empty, a UniquenessError is raised.
     :param group_description: a string to be set as the group description.
         Overwrites previous descriptions, if the group was existing.
@@ -38,9 +39,9 @@ def upload_usp_family(folder,
     import os
 
     import aiida.common
-    from aiida.common import aiidalogger
+    #from aiida.common import aiidalogger
     from aiida.orm import Group
-    from aiida.common.exceptions import UniquenessError, NotExistent
+    from aiida.common import UniquenessError, NotExistent
     from aiida.orm.querybuilder import QueryBuilder
 
     files = [
@@ -53,11 +54,11 @@ def upload_usp_family(folder,
     nfiles = len(files)
 
     try:
-        group = Group.get(name=group_name, type_string=USPGROUP_TYPE)
+        group = Group.get(label=group_label, type_string=USPGROUP_TYPE)
         group_created = False
     except NotExistent:
         group = Group(
-            name=group_name,
+            label=group_label,
             type_string=USPGROUP_TYPE,
         )
         group_created = True
@@ -65,19 +66,20 @@ def upload_usp_family(folder,
     # Update the descript even if the group already existed
     group.description = group_description
 
-    pseudo_and_created = []
+    pseudo_and_created = []  # A list of records (UspData, created)
 
     for f in files:
 
-        md5sum = aiida.common.utils.md5_file(f)
+        md5sum = md5_file(f)
         qb = QueryBuilder()
         qb.append(UspData, filters={'attributes.md5': {'==': md5sum}})
         existing_usp = qb.first()
 
         # Add the file if it is in the database
         if existing_usp is None:
-            pseudo, created = UspData.get_or_create(
-                f, use_first=True, store_usp=False)
+            pseudo, created = UspData.get_or_create(f,
+                                                    use_first=True,
+                                                    store_usp=False)
             pseudo_and_created.append((pseudo, created))
 
         # The same file is there already
@@ -121,17 +123,20 @@ def upload_usp_family(folder,
     for pseudo, created in pseudo_and_created:
         if created:
             pseudo.store()
-            aiidalogger.debug("New node {} created for file {}".format(
-                pseudo.uuid, pseudo.filename))
+            #aiidalogger.debug("New node {} created for file {}".format(
+            #    pseudo.uuid, pseudo.filename))
         else:
-            aiidalogger.debug("Reusing node {} for file {}".format(
-                pseudo.uuid, pseudo.filename))
+            #aiidalogger.debug("Reusing node {} for file {}".format(
+            #    pseudo.uuid, pseudo.filename))
+            pass
 
-    group.add_nodes(pseduo for pseduo, _ in pseudo_and_created)
+    nodes_new = [
+        pseduo for pseduo, created in pseudo_and_created if created is True
+    ]
+    nodes_add = [pseduo for pseduo, created in pseudo_and_created]
+    group.add_nodes(nodes_add)
 
-    nuploaded = len([_ for _, created in pseudo_and_created if created])
-
-    return nfiles, nuploaded
+    return nfiles, len(nodes_new)
 
 
 class UspData(SinglefileData):
@@ -139,10 +144,27 @@ class UspData(SinglefileData):
     Class for a single usp file
     These usp files are stored as individual file nodes in the database
     """
+    def __init__(self, **kwargs):
+        """
+        Initialize a UspData node
+        :param file str: A full path to the file of the potential
+        :param element: The elemnt that this pseudo potential should be used for
+        """
+
+        element = kwargs.pop("element", None)
+        self._abs_path = kwargs["file"]
+        super(UspData, self).__init__(**kwargs)
+
+        # Overides the element inferred
+        if element is not None:
+            self.set_element(element)
 
     @classmethod
-    def get_or_create(cls, filename, element=None,
-                      use_first=False, store_usp=True):
+    def get_or_create(cls,
+                      filename,
+                      element=None,
+                      use_first=False,
+                      store_usp=True):
         """
         Same ase init. Check md5 in the db, it is found return a UspData.
         Otherwise will store the data into the db
@@ -157,14 +179,13 @@ class UspData(SinglefileData):
         filename = str(filename)
         if filename != os.path.abspath(filename):
             raise ValueError("filename must be an absolute path")
-        md5 = aiida.common.utils.md5_file(filename)
+        md5 = md5_file(filename)
 
         # Check if we have got the file already
         pseudos = cls.from_md5(md5)
         if len(pseudos) == 0:
             # No existing pseudopotential file is in the database
-            instance = cls()
-            instance.set_file(filename)
+            instance = cls(file=filename)
             # If we there is an element given then I set it
             if element is not None:
                 instance.set_element(element)
@@ -211,10 +232,10 @@ class UspData(SinglefileData):
         return super(UspData, self).store(*args, **kwargs)
 
     def set_file(self, filename):
-        """Added file but also check data"""
-        import aiida.common.utils
+        """
+        Extract element and compute the md5hash
+        """
 
-        # Convert to string in case a Path object is passed
         filename = str(filename)
 
         try:
@@ -234,96 +255,98 @@ class UspData(SinglefileData):
                 # The element is already set, no need to process further
                 pass
 
-        md5sum = aiida.common.utils.md5_file(filename)
+        md5sum = md5_file(filename)
+        self.set_attribute('md5', md5sum)
         super(UspData, self).set_file(filename)
-        self._set_attr('md5', md5sum)
 
     def set_element(self, element):
         """
         Set the element
         """
-        self._set_attr('element', element)
+        self.set_attribute('element', element)
 
     @property
     def element(self):
-        return self.get_attr('element', None)
+        return self.get_attribute('element', None)
 
     @property
     def md5sum(self):
         """MD5 sum of the usp/recpot file"""
-        return self.get_attr('md5', None)
+        return self.get_attribute('md5', None)
 
     @classmethod
-    def get_usp_group(cls, group_name):
+    def get_usp_group(cls, group_label):
         """
         Return the UspFamily group with the given name.
         """
         from aiida.orm import Group
 
-        return Group.get(
-            name=group_name, type_string=cls.uspfamily_type_string)
+        return Group.objects.get(label=group_label,
+                                 type_string=cls.uspfamily_type_string)
 
     @classmethod
     def get_usp_groups(cls, filter_elements=None, user=None):
         """
-        Return all names of groups of type UspFamily,
-        possibly with some filters.
+        Return all names of groups of type UpfFamily, possibly with some filters.
 
         :param filter_elements: A string or a list of strings.
-               If present, returns only the groups that contains one Usp for
+               If present, returns only the groups that contains one Upf for
                every element present in the list. Default=None, meaning that
                all families are returned.
         :param user: if None (default), return the groups for all users.
                If defined, it should be either a DbUser instance, or a string
                for the username (that is, the user email).
         """
-
         from aiida.orm import Group
+        from aiida.orm import QueryBuilder
+        from aiida.orm import User
 
-        group_query_params = {"type_string": cls.uspfamily_type_string}
+        query = QueryBuilder()
+        filters = {'type_string': {'==': str(USPGROUP_TYPE)}}
 
-        if user is not None:
-            group_query_params['user'] = user
+        query.append(Group, filters=filters, tag='group', project='*')
 
-        if isinstance(filter_elements, basestring):
+        if user:
+            query.append(User,
+                         filters={'email': {
+                             '==': user
+                         }},
+                         with_group='group')
+
+        if isinstance(filter_elements, six.string_types):
             filter_elements = [filter_elements]
 
         if filter_elements is not None:
-            actual_filter_elements = {_.capitalize() for _ in filter_elements}
+            actual_filter_elements = [_ for _ in filter_elements]
+            query.append(
+                cls,
+                filters={'attributes.element': {
+                    'in': filter_elements
+                }},
+                with_group='group')
 
-            group_query_params['node_attributes'] = {
-                'element': actual_filter_elements
-            }
-
-        all_usp_groups = Group.query(**group_query_params)
-
-        groups = [(g.name, g) for g in all_usp_groups]
-        # Sort by name
-        groups.sort()
-        # Return the groups, without name
-        return [_[1] for _ in groups]
+        query.order_by({Group: {'id': 'asc'}})
+        return [_[0] for _ in query.all()]
 
     def _validate(self):
-        from aiida.common.exceptions import ValidationError
-        import aiida.common.utils
+        from aiida.common import ValidationError
 
         super(UspData, self)._validate()
 
-        usp_abspath = self.get_file_abs_path()
+        # Check again, in case things changes
+        usp_abspath = str(self._abs_path)
 
         if not usp_abspath:
             raise ValidationError("No valid usp file was passed")
 
         parsed_element = get_usp_element(usp_abspath)
-        md5 = aiida.common.utils.md5_file(usp_abspath)
+        md5 = md5_file(usp_abspath)
         attr_element = self.element
 
         if attr_element is None:
-            raise ValidationError(
-                "No element is set"
-            )
+            raise ValidationError("No element is set")
 
-        attr_md5 = self.get_attr('md5', None)
+        attr_md5 = self.get_attribute('md5', None)
         if self.md5sum is None:
             raise ValidationError("attribute 'md5' not set.")
 
@@ -336,17 +359,3 @@ class UspData(SinglefileData):
             raise ValidationError("Attribute 'element' says '{}' but '{}' was "
                                   "parsed from file name instead.".format(
                                       attr_element, parsed_element))
-
-
-def get_usp_element(filepath):
-    """
-    infer element from usp/recpot filename
-    :return element: a string of element name or None if not found
-    """
-
-    filename = os.path.split(filepath)[1]
-    match = re_fn.match(filename)
-    if match:
-        element = match.group(1)
-        element = element.capitalize()
-        return element

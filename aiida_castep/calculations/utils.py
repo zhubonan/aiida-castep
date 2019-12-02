@@ -1,7 +1,11 @@
 """
 Utility module
 """
-from aiida.common.exceptions import InputValidationError
+from __future__ import absolute_import
+from aiida.common import InputValidationError
+import six
+from six.moves import range
+from six.moves import zip
 
 
 def get_castep_ion_line(name,
@@ -27,8 +31,11 @@ def get_castep_ion_line(name,
     if isinstance(name, (tuple, list)):
 
         lines = [
-            "{n:18} {x:18.10f} {y:18.10f} {z:18.10f}".format(
-                n=n, x=pos[0], y=pos[1], z=pos[2]) for n in name
+            "{n:18} {x:18.10f} {y:18.10f} {z:18.10f}".format(n=n,
+                                                             x=pos[0],
+                                                             y=pos[1],
+                                                             z=pos[2])
+            for n in name
         ]
 
         assert sum(occupation) == 1, "Occupation need to sum up to 1"
@@ -65,8 +72,10 @@ def get_castep_ion_line(name,
         return "\n".join(lines)
 
     else:
-        line = "{name:18} {x:18.10f} {y:18.10f} {z:18.10f}".format(
-            name=name, x=pos[0], y=pos[1], z=pos[2])
+        line = "{name:18} {x:18.10f} {y:18.10f} {z:18.10f}".format(name=name,
+                                                                   x=pos[0],
+                                                                   y=pos[1],
+                                                                   z=pos[2])
 
         if spin is not None:
 
@@ -91,7 +100,7 @@ def _lowercase_dict(d, dict_name):
     from collections import Counter
 
     if isinstance(d, dict):
-        new_dict = dict((str(k).lower(), v) for k, v in d.iteritems())
+        new_dict = dict((str(k).lower(), v) for k, v in six.iteritems(d))
         if len(new_dict) != len(d):
             num_items = Counter(str(k).lower() for k in d.keys())
             double_keys = ",".join([k for k, v in num_items if v > 1])
@@ -114,7 +123,7 @@ def _uppercase_dict(d, dict_name):
     from collections import Counter
 
     if isinstance(d, dict):
-        new_dict = dict((str(k).upper(), v) for k, v in d.iteritems())
+        new_dict = dict((str(k).upper(), v) for k, v in six.iteritems(d))
         if len(new_dict) != len(d):
             num_items = Counter(str(k).upper() for k in d.keys())
             double_keys = ",".join([k for k, v in num_items if v > 1])
