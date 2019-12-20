@@ -353,6 +353,7 @@ class CastepAlterRelaxWorkChain(CastepRelaxWorkChain):
                 self.report(
                     'Variable cell relax not converged. Turning cell constraints off'
                 )
+        # Variable cell + converged geometry
         else:
             self.ctx.is_converged = True
             self.report('Geometry optimisation is converged')

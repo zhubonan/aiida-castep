@@ -518,13 +518,13 @@ def _handle_walltime_limit(self, calculation):
             if model_match and n > 0 and model_match.group(1) == 'check':
                 self.ctx.restart_mode = 'continuation'
                 self.report(
-                    'dot castep indicate model has been written, try continuation'
+                    'dot castep indicate model has been written, trying continuation.'
                 )
                 break
 
-        # If we are do not continue the run, try input the wallclock
+        # If we are do not continue the run, try increase the wallclock
 
-        if not self.ctx.restart_mode:
+        if self.ctx.restart_mode is None:
 
             wclock = self.inputs.calc.metadata.options.get(
                 'max_wallclock_seconds', 3600)
@@ -543,6 +543,10 @@ def _handle_walltime_limit(self, calculation):
 
             self.report('Adjusted the wallclock limit to {}'.format(
                 self.inputs.calc.metadata.options['max_wallclock_seconds']))
+            # Temporary fix - wait for next relax of aiida that allows customisation
+            # of the valid cache for Process classes
+            calculation.clear_hash()
+            self.report('Cleared the hash of the failed calculation.')
 
         return ErrorHandlerReport(True, False)
 
@@ -555,6 +559,8 @@ def _handle_stop_by_request(self, calculation):
         self.report('Stop is requested by user. Aborting the WorkChain.')
         self.ctx.restart_calc = calculation
         self.ctx.stop_requested = True
+        calculation.clear_hash()
+        self.report('Cleared the hash of the stopped calculation.')
         return ErrorHandlerReport(True, True,
                                   self.exit_codes.USER_REQUESTED_STOP)
 
