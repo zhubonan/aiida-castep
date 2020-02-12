@@ -23,6 +23,9 @@ class CastepRelaxWorkChain(WorkChain):
     if the number of iteration is exceeded (*geom_max_iter*).
     This workchain try to restart such calculations (wrapped in CastepBaseWorkChain)
     until the structure is fully relaxed
+
+    ``relax_options`` is a Dict of the options avaliable fields are "restart_mode"
+    default to "reuse"
     """
 
     _max_meta_iterations = 10

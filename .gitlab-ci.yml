@@ -11,7 +11,7 @@ services:
 
 variables:
   # set to aiida_core that the plugin is last known to work
-  AIIDA_DEVELOP_GIT_HASH: 1.0.0b6
+  AIIDA_DEVELOP_GIT_HASH: 1.1.0
   AIIDA_VERSION: develop
   TEST_AIIDA_BACKEND: django
   DB_HOST: "postgres"
@@ -50,7 +50,7 @@ pre_commit:
     - pre-commit install; pre-commit run --all-files || ( git status --short; git diff ; exit 1 )
 
 # Install and test under python3
-pytest_tests3_latest:
+pytest_tests_latest:
   stage: test
   variables:
     PY_VERSION: "3"
@@ -60,29 +60,10 @@ pytest_tests3_latest:
     - chown -R builder:users ..
     - sudo -u builder -E bash -c "source venv-py$PY_VERSION/bin/activate; pytest ."
 
-pytest_tests3:
+pytest_tests:
   stage: test
   variables:
     PY_VERSION: "3"
-  script:
-    # Acquire ownership of the CI_PROJECT FOLDER
-    - chown -R builder:users ..
-    - sudo -u builder -E bash -c "source venv-py$PY_VERSION/bin/activate; pytest ."
-
-pytest_tests2_latest:
-  stage: test
-  variables:
-    PY_VERSION: "2"
-    AIIDA_DEVELOP_GIT_HASH: develop
-  script:
-    # Acquire ownership of the CI_PROJECT FOLDER
-    - chown -R builder:users ..
-    - sudo -u builder -E bash -c "source venv-py$PY_VERSION/bin/activate; pytest ."
-
-pytest_tests2:
-  stage: test
-  variables:
-    PY_VERSION: "2"
   script:
     # Acquire ownership of the CI_PROJECT FOLDER
     - chown -R builder:users ..
@@ -91,16 +72,6 @@ pytest_tests2:
 doc_build3:
   stage: test
   variables:
-    READTHEDOCS: "True"
-  script:
-      # The profile needs to be there for the building of docs
-      - cd docs
-      - make
-
-doc_build2:
-  stage: test
-  variables:
-    PY_VERSION: "2"
     READTHEDOCS: "True"
   script:
       # The profile needs to be there for the building of docs

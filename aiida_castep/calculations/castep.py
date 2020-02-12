@@ -143,8 +143,8 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
                    help="Use a node defining the kpoints for the calculation")
 
         # Define the exit codes
-        for smsg, (code, msg) in ecodes.items():
-            spec.exit_code(code, smsg, message=msg)
+        for smsg, (code, msg, inv) in ecodes.items():
+            spec.exit_code(code, smsg, message=msg, invalidates_cache=inv)
 
         # Define the output nodes
         spec.output(out_ln['results'],
