@@ -57,7 +57,7 @@ EXIT_CODES_SPEC = OrderedDict((
     ('ERROR_NO_RETRIEVE_FOLDER', (108, 'No retrieve folder is found', True)),
     ('UNKOWN_ERROR', (200, 'UNKOWN ERROR', True)),
     ('CALC_FINISHED', (0, 'Calculation terminated gracefully, end found',
-                       True)),
+                       False)),
 ))
 
 # exit code dictionary with the numerical code as the keys

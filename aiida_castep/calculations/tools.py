@@ -344,7 +344,7 @@ def validate_input_param(input_dict, allow_flat=False):
     helper.check_dict(py_dict, auto_fix=False, allow_flat=allow_flat)
 
 
-def input_param_validator(input_dict):
+def input_param_validator(input_dict, port=None):
     """
     Validator used for input ports
     """
@@ -356,7 +356,7 @@ def input_param_validator(input_dict):
         return error.args[0]
 
 
-def flat_input_param_validator(input_dict):
+def flat_input_param_validator(input_dict, port=None):
     """
     Validator that allows allow_flat parameter format
     """
