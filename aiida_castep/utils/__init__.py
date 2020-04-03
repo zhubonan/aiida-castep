@@ -175,6 +175,7 @@ def is_castep_sorted(atoms):
 def reuse_kpoints_grid(grid, lowest_pk=False):
     """
     Retrieve previously stored kpoints mesh data node.
+    If there is no such ``KpointsData``, a new node will be created.
     Will return the one with highest pk
     :param grid: Grid to be retrieved
     :param bool lowest_pk: If set to True will return the node with lowest pk
@@ -196,7 +197,13 @@ def reuse_kpoints_grid(grid, lowest_pk=False):
     else:
         order = "desc"
     q.order_by({"kpoints": [{"id": {"order": order}}]})
-    return q.first()[0]
+    if q.count() >= 1:
+
+        return q.first()[0]
+    else:
+        kpoints = KpointsData()
+        kpoints.set_kpoints_mesh(grid)
+        return kpoints
 
 
 def traj_to_atoms(traj, combine_ancesters=False, eng_key="enthalpy"):
