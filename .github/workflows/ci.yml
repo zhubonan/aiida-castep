@@ -77,8 +77,10 @@ jobs:
           pattern: '\.'
           string: ${{ matrix.python }}
           replace-with: ''
-      - name: Run tox
-        run: tox -e py${{ steps.tox.outputs.replaced }}-aiida_castep
+      # - name: Run tox
+      #   run: tox -e py${{ steps.tox.outputs.replaced }}-aiida_castep
+      - name: Run pytest
+        run: pytest
       - name: Run coverage from coverage-python by running pytest yet again
         if: ${{ matrix.python }} == '3.8'
         run: pytest --cov-report=xml --cov-append --cov=aiida_castep
