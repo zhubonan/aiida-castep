@@ -232,6 +232,7 @@ def test_usp_upload_family(new_database, usp_folder):
     Test uploading the usp family
     """
     from aiida_castep.data.usp import upload_usp_family
+    from aiida_castep.data.otfg import upload_otfg_family, OTFGGroup
     upload_usp_family(str(usp_folder), "Test", "Test")
 
     new = usp_folder / "O_00.usp"
@@ -244,6 +245,12 @@ def test_usp_upload_family(new_database, usp_folder):
                           stop_if_existing=True)
     # This should be OK
     upload_usp_family(str(usp_folder), "Test", "Test", stop_if_existing=False)
+
+    # Should be able to mix-in Usp and OTFG entries
+    upload_otfg_family(['C18'], "Test", "Test")
+
+    nodes = list(OTFGGroup.get(label='Test').nodes)
+    upload_otfg_family(nodes, "Test2", "Test", stop_if_existing=False)
 
 
 def test_usp_get_or_create(new_database, usp_folder):

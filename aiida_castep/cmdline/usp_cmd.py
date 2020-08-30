@@ -23,41 +23,10 @@ def usp_cmd():
     "Show families contenting this element only. Can be passed multiple times")
 @click.option('--with_description', '-d', is_flag=True)
 def listfamilies(element, with_description):
-    """List avaliable UspData families"""
-    from aiida.orm import QueryBuilder, Group
-    from aiida_castep.data.usp import USPGROUP_TYPE
-    from aiida.plugins import DataFactory
-    UspData = DataFactory("castep.uspdata")
-    q = QueryBuilder()
-    q.append(UspData, tag="uspdata")
-    if element:
-        q.add_filter("uspdata", {"attributes.element": {'in': element}})
-    q.append(Group,
-             tag='group',
-             with_node=UspData,
-             filters={'type_string': USPGROUP_TYPE},
-             project=['label', 'description'])
-    q.distinct()
-    if q.count() > 0:
-        for res in q.dict():
-            group_label = res.get("group").get("label")
-            group_desc = res.get("group").get("description")
-            # Count the number of pseudos in this group
-            q = QueryBuilder()
-            q.append(Group,
-                     tag='thisgroup',
-                     filters={"label": {
-                         'like': group_label
-                     }})
-            q.append(UspData, project=["id"], member_of='thisgroup')
-
-            if with_description:
-                description_string = ": {}".format(group_desc)
-            else:
-                description_string = ""
-
-            click.echo("* {} [{} pseudos]{}".format(group_label, q.count(),
-                                                    description_string))
-
-    else:
-        click.echo("No valid USP pseudopotential family found.")
+    """
+    Deprecated - please use `castep-otfg listfamilies`.
+    """
+    click.echo(
+        "USP families are unified as OTFGGroup, please use `castep-otfg listfamilies` to list the families"
+    )
+    return

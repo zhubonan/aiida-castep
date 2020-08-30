@@ -14,6 +14,22 @@ def otfg_cmd():
     pass
 
 
+@otfg_cmd.command(name="migrate-families")
+def migrate_families():
+    """
+    Migrate to new style Group for pseudopotential families as implemented in
+    `aiida-core >= 1.2.0`. 
+
+    This command should be run once after upgrading `aiida-castep` to 1.2.0,
+    to re-enable working with pseudopotential families.
+    """
+    from aiida_castep.data.otfg import migrate_otfg_family
+    click.echo("Migrating to new style Group")
+    migrate_otfg_family()
+    click.echo(
+        "Finished! Note: No need to run this command again for this profile.")
+
+
 @otfg_cmd.command(name="listfamilies")
 @click.option(
     '--element',
@@ -24,13 +40,12 @@ def otfg_cmd():
 @click.option('--with_description', '-d', is_flag=True)
 def listfamilies(element, with_description):
     """List avaliable OtfgData families"""
-    from aiida.orm import QueryBuilder, Group
-    from aiida_castep.data.otfg import OTFGGROUP_TYPE
+    from aiida.orm import QueryBuilder, Node
+    from aiida_castep.data.otfg import OTFGGroup
     from aiida.plugins import DataFactory
 
-    UspData = DataFactory("castep.otfgdata")
     q = QueryBuilder()
-    q.append(UspData, tag="otfgdata")
+    q.append(Node, tag="otfgdata")
     if element:
         q.add_filter("otfgdata", {
             "attributes.element": {
@@ -41,10 +56,9 @@ def listfamilies(element, with_description):
                 }]
             }
         })
-    q.append(Group,
+    q.append(OTFGGroup,
              tag='group',
-             with_node=UspData,
-             filters={'type_string': OTFGGROUP_TYPE},
+             with_node='otfgdata',
              project=['label', 'description'])
     q.distinct()
     if q.count() > 0:
@@ -53,12 +67,12 @@ def listfamilies(element, with_description):
             group_desc = res.get("group").get("description")
             # Count the number of pseudos in this group
             q = QueryBuilder()
-            q.append(Group,
+            q.append(OTFGGroup,
                      tag='thisgroup',
                      filters={"label": {
                          'like': group_label
                      }})
-            q.append(UspData, project=["id"], member_of='thisgroup')
+            q.append(Node, project=["id"], with_group='thisgroup')
 
             if with_description:
                 description_string = ": {}".format(group_desc)
@@ -69,4 +83,4 @@ def listfamilies(element, with_description):
                                                     description_string))
 
     else:
-        click.echo("No valid OTFG pseudopotential family found.")
+        click.echo("No valid pseudopotential family found.")

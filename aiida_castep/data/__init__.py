@@ -6,7 +6,7 @@ from aiida.orm.nodes.data.upf import UpfData
 
 def get_pseudos_from_structure(structure, family_name):
     """
-    Given a family name (of UpfData, UspData or OTFGData) and a AiiDA
+    Given a family name (of UpfData or OTFGData) and a AiiDA
     structure, return a dictionary associating each kind name with its
     pseduopotential object.
 
@@ -26,16 +26,12 @@ def get_pseudos_from_structure(structure, family_name):
     except NotExistent:
         family_upf = []
     try:
-        family_usp = UspData.get_usp_group(family_name)
-    except NotExistent:
-        family_usp = []
-    try:
         family_otfg = OTFGData.get_otfg_group(family_name)
     except NotExistent:
         family_otfg = []
 
     valid_count = 0
-    for f in [family_usp, family_upf, family_otfg]:
+    for f in [family_upf, family_otfg]:
         if f:
             valid_count += 1
             family = f

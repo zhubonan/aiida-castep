@@ -64,7 +64,7 @@ class CastepBaseWorkChain(WorkChain):
         # The inputs
         spec.input('max_iterations',
                    valid_type=orm.Int,
-                   default=orm.Int(10),
+                   default=lambda: orm.Int(10),
                    serializer=to_aiida_type,
                    help='Maximum number of restarts')
         spec.input(

@@ -1,3 +1,22 @@
+1.2.0
+=====
+
+
+## Changes
+
+* Adapted the new `Group` system implemented in `aiida_core >=1.2.0` for pseudopotential families, the change is backward incompatible.
+* Unified families for `UspData` and `OTFGData` to a single `OTFGGroup`. Two types of pseudopotentials can be mixed up in a single group. Mixing `UpfData` is not supported through this API yet, but can be added manually.
+* Added commandline `verdi data castep-otfg migrate` to migrate the old families. This command **MUST BE RUN ONCE** after the upgrade, otherwise pseudopotential family matching will **NOT WORK**. NOTE:  old groups will not be deleted using this command for now.
+
+## Bugfix
+
+* No longer using `Node` instant as default for workchains.
+
+1.1.0
+=====
+
+* added supports for AiiDA >= 1.2
+
 1.0.0
 =====
 * Plugin migrated to work with `aiida-core==1.0.0`.
