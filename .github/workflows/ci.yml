@@ -65,7 +65,7 @@ jobs:
         if: ${{ matrix.python }} == '3.8'
         run: pip install coveralls
       - name: Install AiiDA
-        run: pip install -e git+https://github.com/aiidateam/aiida_core#egg=aiida-core
+        run: pip install -e git+https://github.com/aiidateam/aiida_core#egg=aiida-core@master
       - name: Install aiida-castep
         run: |
           pip install -e .[testing]
