@@ -15,7 +15,7 @@ from aiida_castep.calculations.castep import CastepTSCalculation as TSCalc
 from .dbcommon import BaseDataCase, BaseCalcCase
 
 CasCalc = CalculationFactory("castep.castep")
-BSCalc = CalculationFactory("castep.bs")
+BSCalc = CalculationFactory("castep.castep")
 TSCalc = CalculationFactory("castep.ts")
 StructureData = DataFactory("structure")
 Dict = DataFactory("dict")
