@@ -23,4 +23,4 @@ to be differentiated with the calculation being killed (by scheduler).
 """
 
 CALC_PARSER_VERSION = "1.0.2"
-PLUGIN_VERSION = "1.1.0"
+PLUGIN_VERSION = "1.2.0"

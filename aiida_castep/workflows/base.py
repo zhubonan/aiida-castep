@@ -236,6 +236,11 @@ class CastepBaseWorkChain(WorkChain):
         else:
             self.report('No valid kpoint input specified')
             return self.exit_codes.ERROR_INVALID_INPUTS
+        # Pass extra kpoints
+        exposed_inputs = self.exposed_inputs(CastepCalculation, 'calc')
+        for key, value in exposed_inputs.items():
+            if key.endswith('_kpoints'):
+                self.ctx.inputs[key] = value
 
         # Validate the inputs related to pseudopotentials
         structure = self.inputs.calc.structure

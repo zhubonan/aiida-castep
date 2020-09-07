@@ -98,7 +98,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
     # Extra kpoints - CASTEP has many calculation mode that take extra kpoints
     _extra_kpoints = {
         'spectral': {  # name XX_kpoints_list
-            'task': ('sepctral', ),
+            'task': ('spectra', ),
             'need_weights':
             True  # Whether the explicit kpoints need weights or not
         },
@@ -160,6 +160,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
                    serializer=to_aiida_type,
                    validator=input_param_validator,
                    help="Use a node that sepcifies the input parameters")
+        # TODO: implement logic to automaticall set the restart if such folder is given
         spec.input(
             inp_ln['parent_calc_folder'],
             valid_type=orm.RemoteData,

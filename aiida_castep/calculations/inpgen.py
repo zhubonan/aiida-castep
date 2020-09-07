@@ -278,7 +278,7 @@ class CastepInputGenerator(object):
             for kpoint, weight in zip(bs_kpts_list, weights):
                 if kpn_settings['need_weights'] is True:
                     extra_kpts_lines.append("{:18.10f} {:18.10f} "
-                                            "{:18.10f} {:18.10f}".format(
+                                            "{:18.10f} {:18.14f}".format(
                                                 kpoint[0], kpoint[1],
                                                 kpoint[2], weight))
                 else:

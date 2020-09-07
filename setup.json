@@ -8,10 +8,12 @@
     "python_requries": ">=3.5",
     "classifiers": [
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.5",
         "Framework :: AiiDA"
     ],
-    "version": "1.1.0",
+    "version": "1.2.0",
     "setup_requires": ["reentry"],
     "reentry_register": true,
     "extras_require":{
@@ -59,12 +61,13 @@
             "castep-helper = aiida_castep.cmdline.helper_cmd:helper_cmd"
         ],
         "aiida.tools.calculations": [
-            "castep.castep = aiida_castep.calculations.tools:CastepCalcTools",
+            "castep.castep = aiida_castep.calculations.tools:CastepCalcTools"
         ],
         "aiida.workflows": [
             "castep.base = aiida_castep.workflows.base:CastepBaseWorkChain",
             "castep.relax = aiida_castep.workflows.relax:CastepRelaxWorkChain",
-            "castep.altrelax = aiida_castep.workflows.relax:CastepAlterRelaxWorkChain"
+            "castep.altrelax = aiida_castep.workflows.relax:CastepAlterRelaxWorkChain",
+            "castep.bands = aiida_castep.workflows.bands:CastepBandsWorkChain"
         ],
         "aiida.groups":[
             "castep.otfg = aiida_castep.data.otfg:OTFGGroup"
