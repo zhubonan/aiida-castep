@@ -249,6 +249,14 @@ def sto_calc_inputs(
 
 
 @pytest.fixture
+def sto_spectral_inputs(sto_calc_inputs, db_test_app):
+    kpoints = db_test_app.imps.KpointsData()
+    kpoints.set_kpoints([[0.0, 0.5, 0.5], [0.0, 0.0, 0.0]])
+    sto_calc_inputs.spectral_kpoints = kpoints
+    return sto_calc_inputs
+
+
+@pytest.fixture
 def sto_calc_builder(sto_calc_inputs):
     return inps_or_builder(sto_calc_inputs, 1)
 

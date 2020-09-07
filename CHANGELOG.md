@@ -5,8 +5,12 @@
 ## Changes
 
 * Adapted the new `Group` system implemented in `aiida_core >=1.2.0` for pseudopotential families, the change is backward incompatible.
+
 * Unified families for `UspData` and `OTFGData` to a single `OTFGGroup`. Two types of pseudopotentials can be mixed up in a single group. Mixing `UpfData` is not supported through this API yet, but can be added manually.
-* Added commandline `verdi data castep-otfg migrate` to migrate the old families. This command **MUST BE RUN ONCE** after the upgrade, otherwise pseudopotential family matching will **NOT WORK**. NOTE:  old groups will not be deleted using this command for now.
+
+* Added command `verdi data castep-otfg migrate` to migrate the old families. This command **MUST BE RUN ONCE** after the upgrade, otherwise pseudopotential family matching will **NOT WORK**. NOTE:  old groups will not be deleted using this command for now.
+
+* Allow move the old task specific calculations inside `CastepCalculation` - it can now accept additional kpoints list/mesh for specific tasks. Entry points are removed for the task specific calculation as well. *Note: all kpoint meshes defined will be used as Monkhorst-Pack grids by CASTEP, which are not always Gamma-centred.*
 
 ## Bugfix
 

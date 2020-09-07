@@ -229,6 +229,66 @@ class CastepInputGenerator(object):
 
         self._prepare_pseudo_potentials()
 
+    def _include_extra_kpoints(self,
+                               kpn_node,
+                               kpn_name,
+                               kpn_settings,
+                               report_fn=None):
+        """Write extra kpoints to the cell"""
+
+        try:
+            mesh, offset = kpn_node.get_kpoints_mesh()
+            has_mesh = True
+        except AttributeError:
+            # Not defined as mesh
+            try:
+                bs_kpts_list = kpn_node.get_kpoints()
+                num_kpoints = len(bs_kpts_list)
+                has_mesh = False
+                if num_kpoints == 0:
+                    raise InputValidationError(
+                        "At least one k points must be provided")
+            except AttributeError:
+                raise InputValidationError(
+                    "No valid {}_kpoints have been found from node {}".format(
+                        kpn_name.lower(), kpn_node.pk))
+
+            # Do we have weights defined?
+            try:
+                _, weights = kpn_node.get_kpoints(also_weights=True)
+            except AttributeError:
+                # If not, fill with fractions
+                if kpn_settings['need_weights'] is True:
+                    import numpy as np
+                    weights = np.ones(num_kpoints, dtype=float) / num_kpoints
+                    if report_fn is not None:
+                        report_fn(
+                            'Warning:filling evenly distributed weights for {}_kpoints'
+                            .format(kpn_name))
+
+        # now add to the cell file
+        if has_mesh is True:
+            mesh_name = "{}_kpoint_mp_grid".format(kpn_name)
+            self.cell_file[mesh_name] = "{} {} {}".format(*mesh)
+            if offset != [0., 0., 0.]:
+                self.cell_file[mesh_name.replace(
+                    "grid", "offset")] = "{} {} {}".format(*offset)
+        else:
+            extra_kpts_lines = []
+            for kpoint, weight in zip(bs_kpts_list, weights):
+                if kpn_settings['need_weights'] is True:
+                    extra_kpts_lines.append("{:18.10f} {:18.10f} "
+                                            "{:18.10f} {:18.10f}".format(
+                                                kpoint[0], kpoint[1],
+                                                kpoint[2], weight))
+                else:
+                    extra_kpts_lines.append("{:18.10f} {:18.10f} "
+                                            "{:18.10f}".format(
+                                                kpoint[0], kpoint[1],
+                                                kpoint[2]))
+            bname = "{}_kpoint_list".format(kpn_name).upper()
+            self.cell_file[bname] = extra_kpts_lines
+
     def _prepare_pseudo_potentials(self):
 
         # --------- PSEUDOPOTENTIALS --------

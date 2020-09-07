@@ -66,6 +66,37 @@ def test_inp_gen_cell(gen_instance, sto_calc_inputs):
     assert isinstance(gen_instance.cell_file["cell_constraints"], list)
     assert 'C9' in gen_instance.cell_file['SPECIES_POT'][0]
 
+    # Test extra-kpoints
+    from aiida.orm import KpointsData
+    kpn1 = KpointsData()
+    kpn1.set_kpoints_mesh((4, 4, 4))
+    gen_instance._include_extra_kpoints(kpn1, 'phonon', {
+        'task': ('phonon', ),
+        'need_weights': False
+    })
+    assert 'phonon_kpoint_mp_grid' in gen_instance.cell_file
+
+    kpn1.set_kpoints_mesh((
+        4,
+        4,
+        4,
+    ), (0.25, 0.25, 0.25))
+    gen_instance._include_extra_kpoints(kpn1, 'phonon', {
+        'task': ('phonon', ),
+        'need_weights': False
+    })
+    assert 'phonon_kpoint_mp_offset' in gen_instance.cell_file
+
+    kpn2 = KpointsData()
+    kpn_points = [[0, 0, 0], [0.5, 0.5, 0.5]]
+    kpn_weights = [0.3, 0.6]
+    kpn2.set_kpoints(kpn_points, weights=kpn_weights)
+    gen_instance._include_extra_kpoints(kpn2, 'bs', {
+        'task': ('bandstructure', ),
+        'need_weights': True
+    })
+    assert 'BS_KPOINT_LIST' in gen_instance.cell_file
+
 
 def test_cell_with_tags(gen_instance, sto_calc_inputs):
     """
@@ -98,13 +129,17 @@ def test_cell_with_tags(gen_instance, sto_calc_inputs):
 
 
 @pytest.mark.process_execution
-def test_submission(new_database, sto_calc_inputs):
+def test_submission(new_database, sto_calc_inputs, sto_spectral_inputs):
     """
     Test submitting a CastepCalculation
     """
     from aiida_castep.calculations.castep import CastepCalculation
     from aiida.engine import run_get_node
     _, return_node = run_get_node(CastepCalculation, **sto_calc_inputs)
+    assert return_node.exit_status == 106  # No castep output found
+
+    # test with extra kpoints
+    _, return_node = run_get_node(CastepCalculation, **sto_spectral_inputs)
     assert return_node.exit_status == 106
 
 

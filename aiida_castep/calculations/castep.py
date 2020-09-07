@@ -95,6 +95,43 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
 
     _param_links = [inp_ln['parameters']]
 
+    # Extra kpoints - CASTEP has many calculation mode that take extra kpoints
+    _extra_kpoints = {
+        'spectral': {  # name XX_kpoints_list
+            'task': ('sepctral', ),
+            'need_weights':
+            True  # Whether the explicit kpoints need weights or not
+        },
+        'bs': {
+            'task': ('bandstructure', ),  # task where the kpoints will be used
+            'need_weigthts': False,
+        },
+        'phonon': {
+            'task': ('phonon', 'phonon+efield'),
+            'need_weights': False,
+        },
+        'phonon_fine': {
+            'task': ('phonon', 'phonon+efield'),
+            'need_weights': False,
+        },
+        'supercell': {
+            'task': ('phonon', ),
+            'need_weights': True,
+        },
+        'magres': {
+            'task': ('magres', ),
+            'need_weights': True,
+        },
+        'optics': {
+            'task': ('optics', ),
+            'need_weights': True,
+        },
+        'elnes': {
+            'task': ('elnes', ),
+            'need_weights': True,
+        }
+    }
+
     @classmethod
     def define(cls, spec):
         import aiida.orm as orm
@@ -141,6 +178,14 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
                    valid_type=KpointsData,
                    required=False,
                    help="Use a node defining the kpoints for the calculation")
+
+        # Define additional kpoints for different tasks
+        for key, value in cls._extra_kpoints.items():
+            tasks = ', '.join(value['task'])
+            spec.input(key + '_' + inp_ln['kpoints'],
+                       valid_type=KpointsData,
+                       required=False,
+                       help="Extra kpoints input for task: {}".format(tasks))
 
         # Define the exit codes
         for smsg, (code, msg, inv) in ecodes.items():
@@ -388,6 +433,26 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
                     continue
 
         return folder, dryrun_results
+
+    def _prepare_cell_file(self):
+        """Add extra kpoints information to the calculation"""
+        # First, call the base method
+        super(CastepCalculation, self)._prepare_cell_file()
+        param = self.inputs.get(inp_ln['parameters']).get_dict()
+        task = param['PARAM'].get('task', 'singlepoint')
+
+        # Check if we have more kpoints
+        for kpn_name, kpn_settings in self._extra_kpoints.items():
+            extra_kpns = self.inputs.get(kpn_name + '_' + inp_ln['kpoints'])
+            # No need to proceed if it is not defined
+            if extra_kpns is None:
+                continue
+            self._include_extra_kpoints(extra_kpns, kpn_name, kpn_settings)
+            # Warn if this kpoint will not be used by the task
+            if task not in kpn_settings['task']:
+                self.report(
+                    'Warning: kpoints for {} will not be used for task {}'.
+                    format(kpn_name, task))
 
     @staticmethod
     def update_paraemters(inputs, *args, **kwargs):

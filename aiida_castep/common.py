@@ -52,7 +52,7 @@ EXIT_CODES_SPEC = OrderedDict((
      (104, 'CASTEP generate error files. Check them for details', True)),
     ('ERROR_NO_END_OF_CALCULATION',
      (105, 'Cannot find the end of calculation',
-      True)),  # Indicated by the lack of summary time
+      True)),  # Indicated by the lack of summary line
     ('ERROR_NO_OUTPUT_FILE', (106, 'No output .castep files found', True)),
     ('ERROR_NO_RETRIEVE_FOLDER', (108, 'No retrieve folder is found', True)),
     ('UNKOWN_ERROR', (200, 'UNKOWN ERROR', True)),

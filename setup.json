@@ -39,11 +39,8 @@
         ],
         "aiida.calculations": [
             "castep.castep = aiida_castep.calculations.castep:CastepCalculation",
-            "castep.bs = aiida_castep.calculations.castep:CastepBSCalculation",
-            "castep.spec = aiida_castep.calculations.castep:CastepSpectralCalculation",
             "castep.pot1d = aiida_castep.calculations.castep:Pot1dCalculation",
             "castep.ts = aiida_castep.calculations.castep:CastepTSCalculation",
-            "castep.phonon = aiida_castep.calculations.castep:CastepPhononCalculation"
         ],
         "aiida.parsers": [
             "castep.castep = aiida_castep.parsers.castep:CastepParser",
@@ -63,9 +60,6 @@
         ],
         "aiida.tools.calculations": [
             "castep.castep = aiida_castep.calculations.tools:CastepCalcTools",
-            "castep.spec = aiida_castep.calculations.tools:CastepCalcTools",
-            "castep.phonon = aiida_castep.calculations.tools:CastepCalcTools",
-            "castep.bs = aiida_castep.calculations.tools:CastepCalcTools"
         ],
         "aiida.workflows": [
             "castep.base = aiida_castep.workflows.base:CastepBaseWorkChain",
