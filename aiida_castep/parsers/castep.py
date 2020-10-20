@@ -175,11 +175,12 @@ class CastepParser(Parser):
 
             # If we have .geom file, save as in a trajectory data
             if has_md_geom:
+                idesort = get_desort_args(input_structure)
                 try:
-                    idesort = get_desort_args(input_structure)
                     positions = np.asarray(
                         trajectory_data["positions"])[:, idesort]
                     cells = trajectory_data["cells"]
+                    # Assume symbols do not change - symbols are the same for all frames
                     symbols = np.asarray(trajectory_data["symbols"])[idesort]
                     stepids = np.arange(len(positions))
 
@@ -187,7 +188,6 @@ class CastepParser(Parser):
                     out_dict["parser_warning"].append(
                         "Cannot "
                         "extract data from .geom file.")
-                    pass
 
                 else:
                     traj = TrajectoryData()
@@ -198,8 +198,14 @@ class CastepParser(Parser):
                     # Save the rest
                     for name, value in six.iteritems(trajectory_data):
                         # Skip saving empty arrays
-                        if len(value) > 0:
-                            traj.set_array(name, np.asarray(value))
+                        if len(value) == 0:
+                            continue
+
+                        array = np.asarray(value)
+                        # For forces/velocities we also need to resort the array
+                        if ("force" in name) or ("velocities" in name):
+                            array = array[:, idesort]
+                        traj.set_array(name, np.asarray(value))
                     self.out(out_ln['trajectory'], traj)
 
             # Otherwise, save data into a ArrayData node
@@ -207,8 +213,12 @@ class CastepParser(Parser):
                 out_array = ArrayData()
                 for name, value in six.iteritems(trajectory_data):
                     # Skip saving empty arrays
-                    if len(value) > 0:
-                        out_array.set_array(name, np.asarray(value))
+                    if len(value) == 0:
+                        continue
+                    array = np.asarray(value)
+                    if ("force" in name) or ("velocities" in name):
+                        array = array[:, idesort]
+                    out_array.set_array(name, np.asarray(value))
                 self.out(out_ln['array'], out_array)
 
         ######## ---- PROCESSING OUTPUT DATA --- ########
