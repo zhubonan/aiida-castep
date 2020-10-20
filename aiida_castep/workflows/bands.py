@@ -65,14 +65,18 @@ class CastepBandsWorkChain(WorkChain):
                                'help':
                                'Inputs for Relaxation workchain, if needed'
                            })
-        spec.expose_inputs(base_work,
-                           namespace='scf',
-                           exclude=('calc.structure', ),
-                           namespace_options={
-                               'required': True,
-                               'populate_defaults': True,
-                               'help': 'Inputs for SCF workchain, mandatory'
-                           })
+        spec.expose_inputs(
+            base_work,
+            namespace='scf',
+            exclude=('calc.structure', 'calc.kpoints'),
+            namespace_options={
+                'required':
+                True,
+                'populate_defaults':
+                True,
+                'help':
+                'Inputs for SCF workchain, mandatory. Explicit kpoints is not allowed.'
+            })
         spec.expose_inputs(base_work,
                            namespace='bands',
                            exclude=('calc.structure', 'calc.kpoints'),
@@ -147,6 +151,10 @@ class CastepBandsWorkChain(WorkChain):
         """Setup the calculation"""
         self.ctx.current_structure = self.inputs.structure
         self.ctx.bands_kpoints = self.inputs.get('bands_kpoints')
+        if 'kpoints' in self.inputs.scf:
+            self.report(
+                "WARNING: explicit kpoints for SCF - this is likely to cause problems"
+            )
 
     def should_do_relax(self):
         """Wether we should do relax or not"""
