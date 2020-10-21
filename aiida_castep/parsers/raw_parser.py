@@ -274,6 +274,7 @@ def parse_castep_text_output(out_lines, input_dict):
     # Warnings that won't result in a calculation in FAILED state
     minor_warnings = {
         "Warning": None,
+        "WARNING": None,
         "Geometry optimization failed to converge": GEOM_FAILURE_MESSAGE,
     }
 

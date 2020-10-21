@@ -2,6 +2,7 @@
 Parsers for CASTEP
 """
 from __future__ import absolute_import
+from copy import deepcopy
 from aiida.plugins import DataFactory
 from aiida.parsers.parser import Parser  # , ParserParamManager
 from aiida_castep.parsers.raw_parser import parse_raw_ouput, units, RawParser
@@ -145,14 +146,21 @@ class CastepParser(Parser):
             self.out(out_ln['bands'], bands_node)
 
         ######## --- PROCESSING STRUCTURE DATA --- ########
+        no_optimise = False
         try:
             cell = structure_data["cell"]
             positions = structure_data["positions"]
             symbols = structure_data["symbols"]
 
         except KeyError:
-            # No final structure can be used - that is OK
-            pass
+            # Handle special case where CASTEP founds nothing to optimise,
+            # hence we attached the input geometry as the output
+            for warning in out_dict["warnings"]:
+                if "there is nothing to optimise" in warning:
+                    no_optimise = True
+            if no_optimise is True:
+                self.out(out_ln['structure'],
+                         deepcopy(self.node.inputs.structure))
         else:
             structure_node = structure_from_input(cell=cell,
                                                   positions=positions,
@@ -210,6 +218,32 @@ class CastepParser(Parser):
                         traj.set_array(name, np.asarray(value))
                     self.out(out_ln['trajectory'], traj)
 
+            # Or may there is nothing to optimise? still save a Trajectory data
+            elif no_optimise is True:
+                traj = TrajectoryData()
+                input_structure = self.node.inputs.structure
+                traj.set_trajectory(stepids=np.asarray([1]),
+                                    cells=np.asarray([input_structure.cell]),
+                                    symbols=np.asarray([
+                                        site.kind_name
+                                        for site in input_structure.sites
+                                    ]),
+                                    positions=np.asarray([[
+                                        site.position
+                                        for site in input_structure.sites
+                                    ]]))
+                # Save the rest
+                for name, value in six.iteritems(trajectory_data):
+                    # Skip saving empty arrays
+                    if len(value) == 0:
+                        continue
+
+                    array = np.asarray(value)
+                    # For forces/velocities we also need to resort the array
+                    if ("force" in name) or ("velocities" in name):
+                        array = array[:, idesort]
+                    traj.set_array(name, np.asarray(value))
+                self.out(out_ln['trajectory'], traj)
             # Otherwise, save data into a ArrayData node
             else:
                 out_array = ArrayData()
