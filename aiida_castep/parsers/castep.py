@@ -173,9 +173,11 @@ class CastepParser(Parser):
             from aiida.orm.nodes.data.array.trajectory import TrajectoryData
             from aiida.orm.nodes.data.array import ArrayData
 
+            # Resorting indices - for recovering the original ordering of the
+            # species in the input structure
+            idesort = get_desort_args(input_structure)
             # If we have .geom file, save as in a trajectory data
             if has_md_geom:
-                idesort = get_desort_args(input_structure)
                 try:
                     positions = np.asarray(
                         trajectory_data["positions"])[:, idesort]
