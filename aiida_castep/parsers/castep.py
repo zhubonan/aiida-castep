@@ -157,9 +157,8 @@ class CastepParser(Parser):
             structure_node = structure_from_input(cell=cell,
                                                   positions=positions,
                                                   symbols=symbols)
-            calc_in = self.node
             # Use the output label as the input label
-            input_structure = calc_in.inputs.structure
+            input_structure = self.node.inputs.structure
             structure_node = desort_structure(structure_node, input_structure)
             structure_node.label = input_structure.label
             self.out(out_ln['structure'], structure_node)
@@ -175,6 +174,7 @@ class CastepParser(Parser):
 
             # Resorting indices - for recovering the original ordering of the
             # species in the input structure
+            input_structure = self.node.inputs.structure
             idesort = get_desort_args(input_structure)
             # If we have .geom file, save as in a trajectory data
             if has_md_geom:
