@@ -1,13 +1,10 @@
 """
 Utility module with useful functions
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from copy import copy
+import io
 import numpy as np
-from six.moves import zip
+
+# pylint: disable=import-outside-toplevel, too-many-locals
 
 
 def atoms_to_castep(atoms, index):
@@ -30,7 +27,6 @@ def ase_to_castep_index(atoms, indices):
     return list of (element, i in the same element)"""
     if isinstance(indices, int):
         indices = [indices]
-    num = atoms.numbers
     symbols = np.array(atoms.get_chemical_symbols())
     iatoms = np.arange(len(atoms))
     res = []
@@ -39,8 +35,8 @@ def ase_to_castep_index(atoms, indices):
         mask = symbols == symbols[i]  # Select the same species
 
         # CASTEP start counting from 1
-        c = np.where(iatoms[mask] == i)[0][0] + 1
-        res.append([symbols[i], c])
+        counter = np.where(iatoms[mask] == i)[0][0] + 1
+        res.append([symbols[i], counter])
     return res
 
 
@@ -60,7 +56,7 @@ def generate_ionic_fix_cons(atoms, indices, mask=None, count_start=1):
     castep_indices = ase_to_castep_index(atoms, indices)
     count = count_start
     lines = []
-    if mask == None:
+    if mask is None:
         mask = (1, 1, 1)
     for symbol, i in castep_indices:
         if mask[0]:
@@ -133,7 +129,7 @@ def sort_atoms_castep(atoms, copy=True, order=None):
 
     :returns: A ``ase.Atoms`` object that is sorted.
     """
-
+    _ = copy
     # Sort castep style
     if order is not None:
         for i in reversed(order):
@@ -182,28 +178,27 @@ def reuse_kpoints_grid(grid, lowest_pk=False):
 
     :returns: A KpointsData node representing the grid requested
     """
-    from aiida.orm.querybuilder import QueryBuilder
-    from aiida.orm.nodes.data.array.kpoints import KpointsData
-    q = QueryBuilder()
-    q.append(KpointsData,
-             tag="kpoints",
-             filters={
-                 "attributes.mesh.0": grid[0],
-                 "attributes.mesh.1": grid[1],
-                 "attributes.mesh.2": grid[2]
-             })
+    from aiida.orm import QueryBuilder
+    from aiida.orm import KpointsData
+    qbd = QueryBuilder()
+    qbd.append(KpointsData,
+               tag="kpoints",
+               filters={
+                   "attributes.mesh.0": grid[0],
+                   "attributes.mesh.1": grid[1],
+                   "attributes.mesh.2": grid[2]
+               })
     if lowest_pk:
         order = "asc"
     else:
         order = "desc"
-    q.order_by({"kpoints": [{"id": {"order": order}}]})
-    if q.count() >= 1:
+    qbd.order_by({"kpoints": [{"id": {"order": order}}]})
+    if qbd.count() >= 1:
 
-        return q.first()[0]
-    else:
-        kpoints = KpointsData()
-        kpoints.set_kpoints_mesh(grid)
-        return kpoints
+        return qbd.first()[0]
+    kpoints = KpointsData()
+    kpoints.set_kpoints_mesh(grid)
+    return kpoints
 
 
 def traj_to_atoms(traj, combine_ancesters=False, eng_key="enthalpy"):
@@ -224,15 +219,15 @@ def traj_to_atoms(traj, combine_ancesters=False, eng_key="enthalpy"):
         traj = traj.outputs.__getattr__(OUTPUT_LINKNAMES['trajectory'])
     # Combine trajectory from ancesters
     if combine_ancesters is True:
-        q = QueryBuilder()
-        q.append(Node, filters={"uuid": traj.uuid})
-        q.append(CalcJobNode, tag="ans", ancestor_of=Node)
-        q.order_by({"ans": "id"})
-        calcs = [_[0] for _ in q.iterall()]
+        qbd = QueryBuilder()
+        qbd.append(Node, filters={"uuid": traj.uuid})
+        qbd.append(CalcJobNode, tag="ans", ancestor_of=Node)
+        qbd.order_by({"ans": "id"})
+        calcs = [_[0] for _ in qbd.iterall()]
         atoms_list = []
-        for c in calcs:
+        for counter in calcs:
             atoms_list.extend(
-                traj_to_atoms(c.outputs.__getattr__(
+                traj_to_atoms(counter.outputs.__getattr__(
                     OUTPUT_LINKNAMES['trajectory']),
                               combine_ancesters=False,
                               eng_key=eng_key))
@@ -246,9 +241,9 @@ def traj_to_atoms(traj, combine_ancesters=False, eng_key="enthalpy"):
         eng = None
     cells = traj.get_array("cells")
     atoms_traj = []
-    for c, p, e, f in zip(cells, positions, eng, forces):
-        atoms = Atoms(symbols=symbols, cell=c, pbc=True, positions=p)
-        calc = SinglePointCalculator(atoms, energy=e, forces=f)
+    for counter, pos, eng_, force in zip(cells, positions, eng, forces):
+        atoms = Atoms(symbols=symbols, cell=counter, pbc=True, positions=pos)
+        calc = SinglePointCalculator(atoms, energy=eng_, forces=force)
         atoms.set_calculator(calc)
         atoms_traj.append(atoms)
     return atoms_traj
@@ -281,11 +276,10 @@ def take_popn(seed):
     Take section of population analysis from a seed.castep file
     Return a list of StringIO of the population analysis section
     """
-    import io
     popns = []
     rec = False
-    with open(seed + '.castep') as fh:
-        for line in fh:
+    with open(seed + '.castep') as fhd:
+        for line in fhd:
             if "Atomic Populations (Mulliken)" in line:
                 record = io.StringIO()
                 rec = True
@@ -302,10 +296,10 @@ def take_popn(seed):
     return popns
 
 
-def read_popn(fn):
+def read_popn(fname):
     """Read population file into pandas dataframe"""
     import pandas as pd
-    table = pd.read_table(fn,
+    table = pd.read_table(fname,
                           sep=r"\s\s+",
                           header=2,
                           comment="=",
@@ -313,11 +307,10 @@ def read_popn(fn):
     return table
 
 
-def export_calculation(n, output_dir, prefix=None):
+def export_calculation(node, output_dir, prefix=None):
     """
     Export one calculation a a directory
     """
-    from functools import partial
     from aiida.orm.utils.repository import FileType
     from pathlib import Path
 
@@ -331,7 +324,7 @@ def export_calculation(n, output_dir, prefix=None):
                 continue
             with node.open(objname, mode='rb') as fsource:
                 name, suffix = objname.split('.')
-                if prefix and name == n.get_option('seedname'):
+                if prefix and name == node.get_option('seedname'):
                     outname = prefix + '.' + suffix
                 else:
                     outname = objname
@@ -346,16 +339,16 @@ def export_calculation(n, output_dir, prefix=None):
                             break
 
     #inputs
-    bwrite(n, output_dir)
+    bwrite(node, output_dir)
 
     # outputs
-    retrieved = n.outputs.retrieved
+    retrieved = node.outputs.retrieved
     bwrite(retrieved, output_dir)
 
 
 def compute_kpoints_spacing(cell, grid, unit="2pi"):
     """
-    Compute the spacing of the kpoints in the receprical space.
+    Compute the spacing of the kpoints in the reciprocal space.
     Spacing = 1 / cell_length / mesh for each dimension.
     Assume orthogonal cell shape.
     """
