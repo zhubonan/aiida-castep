@@ -5,10 +5,6 @@ Store common stuff
 # Mapping of the input names
 from __future__ import absolute_import
 from collections import OrderedDict
-try:
-    from pathlib import Path
-except ImportError:
-    from pathlib2 import Path
 
 INPUT_LINKNAMES = {
     'structure': 'structure',  # Input structure

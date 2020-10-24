@@ -5,6 +5,7 @@ ignore-paths:
   - .github
   - examples
   - test
+  - aiida_castep/tests
   - utils
   - cookiecutters
 

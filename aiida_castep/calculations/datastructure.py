@@ -31,25 +31,25 @@ class CastepInputFile(OrderedDict):
         Return a list of strings to be write out to the files
         """
         lines = []
-        for h in self.header:
-            if not h.startswith("#"):
-                lines.append("# " + h)
+        for head in self.header:
+            if not head.startswith("#"):
+                lines.append("# " + head)
             else:
-                lines.append(h)
+                lines.append(head)
 
         for key, value in self.items():
             if isinstance(value, (tuple, list)):
                 lines.append("%BLOCK {}".format(key))
                 if key in self.units:
                     lines.append("{}".format(self.units[key]))
-                for v in value:
-                    lines.append(v)
+                for tmp in value:
+                    lines.append(tmp)
                 lines.append("%ENDBLOCK {}".format(key))
             else:
-                l = "{:<20}: {}".format(key, value)
+                line = "{:<20}: {}".format(key, value)
                 if key in self.units:
-                    l = l + " " + self.units[key]
-                lines.append(l)
+                    line = line + " " + self.units[key]
+                lines.append(line)
 
         return lines
 
