@@ -12,6 +12,8 @@
 
 * Allow move the old task specific calculations inside `CastepCalculation` - it can now accept additional kpoints list/mesh for specific tasks. Entry points are removed for the task specific calculation as well. *Note: all kpoint meshes defined will be used as Monkhorst-Pack grids by CASTEP, which are not always Gamma-centred.*
 
+* CASTEP will skip geometry optimisation if it found there is nothing to optimise. Now the plugin will detect this and add the initial structure as the output as the structure is indeed optimised in full.
+
 ### Bugfix
 
 * No longer using `Node` instant as default for workchains.
