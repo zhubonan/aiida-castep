@@ -1,10 +1,26 @@
-# YAPF
-- repo: local
+# Install pre-commit hooks via:
+# pre-commit install
+
+# yapf = yet another python formatter
+- repo: https://github.com/pre-commit/mirrors-yapf
+  rev: v0.28.0
   hooks:
-  # yapf = yet another python formatter
   - id: yapf
     name: yapf
-    entry: yapf
+    args: ["-i"]
+
+- repo: https://github.com/PyCQA/prospector
+  rev: 1.1.7
+  hooks:
+  - id: prospector
     language: system
     types: [python]
-    args: ["-i"]
+    exclude: "(^docs)|(^.github)"
+
+- repo: local
+  hooks:
+  - id: version-number
+    name: Check version numbers
+    entry: python ./.github/check_version.py
+    language: system
+    files: '^(setup.json)|(aiida_fireworks_scheduler/__init__.py)'
