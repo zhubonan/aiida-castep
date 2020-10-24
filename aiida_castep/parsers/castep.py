@@ -3,33 +3,33 @@ Parsers for CASTEP
 """
 from __future__ import absolute_import
 from copy import deepcopy
-from aiida.plugins import DataFactory
-from aiida.parsers.parser import Parser  # , ParserParamManager
-from aiida_castep.parsers.raw_parser import parse_raw_ouput, units, RawParser
-from aiida_castep.parsers.raw_parser import __version__ as raw_parser_version
+import six
+import numpy as np
+
+from aiida.orm import TrajectoryData, ArrayData, Dict, BandsData
+
+from aiida.parsers.parser import Parser
+from aiida.common import exceptions
+
+from aiida_castep.parsers.raw_parser import units, RawParser
 from aiida_castep.parsers.utils import (structure_from_input,
                                         add_last_if_exists, desort_structure,
                                         get_desort_args)
 from aiida_castep.common import OUTPUT_LINKNAMES as out_ln
 from aiida_castep.common import EXIT_CODES_SPEC as calc_exit_code
 from aiida_castep._version import CALC_PARSER_VERSION
-import six
+
+# pylint: disable=invalid-name,too-many-locals,too-many-statements,too-many-branches
 __version__ = CALC_PARSER_VERSION
 
-Dict = DataFactory("dict")
-BandsData = DataFactory("array.bands")
-
 ERR_FILE_WARNING_MSG = ".err files found in workdir"
-
-# No need to have consistent raw parser version
-#assert __version__ == raw_parser_version, "Inconsistent version numbers"
 
 
 class CastepParser(Parser):
     """
     This is the class for Parsing results from a CASTEP calculation
     Supported calculations types:
-    signlepoint
+    singlepoint
     geom
     """
 
@@ -40,8 +40,6 @@ class CastepParser(Parser):
         Receives a dictionary of retrieved nodes.retrieved.
         Top level logic of operation
         """
-        from aiida.common import exceptions
-        import os
 
         try:
             output_folder = self.retrieved
@@ -51,10 +49,10 @@ class CastepParser(Parser):
         warnings = []
         exit_code_1 = None
 
-        # TODO Enable parser options
+        # NOTE parser options not used for not
         parser_opts = {}
 
-        # NOT READLLY IN USE
+        # NOT READILY IN USE
         input_dict = {}
 
         # check what is inside the folder
@@ -104,12 +102,6 @@ class CastepParser(Parser):
             '\n')
 
         ###### CALL THE RAW PASSING FUNCTION TO PARSE DATA #######
-        # out_dict, trajectory_data, structure_data, bands_data, exit_code\
-        #     = parse_raw_ouput(out_lines=out_file_content,
-        #                       input_dict=input_dict,
-        #                       parser_opts=parser_opts,
-        #                       md_geom_lines=out_md_geom_name_content,
-        #                       bands_lines=out_bands_content)
 
         raw_parser = RawParser(out_lines=out_file_content,
                                input_dict=input_dict,
@@ -175,10 +167,6 @@ class CastepParser(Parser):
         # If there is anything to save
         # It should...
         if trajectory_data:
-
-            import numpy as np
-            from aiida.orm.nodes.data.array.trajectory import TrajectoryData
-            from aiida.orm.nodes.data.array import ArrayData
 
             # Resorting indices - for recovering the original ordering of the
             # species in the input structure
@@ -265,49 +253,6 @@ class CastepParser(Parser):
         return self.exit_codes.__getattr__(exit_code)
 
 
-#TODO: NEED TO MIGRATE THIS
-class Pot1dParser(Parser):
-    """
-    Parser for Pot1d
-    """
-    def parse_with_retrieved(self, retrieved):
-        # NOT READLLY IN USE
-
-        # Check that the retrieved folder is there
-        try:
-            output_folder = retrieved[self._calc._get_linkname_retrieved()]
-        except KeyError:
-            self.logger.error("No retrieved folder found")
-            return False, ()
-
-        # check what is inside the folder
-        filenames = output_folder.get__list()
-
-        # at least the stdout should exist
-        oname = self._calc._OUTPUT_FILE_NAME
-        if oname not in filenames:
-            self.logger.error("Standard output not found")
-            successful = False
-            return successful, ()
-
-        # The calculation is failed if there is any err file.
-        for f in filenames:
-            if ".err" in f:
-                successful = False
-                self.logger.warning("Error files found in workdir.")
-                break
-
-        # Check for keyword
-        castep_file = output_folder.get_file_content(
-            self._calc._OUTPUT_FILE_NAME)
-        if "Finished pot1d" in castep_file:
-            successful = True
-        else:
-            successful = False
-
-        return successful, []
-
-
 def bands_to_bandsdata(bands_info, kpoints, bands):
     """
     Convert the result of parser_dot_bands into a BandsData object
@@ -321,7 +266,6 @@ def bands_to_bandsdata(bands_info, kpoints, bands):
     :rtype: ``aiida.orm.bands.data.array.bands.BandsData``
     """
 
-    import numpy as np
     bands_node = BandsData()
 
     # Extract the index of the kpoints
