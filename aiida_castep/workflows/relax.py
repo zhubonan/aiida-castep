@@ -9,8 +9,14 @@ from aiida.common import AttributeDict
 import aiida.orm as orm
 from aiida.orm.nodes.data.base import to_aiida_type
 
+from aiida.common.exceptions import NotExistent, MultipleObjectsError
+from aiida_castep.common import INPUT_LINKNAMES as IN_LINKS
+from aiida_castep.common import OUTPUT_LINKNAMES as OUT_LINKS
+from aiida_castep.calculations.helper import CastepHelper
 from aiida_castep.calculations.tools import flat_input_param_validator
 from .base import CastepBaseWorkChain
+
+# pylint: disable=protected-access,no-member,import-outside-toplevel
 
 __version__ = '0.0.1'
 
@@ -179,7 +185,7 @@ class CastepRelaxWorkChain(WorkChain):
             self.ctx.is_converged = True
             self.report('Geometry optimisation is converged')
 
-        return
+        return None
 
     def result(self):
         """Attach the output parameters and structure of the last workchain to the outputs."""
@@ -205,22 +211,19 @@ class CastepRelaxWorkChain(WorkChain):
         """
         Push the parameters for completed calculation to the current inputs
         """
-        from aiida.orm import QueryBuilder, WorkChainNode, CalcJobNode, Dict
-        from aiida.common.exceptions import NotExistent, MultipleObjectsError
-        from aiida_castep.common import INPUT_LINKNAMES as IN_LINKS
-        from aiida_castep.common import OUTPUT_LINKNAMES as OUT_LINKS
-        from aiida_castep.calculations.helper import CastepHelper
-        query = QueryBuilder()
-        query.append(WorkChainNode, filters={'id': workchain.pk}, tag='work')
-        query.append(Dict,
+        query = orm.QueryBuilder()
+        query.append(orm.WorkChainNode,
+                     filters={'id': workchain.pk},
+                     tag='work')
+        query.append(orm.Dict,
                      with_incoming='work',
                      tag='output_dict',
                      edge_filters={'label': OUT_LINKS['results']})
-        query.append(CalcJobNode,
+        query.append(orm.CalcJobNode,
                      with_outgoing='output_dict',
                      filters={'attributes.exit_status': 0},
                      tag='final_calc')
-        query.append(Dict,
+        query.append(orm.Dict,
                      with_outgoing='final_calc',
                      edge_filters={'label': IN_LINKS['parameters']},
                      project=['attributes'])
@@ -247,8 +250,9 @@ class CastepRelaxWorkChain(WorkChain):
             self.report(
                 'Pushed the input parameters of the last completed calculation to the next iteration'
             )
-            self.ctx.calc_update[IN_LINKS['parameters']] = Dict(
+            self.ctx.calc_update[IN_LINKS['parameters']] = orm.Dict(
                 dict=last_param)
+        return None
 
 
 class CastepAlterRelaxWorkChain(CastepRelaxWorkChain):
@@ -301,6 +305,8 @@ class CastepAlterRelaxWorkChain(CastepRelaxWorkChain):
             'fix_cell_iter_max', self._default_fix_cell_iter_max)
         self.ctx.restart_mode = 'reuse'
         self.ctx.is_fixed_cell = False
+
+        return None
 
     def inspect_relax(self):
         """
@@ -361,7 +367,7 @@ class CastepAlterRelaxWorkChain(CastepRelaxWorkChain):
             self.ctx.is_converged = True
             self.report('Geometry optimisation is converged')
 
-        return
+        return None
 
     def set_cons_and_imax(self, cell_cons, iter_max):
         """Set the cell constraints"""
