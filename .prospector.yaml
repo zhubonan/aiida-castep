@@ -1,0 +1,15 @@
+doc-warnings: true
+
+ignore-paths:
+  - docs
+  - .github
+  - examples
+  - test
+  - utils
+  - cookiecutters
+
+pylint:
+  max-line-length: 140
+
+pep257:
+  run: false
