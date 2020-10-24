@@ -45,7 +45,7 @@
             "castep.ts = aiida_castep.calculations.castep:CastepTSCalculation"
         ],
         "aiida.parsers": [
-            "castep.castep = aiida_castep.parsers.castep:CastepParser",
+            "castep.castep = aiida_castep.parsers.castep:CastepParser"
         ],
         "aiida.data": [
             "castep.uspdata = aiida_castep.data.usp:UspData",
@@ -55,8 +55,7 @@
             "castep.calculation = aiida_castep.tests.dbtests.dbtestcalculation"
         ],
         "aiida.cmdline.data" : [
-            "castep-usp = aiida_castep.cmdline.usp_cmd:usp_cmd",
-            "castep-otfg = aiida_castep.cmdline.otfg_cmd:otfg_cmd",
+            "castep-pseudos = aiida_castep.cmdline.otfg_cmd:pseudos_cmd",
             "castep-helper = aiida_castep.cmdline.helper_cmd:helper_cmd"
         ],
         "aiida.tools.calculations": [
