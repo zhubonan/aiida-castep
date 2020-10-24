@@ -44,3 +44,4 @@ def get_usp_element(filepath):
         element = match.group(1)
         element = element.capitalize()
         return element
+    return None
