@@ -8,7 +8,7 @@ import pytest
 import os
 from aiida.common.exceptions import NotExistent
 from aiida.common import AttributeDict
-from aiida_castep.common import Path
+from pathlib import Path
 
 this_folder = Path(__file__).parent
 

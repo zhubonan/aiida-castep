@@ -13,7 +13,7 @@ import shutil
 
 import castepinput
 from aiida_castep import tests
-from aiida_castep.common import Path
+from pathlib import Path
 
 _TEST_BASE_FOLDER = Path(tests.__file__).parent
 _TEST_DATA_FOLDER = _TEST_BASE_FOLDER / 'data'

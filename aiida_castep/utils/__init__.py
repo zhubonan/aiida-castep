@@ -319,10 +319,7 @@ def export_calculation(n, output_dir, prefix=None):
     """
     from functools import partial
     from aiida.orm.utils.repository import FileType
-    try:
-        from pathlib import Path
-    except ImportError:
-        from pathlib2 import Path
+    from pathlib import Path
 
     output_dir = Path(output_dir)
     output_dir.mkdir(exist_ok=True)

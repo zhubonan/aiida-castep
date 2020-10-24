@@ -10,7 +10,7 @@ import shutil
 @pytest.fixture(scope='session')
 def Path():
     """Load the Path class"""
-    from aiida_castep.common import Path
+    from pathlib import Path
     return Path
 
 
