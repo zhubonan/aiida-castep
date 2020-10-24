@@ -525,8 +525,3 @@ class TestBSCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
         self.assertIn("{:<20}: 2 2 2".format("bs_kpoints_mp_grid"), content)
         self.assertIn("{:<20}: 0.1 0.1 0.1".format("bs_kpoints_mp_offset"),
                       content)
-
-
-class TestPot1dCalculation(BaseCalcCase, BaseDataCase, AiidaTestCase):
-    def test_load_plugin(self):
-        Pot1D = CalculationFactory("castep.pot1d")

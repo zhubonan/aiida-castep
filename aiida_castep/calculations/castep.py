@@ -520,19 +520,6 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         return lines
 
 
-class Pot1dCalculation(CastepCalculation):
-    """
-    Class for pot1d Calculation
-    """
-    def prepare_for_submission(self, folder):
-        if self.inputs.metadata.options.withmpi is True:
-            raise RuntimeError('Pot1D cannot run with mpi')
-        in_dict = self.inputs[INPUT_LINKNAMES['parameters']].get_dict()
-        if in_dict['PARAM'].get('continuation') is None:
-            raise InputValidationError('Pot1D must run as continuation')
-        super(Pot1dCalculation, self).prepare_for_submission(folder)
-
-
 class TaskSpecificCalculation(CastepCalculation):
     """
     Class for Calculations that only allow certain tasks

@@ -37,7 +37,7 @@ def param_dict():
 
 
 @pytest.mark.parametrize('entry_point',
-                         ('castep.castep', 'castep.ts', 'castep.pot1d'))
+                         ('castep.castep', 'castep.ts'))
 def test_get_builder(db_test_app, entry_point):
     from aiida.plugins import CalculationFactory
     cls = CalculationFactory(entry_point)

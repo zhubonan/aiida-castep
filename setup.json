@@ -42,12 +42,10 @@
         ],
         "aiida.calculations": [
             "castep.castep = aiida_castep.calculations.castep:CastepCalculation",
-            "castep.pot1d = aiida_castep.calculations.castep:Pot1dCalculation",
             "castep.ts = aiida_castep.calculations.castep:CastepTSCalculation"
         ],
         "aiida.parsers": [
             "castep.castep = aiida_castep.parsers.castep:CastepParser",
-            "castep.pot1d = aiida_castep.parsers.castep:Pot1dParser"
         ],
         "aiida.data": [
             "castep.uspdata = aiida_castep.data.usp:UspData",
