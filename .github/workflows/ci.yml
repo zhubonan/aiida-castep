@@ -25,6 +25,24 @@ jobs:
           pip freeze
       - name: Run pre-commit
         run: pre-commit run --all-files || ( git diff; git status; exit 1; )
+  docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.8
+    - name: Install python dependencies
+      run: |
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -e .[docs]
+        reentry scan -r aiida
+    - name: Build docs
+      run: cd ./docs && make
+
   tests:
     needs: [pre-commit]
     runs-on: ubuntu-latest
