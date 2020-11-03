@@ -3,7 +3,7 @@
     "author": "Bonan Zhu",
     "author_email": "bz240@cam.ac.uk",
     "description": "AiiDA plugin for CASTEP",
-    "url": "https://gitlab.com/bz1/aiida-castep",
+    "url": "https://github.com/zhubonan/aiida-castep",
     "license": "MIT License",
     "python_requries": ">=3.5",
     "classifiers": [

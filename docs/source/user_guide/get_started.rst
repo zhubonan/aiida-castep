@@ -32,7 +32,7 @@ This will install the latest package released with its dependencies.
 
 Alternatively, to clone the repository from the repository::
 
- git clone git@gitlab.com:bz1/aiida-castep.git
+ git clone git@github.com:zhubonan/aiida-castep.git
 
 Then pip can be used to install the plugin::
 
