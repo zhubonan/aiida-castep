@@ -34,14 +34,14 @@ jobs:
     - name: Set up Python 3.7
       uses: actions/setup-python@v1
       with:
-        python-version: 3.8
+        python-version: 3.7
     - name: Install python dependencies
       run: |
         pip install --upgrade pip
         pip install -e .[docs]
         reentry scan -r aiida
     - name: Build docs
-      run: cd ./docs && make
+      run: cd docs && make
 
   tests:
     needs: [pre-commit]

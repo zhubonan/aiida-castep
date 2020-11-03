@@ -1,8 +1,6 @@
 """
 Commandline plugin module for aiida CASTEP plugin
 """
-from __future__ import print_function
-from __future__ import absolute_import
 import click
 
 from aiida.cmdline.commands.cmd_data import verdi_data

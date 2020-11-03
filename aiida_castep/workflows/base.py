@@ -3,35 +3,29 @@ This module contains the *base* workchain class which acts as the starting point
 implementing more complex ones
 """
 
-from __future__ import absolute_import
-import six
 import re
 import numpy as np
 
 from aiida.engine import WorkChain, if_, while_, ToContext, append_
 from aiida.orm.nodes.data.base import to_aiida_type
-from aiida.orm import UpfData
 from aiida.common import AttributeDict
 import aiida.orm as orm
 from aiida.plugins import DataFactory
 from aiida.engine import CalcJob
 from aiida_castep.data import get_pseudos_from_structure
 
-from aiida_castep.common import (INPUT_LINKNAMES, OUTPUT_LINKNAMES,
-                                 EXIT_CODES_SPEC)
+from aiida_castep.common import (INPUT_LINKNAMES, OUTPUT_LINKNAMES)
 from aiida_castep.calculations.helper import CastepHelper
 from aiida_castep.calculations import CastepCalculation
 from aiida_castep.calculations.tools import flat_input_param_validator
 from .common import (UnexpectedCalculationFailure, register_error_handler,
                      ErrorHandlerReport)
 
-inp_ln = INPUT_LINKNAMES
-out_ln = OUTPUT_LINKNAMES
-ecodes = EXIT_CODES_SPEC
+KpointsData = DataFactory("array.kpoints")  # pylint: disable=invalid-name
+StructureData = DataFactory("structure")  # pylint: disable=invalid-name
+Dict = DataFactory("dict")  # pylint: disable=invalid-name
 
-KpointsData = DataFactory("array.kpoints")
-StructureData = DataFactory("structure")
-Dict = DataFactory("dict")
+# pylint: disable=no-member
 
 __version__ = '0.0.1'
 
@@ -54,7 +48,6 @@ class CastepBaseWorkChain(WorkChain):
             raise ValueError(
                 'no valid CalcJob class defined for _calculation_class attribute'
             )
-        return
 
     @classmethod
     def define(cls, spec):
@@ -162,7 +155,7 @@ class CastepBaseWorkChain(WorkChain):
         self.ctx.unexpected_failure = False
         self.ctx.iteration = 0
 
-    def validate_inputs(self):
+    def validate_inputs(self):  # pylint: disable=too-many-branches, too-many-statements
         """Validate the inputs. Populate the inputs in the context
         This inputs is used as a staging area for the next calculation
         to be launched"""
@@ -206,16 +199,16 @@ class CastepBaseWorkChain(WorkChain):
         self.ctx.inputs['parameters'] = param_dict
 
         if self.inputs.get('continuation_folder'):
-            self.ctx.inputs[
-                inp_ln['parent_calc_folder']] = self.inputs.continuation_folder
+            self.ctx.inputs[INPUT_LINKNAMES[
+                'parent_calc_folder']] = self.inputs.continuation_folder
             self.ctx.inputs.parameters['PARAM'][
                 'continuation'] = 'parent/{}.{}'.format(
                     seedname, restart_suffix)
             self.ctx.inputs.parameters['PARAM'].pop('reuse', None)
 
         elif self.inputs.get('reuse_folder'):
-            self.ctx.inputs[
-                inp_ln['parent_calc_folder']] = self.inputs.reuse_folder
+            self.ctx.inputs[INPUT_LINKNAMES[
+                'parent_calc_folder']] = self.inputs.reuse_folder
             self.ctx.inputs.parameters['PARAM'][
                 'reuse'] = 'parent/{}.{}'.format(seedname, restart_suffix)
             self.ctx.inputs.parameters['PARAM'].pop('continuation', None)
@@ -255,8 +248,10 @@ class CastepBaseWorkChain(WorkChain):
         else:
             self.report('No valid pseudopotential input specified')
             return self.exit_codes.ERROR_INVALID_INPUTS
+        return None
 
-    def should_dry_run(self):
+    @staticmethod
+    def should_dry_run():
         """
         Do a dryrun to validate the inputs
         """
@@ -288,18 +283,19 @@ class CastepBaseWorkChain(WorkChain):
                 self.ctx.inputs.parameters['PARAM'][
                     'continuation'] = './parent/aiida.check'
                 self.ctx.inputs.parameters['PARAM'].pop('reuse', None)
-                self.ctx.inputs[inp_ln[
+                self.ctx.inputs[INPUT_LINKNAMES[
                     'parent_calc_folder']] = self.ctx.restart_calc.outputs.remote_folder
             elif self.ctx.restart_type == 'reuse':
                 self.ctx.inputs.parameters['PARAM'][
                     'reuse'] = './parent/aiida.check'
                 self.ctx.inputs.parameters['PARAM'].pop('continuation', None)
-                self.ctx.inputs[inp_ln[
+                self.ctx.inputs[INPUT_LINKNAMES[
                     'parent_calc_folder']] = self.ctx.restart_calc.outputs.remote_folder
             else:
                 self.ctx.inputs.parameters['PARAM'].pop('continuation', None)
                 self.ctx.inputs.parameters['PARAM'].pop('reuse', None)
-                self.ctx.inputs.pop(inp_ln['parent_calc_folder'], None)
+                self.ctx.inputs.pop(INPUT_LINKNAMES['parent_calc_folder'],
+                                    None)
 
     def run_calculation(self):
         """
@@ -364,9 +360,6 @@ class CastepBaseWorkChain(WorkChain):
                 self.ctx.unexpected_failure = True
         return exit_code
 
-    def results(self):
-        pass
-
     def _prepare_process_inputs(self, inputs_dict):
         """Convert plain dictionary to Dict node"""
         out = AttributeDict(inputs_dict)
@@ -378,9 +371,10 @@ class CastepBaseWorkChain(WorkChain):
     def _handle_calculation_failure(self, calculation):
         """Handle failure of calculation by refering to a range of handlers"""
         try:
-            outputs = calculation.outputs[out_ln['results']].get_dict()
-            warnings = outputs['warnings']
-            parser_warnings = outputs['parser_warnings']
+            outputs = calculation.outputs[
+                OUTPUT_LINKNAMES['results']].get_dict()
+            _ = outputs['warnings']
+            _ = outputs['parser_warnings']
         except (KeyError) as exception:
             raise UnexpectedCalculationFailure(exception)
 
@@ -412,7 +406,7 @@ class CastepBaseWorkChain(WorkChain):
         if handler_report:
             return handler_report.exit_code
 
-        return
+        return None
 
     def results(self):
         """
@@ -421,7 +415,7 @@ class CastepBaseWorkChain(WorkChain):
         self.report('workchain completed after {} iterations'.format(
             self.ctx.iteration))
 
-        for name, port in six.iteritems(self.spec().outputs):
+        for name, port in self.spec().outputs.items():
             try:
                 node = self.ctx.restart_calc.get_outgoing(
                     link_label_filter=name).one().node
@@ -440,7 +434,8 @@ class CastepBaseWorkChain(WorkChain):
     def _handle_unexpected_failure(self, calculation, exception=None):
         """
         The calculation has failed for an unknown reason and could not be handled.
-        If the unexpected_failure flag is true, this is the second consecutive unexpected failure and we abort the workchain. Otherwise we restart once more.
+        If the unexpected_failure flag is true, this is the second consecutive unexpected
+        failure and we abort the workchain. Otherwise we restart once more.
         """
         if exception:
             self.report('{}'.format(exception))
@@ -463,16 +458,17 @@ class CastepBaseWorkChain(WorkChain):
 
 @register_error_handler(CastepBaseWorkChain, 900)
 def _handle_scf_failure(self, calculation):
+    """Handle case when SCF failed"""
 
     if 'ERROR_SCF_NOT_CONVERGED' in calculation.res.warnings:
         self.ctx.restart_calc = calculation
         self.ctx.restart_mode = None
         dot_castep = _get_castep_output_file(calculation)
-        for n, line in enumerate(dot_castep[:-50:-1]):
+        for idx, line in enumerate(dot_castep[:-50:-1]):
             model_match = re.match(r'Writing model to \w+\.(\w+)', line)
             # If the writing model is at the last line there is a good
             # Chance that it was interrupted
-            if model_match and n > 0 and model_match.group(1) == 'check':
+            if model_match and idx > 0 and model_match.group(1) == 'check':
                 self.ctx.restart_mode = 'continuation'
                 break
 
@@ -507,20 +503,22 @@ def _handle_scf_failure(self, calculation):
                 mix_charge_amp, mix_spin_amp))
 
         return ErrorHandlerReport(True, True)
+    return None
 
 
 @register_error_handler(CastepBaseWorkChain, 500)
 def _handle_walltime_limit(self, calculation):
+    """Handle case when the walltime limit has reached"""
 
     if 'ERROR_TIMELIMIT_REACHED' in calculation.res.warnings:
         self.ctx.restart_calc = calculation
         self.ctx.restart_mode = None
         dot_castep = _get_castep_output_file(calculation)
-        for n, line in enumerate(dot_castep[::-1]):
+        for nline, line in enumerate(dot_castep[::-1]):
             model_match = re.match(r'Writing model to \w+\.(\w+)', line)
             # If the writing model is at the last line there is a good
             # Chance that it was interrupted
-            if model_match and n > 0 and model_match.group(1) == 'check':
+            if model_match and nline > 0 and model_match.group(1) == 'check':
                 self.ctx.restart_mode = 'continuation'
                 self.report(
                     'dot castep indicate model has been written, trying continuation.'
@@ -554,6 +552,7 @@ def _handle_walltime_limit(self, calculation):
             self.report('Cleared the hash of the failed calculation.')
 
         return ErrorHandlerReport(True, False)
+    return None
 
 
 @register_error_handler(CastepBaseWorkChain, 10000)
@@ -568,6 +567,7 @@ def _handle_stop_by_request(self, calculation):
         self.report('Cleared the hash of the stopped calculation.')
         return ErrorHandlerReport(True, True,
                                   self.exit_codes.USER_REQUESTED_STOP)
+    return None
 
 
 def _get_castep_output_file(calculation):

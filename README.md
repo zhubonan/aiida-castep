@@ -1,6 +1,6 @@
 AiiDA plugin for working with CASTEP
 ====================================
-[[![Docs status](https://readthedocs.org/projects/aiida-castep/badge)](http://aiida-castep.readthedocs.io/)
+[![Docs status](https://readthedocs.org/projects/aiida-castep/badge)](http://aiida-castep.readthedocs.io/)
 
 [![pipeline status](https://github.com/zhubonan/aiida-castep/workflows/aiida-castep/badge.svg)](https://github.com/zhubonan/aiida-castep/actions)
 
