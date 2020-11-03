@@ -20,11 +20,12 @@ jobs:
           pip install --upgrade pip
           pip --version
       - name: Install aiida-castep
-        run:
+        run: |
           pip install -e .[testing,pre-commit]
           pip freeze
       - name: Run pre-commit
         run: pre-commit run --all-files || ( git diff; git status; exit 1; )
+
   docs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
