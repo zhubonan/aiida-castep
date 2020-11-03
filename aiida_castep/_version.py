@@ -19,8 +19,11 @@ The order of error is also adjusted. Fixed a bug where if the *.err files are
 present the returned code would be same as when end of the calculation is not
 found. This fix allows the internal crash of CASTEP (usually with the *.err files)
 to be differentiated with the calculation being killed (by scheduler).
+
 1.0.2 -> Fix a bug of parsing cons'd forces
+
+1.0.3 -> Fix a bug where the forces are not reorderred as for the case of StructureData
 """
 
-CALC_PARSER_VERSION = "1.0.2"
-PLUGIN_VERSION = "1.2.0"
+CALC_PARSER_VERSION = "1.0.3"
+PLUGIN_VERSION = "1.2.0a1"
