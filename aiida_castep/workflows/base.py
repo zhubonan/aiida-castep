@@ -250,8 +250,7 @@ class CastepBaseWorkChain(WorkChain):
             return self.exit_codes.ERROR_INVALID_INPUTS
         return None
 
-    @staticmethod
-    def should_dry_run():
+    def should_dry_run(self):  # pylint: disable=no-self-use
         """
         Do a dryrun to validate the inputs
         """
