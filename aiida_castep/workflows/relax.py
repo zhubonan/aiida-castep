@@ -1,5 +1,10 @@
 """
-Module for Relxation WorkChain
+Module for Relaxation WorkChain
+
+CHANGELOG:
+
+- 0.1.0: Added ``bypass`` option to skip convergence checking.
+  The user is still responsible to setting the correct inputs.
 """
 
 from __future__ import absolute_import
@@ -18,7 +23,7 @@ from .base import CastepBaseWorkChain
 
 # pylint: disable=protected-access,no-member,import-outside-toplevel
 
-__version__ = '0.0.1'
+__version__ = '0.1.0'
 
 
 class CastepRelaxWorkChain(WorkChain):
@@ -30,8 +35,13 @@ class CastepRelaxWorkChain(WorkChain):
     This workchain try to restart such calculations (wrapped in CastepBaseWorkChain)
     until the structure is fully relaxed
 
-    ``relax_options`` is a Dict of the options avaliable fields are "restart_mode"
-    default to "reuse"
+    ``relax_options`` is a Dict of the options avaliable fields are:
+
+    - restart_mode: mode of restart, choose from ``reuse`` (default), ``structure``,
+      ``continuation``.
+    - bypass: Bypass relaxation control - e.g. no checking of the convergence.
+      Can be used for doing singlepoint calculation.
+
     """
 
     _max_meta_iterations = 10
@@ -57,18 +67,19 @@ class CastepRelaxWorkChain(WorkChain):
 
         spec.input('structure',
                    valid_type=orm.StructureData,
-                   help='Structure to be used for relxation',
+                   help='Structure to be used for relaxation.',
                    required=True)
         spec.input('relax_options',
                    valid_type=orm.Dict,
                    serializer=to_aiida_type,
                    required=False,
-                   help='Options for relaxation')
+                   help='Options for relaxation.')
 
         spec.expose_outputs(CastepBaseWorkChain, exclude=['output_structure'])
         spec.output('output_structure',
                     valid_type=orm.StructureData,
-                    required=True)
+                    required=False,
+                    help='The relaxed structure.')
 
         spec.outline(
             cls.setup,
@@ -105,6 +116,7 @@ class CastepRelaxWorkChain(WorkChain):
         assert restart_mode in [
             "reuse", "continuation", "structure"
         ], "Invalid restart mode: {}".format(restart_mode)
+        self.ctx.bypass_relax = relax_options.pop('bypass', False)
         self.ctx.restart_mode = restart_mode
         self.ctx.relax_options = relax_options
 
@@ -134,8 +146,14 @@ class CastepRelaxWorkChain(WorkChain):
         if 'metadata' in inputs:
             inputs.metadata = AttributeDict(inputs['metadata'])
             inputs.metadata['call_link_label'] = link_label
+            if 'label' not in inputs.metadata:
+                inputs.metadata['label'] = self.inputs.metadata.get(
+                    'label', '')
         else:
-            inputs['metadata'] = {'call_link_label': link_label}
+            inputs['metadata'] = {
+                'call_link_label': link_label,
+                'label': self.inputs.metadata.get('label', '')
+            }
 
         running = self.submit(CastepBaseWorkChain, **inputs)
 
@@ -148,6 +166,10 @@ class CastepRelaxWorkChain(WorkChain):
         """
         Inspet the relaxation results, check if convergence is reached.
         """
+        if self.ctx.get('bypass_relax', False):
+            self.report("Bypass mode, convergence checking skipped")
+            self.ctx.converged = True
+            return None
 
         workchain = self.ctx.workchains[-1]
 
@@ -200,10 +222,11 @@ class CastepRelaxWorkChain(WorkChain):
             exit_code = self.exit_codes.ERROR_CONVERGE_NOT_REACHED
 
         workchain = self.ctx.workchains[-1]
-        structure = workchain.outputs.output_structure
+        if 'output_structure' in workchain.outputs:
+            structure = workchain.outputs.output_structure
+            self.out('output_structure', structure)
 
         self.out_many(self.exposed_outputs(workchain, CastepBaseWorkChain))
-        self.out('output_structure', structure)
 
         return exit_code
 
@@ -312,6 +335,11 @@ class CastepAlterRelaxWorkChain(CastepRelaxWorkChain):
         """
         Inspet the relaxation results, check if convergence is reached.
         """
+
+        if self.ctx.get('bypass_relax', False):
+            self.report("Bypass mode, convergence checking skipped")
+            self.ctx.converged = True
+            return None
 
         workchain = self.ctx.workchains[-1]
 
