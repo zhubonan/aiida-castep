@@ -168,7 +168,7 @@ class CastepRelaxWorkChain(WorkChain):
         """
         if self.ctx.get('bypass_relax', False):
             self.report("Bypass mode, convergence checking skipped")
-            self.ctx.converged = True
+            self.ctx.is_converged = True
             return None
 
         workchain = self.ctx.workchains[-1]
@@ -338,7 +338,7 @@ class CastepAlterRelaxWorkChain(CastepRelaxWorkChain):
 
         if self.ctx.get('bypass_relax', False):
             self.report("Bypass mode, convergence checking skipped")
-            self.ctx.converged = True
+            self.ctx.is_converged = True
             return None
 
         workchain = self.ctx.workchains[-1]
