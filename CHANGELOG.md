@@ -14,6 +14,8 @@
 
 * CASTEP will skip geometry optimisation if it found there is nothing to optimise. Now the plugin will detect this and add the initial structure as the output as the structure is indeed optimised in full.
 
+* added `bypass` option in `relax_mode` for `CastepRelaxWorkChain` for skipping any higher level control. This is primarily to make the project work with `aiida-common-workflows`.
+
 ### Bugfix
 
 * No longer using `Node` instant as default for workchains.
