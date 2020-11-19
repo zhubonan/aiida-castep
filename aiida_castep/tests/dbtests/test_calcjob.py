@@ -3,6 +3,7 @@ Test input generation
 """
 from __future__ import absolute_import
 import pytest
+import numpy as np
 from aiida_castep.calculations.inpgen import CastepInputGenerator
 from aiida.engine.processes.ports import PortNamespace
 
@@ -124,6 +125,39 @@ def test_cell_with_tags(gen_instance, sto_calc_inputs):
     assert ('Sr:SrTi', 'C9') in species_pots
     assert ('O:O1', 'C9') in species_pots
     assert ('O:O2', 'C9') in species_pots
+
+
+def test_cell_with_spin(gen_instance, sto_calc_inputs):
+    """Test input geneation with spins"""
+    import aiida.orm as orm
+    from aiida.common.exceptions import InputValidationError
+
+    sto_calc_inputs.settings = orm.Dict(dict={'SPINS': [1, 1, 1, 1, 1]})
+    gen_instance.inputs = sto_calc_inputs
+    gen_instance.prepare_inputs()
+
+    positions = gen_instance.cell_file['POSITIONS_ABS']
+    for i in range(5):
+        assert positions[i].endswith(" SPIN=1.000 ")
+
+    # Test non-collinear spins
+    sto_calc_inputs.settings = orm.Dict(dict={'SPINS': [[1., 1., 1.]] * 5})
+    gen_instance.prepare_inputs()
+    positions = gen_instance.cell_file['POSITIONS_ABS']
+    for i in range(5):
+        assert positions[i].endswith(" SPIN=( 1.000000 1.000000 1.000000 ) ")
+
+    # Test spin consistency checks
+    d = sto_calc_inputs.parameters.get_dict()
+    d['PARAM']['spin'] = 1.0  # This is wrong
+    sto_calc_inputs.parameters = orm.Dict(dict=d)
+    with pytest.raises(InputValidationError):
+        gen_instance.prepare_inputs()
+
+    # Summation of spins for non-collinear spins
+    d['PARAM']['spin'] = 3**(1 / 2) * 5
+    sto_calc_inputs.parameters = orm.Dict(dict=d)
+    gen_instance.prepare_inputs()
 
 
 @pytest.mark.process_execution

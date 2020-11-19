@@ -4,17 +4,17 @@ Module for generating text based CASTEP inputs
 from __future__ import absolute_import, print_function
 
 import six
-import numpy as np
-from .datastructure import ParamFile, CellFile
-from aiida.common import InputValidationError, MultipleObjectsError
-from .utils import get_castep_ion_line, _lowercase_dict, _uppercase_dict
-
-from aiida.orm import UpfData
-from ..data.otfg import OTFGData
-from ..data.usp import UspData
 from six.moves import zip
 
+import numpy as np
+from aiida.orm import UpfData
+from aiida.common import InputValidationError, MultipleObjectsError
 from aiida_castep.common import INPUT_LINKNAMES as in_ln
+
+from .datastructure import ParamFile, CellFile
+from .utils import get_castep_ion_line, _lowercase_dict, _uppercase_dict
+from ..data.otfg import OTFGData
+from ..data.usp import UspData
 
 
 class CastepInputGenerator(object):
@@ -155,7 +155,13 @@ class CastepInputGenerator(object):
 
         # Check the consistency of spin in parameters
         if spin_list:
-            total_spin = sum(s for s in spin_list if s)
+            # In case of non-collinear spin
+            if isinstance(spin_list[0], (list, tuple)):
+                non_collinear = True
+                total_spin = np.linalg.norm(spin_list, axis=1).sum()
+            else:
+                non_collinear = False
+                total_spin = sum(s for s in spin_list if s)
             param_spin = self.param_dict["PARAM"].get("spin", None)
             if param_spin is not None:
                 # If spin is specified - check consistency
@@ -168,7 +174,11 @@ class CastepInputGenerator(object):
                 # If no spin specified, do it automatically
                 # Note that we don't check if spin polarized calculation is
                 # requested in the first place
-                self.param_dict["PARAM"]["spin"] = total_spin
+                # self.param_dict["PARAM"]["spin"] = total_spin
+                # Explicitly setting `spin` is not need since 18.1 - having those in CELL
+                # is enough
+                pass
+            # Validate if spin_treatment: vector is activated.
 
         # --------- KPOINTS ---------
         kpoints = self.inputs.get('kpoints')
@@ -259,7 +269,6 @@ class CastepInputGenerator(object):
             except AttributeError:
                 # If not, fill with fractions
                 if kpn_settings['need_weights'] is True:
-                    import numpy as np
                     weights = np.ones(num_kpoints, dtype=float) / num_kpoints
                     if report_fn is not None:
                         report_fn(

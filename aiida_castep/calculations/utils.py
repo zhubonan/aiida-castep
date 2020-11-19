@@ -60,12 +60,12 @@ def get_castep_ion_line(name,
 
         if isinstance(spin[0], (list, tuple)):
             lines = [
-                l + " SPIN=( {:.2f} {.2f} {.2f} )".format(*s)
+                l + " SPIN=( {:.6f} {:6.f} {:.6f} )".format(*s)
                 for l, s in zip(lines, spin)
             ]
         else:
             if None not in spin:
-                lines = [l + " SPIN={}".format(s) for l, s in zip(lines, spin)]
+                lines = [l + " SPIN={:.3f} ".format(s) for l, s in zip(lines, spin)]
 
         return "\n".join(lines)
 
@@ -77,7 +77,7 @@ def get_castep_ion_line(name,
     if spin is not None:
 
         if isinstance(spin, (list, tuple)):
-            line += " SPIN=({}, {}, {}) ".format(*spin)
+            line += " SPIN=( {:.6f} {:.6f} {:.6f} ) ".format(*spin)
         else:
             line += " SPIN={:.3f} ".format(spin)
 
