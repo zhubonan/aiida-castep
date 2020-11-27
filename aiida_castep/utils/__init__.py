@@ -319,12 +319,16 @@ def export_calculation(node, output_dir, prefix=None):
 
     def bwrite(node, outpath):
         """Write the objects stored under a node to a certain path"""
+        try:
+            seedname = node.get_option('seedname')
+        except AttributeError:
+            seedname = None
         for objname in node.list_object_names():
             if node.get_object(objname).type != FileType.FILE:
                 continue
             with node.open(objname, mode='rb') as fsource:
                 name, suffix = objname.split('.')
-                if prefix and name == node.get_option('seedname'):
+                if prefix and name == seedname:
                     outname = prefix + '.' + suffix
                 else:
                     outname = objname
