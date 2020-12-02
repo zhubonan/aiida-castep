@@ -68,14 +68,14 @@ class CastepBandsWorkChain(WorkChain):
         spec.expose_inputs(
             base_work,
             namespace='scf',
-            exclude=('calc.structure', 'calc.kpoints'),
+            exclude=('calc.structure'),
             namespace_options={
                 'required':
                 True,
                 'populate_defaults':
                 True,
                 'help':
-                'Inputs for SCF workchain, mandatory. Explicit kpoints is not allowed.'
+                'Inputs for SCF workchain, mandatory. Used as template for bands/dos if not supplied separately'
             })
         spec.expose_inputs(base_work,
                            namespace='bands',
@@ -88,7 +88,7 @@ class CastepBandsWorkChain(WorkChain):
                            })
         spec.expose_inputs(base_work,
                            namespace='dos',
-                           exclude=('calc.structure', 'calc.kpoints'),
+                           exclude=('calc.structure', ),
                            namespace_options={
                                'required': False,
                                'populate_defaults': False,
@@ -151,10 +151,6 @@ class CastepBandsWorkChain(WorkChain):
         """Setup the calculation"""
         self.ctx.current_structure = self.inputs.structure
         self.ctx.bands_kpoints = self.inputs.get('bands_kpoints')
-        if 'kpoints' in self.inputs.scf:
-            self.report(
-                "WARNING: explicit kpoints for SCF - this is likely to cause problems"
-            )
 
     def should_do_relax(self):
         """Wether we should do relax or not"""
@@ -194,6 +190,7 @@ class CastepBandsWorkChain(WorkChain):
     def run_seekpath(self):
         """
         Run seekpath to obtain the primitive structure and bands
+        NOTE: Need to handle the magnetic symmetry properly
         """
 
         inputs = {
@@ -299,7 +296,12 @@ class CastepBandsWorkChain(WorkChain):
             return inputs
 
         if (only_dos is None) or (only_dos.value is False):
-            inputs = generate_sub_input(inputs, 'bands', 'spectral')
+
+            # Fall back to use SCF inputs if not supplied
+            if 'bands' in self.inputs:
+                inputs = generate_sub_input(inputs, 'bands', 'spectral')
+            else:
+                inputs = generate_sub_input(inputs, 'scf', 'spectral')
             # Set the kpoints
             inputs.calc[self._task_name + '_kpoints'] = self.ctx.bands_kpoints
             bands_calc = self.submit(base_work, **inputs)
@@ -308,6 +310,12 @@ class CastepBandsWorkChain(WorkChain):
                 'Submitted workchain {} for band structure'.format(bands_calc))
 
         if ('dos_kpoints' in self.inputs) or ('dos' in self.inputs):
+
+            # Fall back to use SCF inputs if not supplied
+            if 'dos' in self.inputs:
+                inputs = generate_sub_input(inputs, 'dos', 'spectral')
+            else:
+                inputs = generate_sub_input(inputs, 'scf', 'spectral')
 
             inputs = generate_sub_input(inputs, 'dos', 'spectral')
             # Set the kpoints
