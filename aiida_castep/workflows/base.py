@@ -219,12 +219,19 @@ class CastepBaseWorkChain(WorkChain):
         elif self.inputs.get('kpoints_spacing'):
             spacing = self.inputs.kpoints_spacing.value
             kpoints = KpointsData()
-            # Here i set the cell directly
-            # The set_cell_from_structure will consider the PBC
-            # However for CASTEP a non-peroidic cell does not make any sense
-            # So the default should be that the structure is peroidic
-            kpoints.set_cell(self.inputs.calc.structure.cell)
+            # Here the pbc settings of the structure is respected.
+            # If a direction is not periodic it will have a single kpoint for the grid.
+            # Care should be taken if a periodic structure incorrectly set to be
+            # non-periodic! The kpoint along the non-periodic direction will be set to 1 by AiiDA's routine
+            kpoints.set_cell_from_structure(self.inputs.calc.structure)
             kpoints.set_kpoints_mesh_from_density(np.pi * 2 * spacing)
+            if not all(kpoints.pbc):
+                self.report((
+                    "WARNING: Non-periodic structure detected. Kpoint spacings are set to reflect the non-periodicity."
+                    "This only makes sense for molecules-in-a-box input structures."
+                    "Bear in mind that plane-wave DFT calculations are always periodic internally."
+                ))
+            self.report("Using kpoints: {}".format(kpoints.get_description()))
             self.ctx.inputs.kpoints = kpoints
         else:
             self.report('No valid kpoint input specified')

@@ -68,7 +68,7 @@ class CastepBandsWorkChain(WorkChain):
         spec.expose_inputs(
             base_work,
             namespace='scf',
-            exclude=('calc.structure'),
+            exclude=('calc.structure', ),
             namespace_options={
                 'required':
                 True,

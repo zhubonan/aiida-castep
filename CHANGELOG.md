@@ -16,6 +16,8 @@
 
 * added `bypass` option in `relax_mode` for `CastepRelaxWorkChain` for skipping any higher level control. This is primarily to make the project work with `aiida-common-workflows`.
 
+* Make `kpoints_spacing` input for `CastepBaseWorkChain` respect the `pbc` information of the input structure. Previously it was assumed that all input structures are periodic. Now this information will be used for setting the kpoint grid. Directions that are non-periodic will not have the span along it. This means that a Gamma-point only calculation will be performed, if all three directions are non-periodic and the spacing input is ignored.
+
 ### Bugfix
 
 * No longer using `Node` instant as default for workchains.
