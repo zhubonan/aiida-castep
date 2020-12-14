@@ -10,13 +10,13 @@ import shutil
 @pytest.fixture(scope='session')
 def Path():
     """Load the Path class"""
-    from aiida_castep.common import Path
+    from pathlib import Path
     return Path
 
 
 @pytest.fixture(scope='function')
 def new_workdir(Path):
-    """get a new temporary folder to use as the computer's wrkdir"""
+    """get a new temporary folder to use as the computer's workdir"""
     dirpath = tempfile.mkdtemp()
     yield Path(dirpath)
     shutil.rmtree(dirpath)
@@ -27,7 +27,6 @@ def data_path(Path):
     """
     Return the directory to the data folder
     """
-    import os
     this_file = Path(__file__)
     return (this_file.parent / 'data').resolve()
 

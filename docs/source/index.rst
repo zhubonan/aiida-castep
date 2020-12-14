@@ -21,7 +21,7 @@ Welcome to the documentation of ``aiida-castep``
 `CASTEP`_ is a plane-wave pseudopotential density functional theory code.
 This plugin allow CASTEP calculations to be run using `AiiDA`_.
 
-The project home is located at http://gitlab.com/bz1/aiida-castep.
+The project home is located at http://github.com/zhubonan/aiida-castep.
 
 If you use this plugin and/or AiiDA for your research, please cite the following work:
 

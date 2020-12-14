@@ -1,12 +1,17 @@
-from __future__ import absolute_import
+"""
+Module for additional Data classes
+"""
+
+from aiida.orm.nodes.data.upf import UpfData
+from aiida.common import NotExistent, MultipleObjectsError
+
 from .otfg import OTFGData
 from .usp import UspData
-from aiida.orm.nodes.data.upf import UpfData
 
 
 def get_pseudos_from_structure(structure, family_name):
     """
-    Given a family name (of UpfData, UspData or OTFGData) and a AiiDA
+    Given a family name (of UpfData or OTFGData) and a AiiDA
     structure, return a dictionary associating each kind name with its
     pseduopotential object.
 
@@ -17,7 +22,6 @@ def get_pseudos_from_structure(structure, family_name):
 
     :returns: A dictionary maps kind to the psueodpotential node
     """
-    from aiida.common import NotExistent, MultipleObjectsError
 
     family_pseudos = {}
 
@@ -26,19 +30,15 @@ def get_pseudos_from_structure(structure, family_name):
     except NotExistent:
         family_upf = []
     try:
-        family_usp = UspData.get_usp_group(family_name)
-    except NotExistent:
-        family_usp = []
-    try:
         family_otfg = OTFGData.get_otfg_group(family_name)
     except NotExistent:
         family_otfg = []
 
     valid_count = 0
-    for f in [family_usp, family_upf, family_otfg]:
-        if f:
+    for fam in [family_upf, family_otfg]:
+        if fam:
             valid_count += 1
-            family = f
+            family = fam
 
     if valid_count == 0:
         raise NotExistent(

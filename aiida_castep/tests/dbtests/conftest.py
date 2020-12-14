@@ -8,7 +8,7 @@ import pytest
 import os
 from aiida.common.exceptions import NotExistent
 from aiida.common import AttributeDict
-from aiida_castep.common import Path
+from pathlib import Path
 
 this_folder = Path(__file__).parent
 
@@ -246,6 +246,14 @@ def sto_calc_inputs(
     inputs.kpoints = db_test_app.get_kpoints_mesh((3, 3, 3))
     inputs.code = db_test_app.code_echo
     return inputs
+
+
+@pytest.fixture
+def sto_spectral_inputs(sto_calc_inputs, db_test_app):
+    kpoints = db_test_app.imps.KpointsData()
+    kpoints.set_kpoints([[0.0, 0.5, 0.5], [0.0, 0.0, 0.0]])
+    sto_calc_inputs.spectral_kpoints = kpoints
+    return sto_calc_inputs
 
 
 @pytest.fixture

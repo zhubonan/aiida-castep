@@ -2,33 +2,34 @@
 Parsers for CASTEP
 """
 from __future__ import absolute_import
-from aiida.plugins import DataFactory
-from aiida.parsers.parser import Parser  # , ParserParamManager
-from aiida_castep.parsers.raw_parser import parse_raw_ouput, units, RawParser
-from aiida_castep.parsers.raw_parser import __version__ as raw_parser_version
+from copy import deepcopy
+import six
+import numpy as np
+
+from aiida.orm import TrajectoryData, ArrayData, Dict, BandsData
+
+from aiida.parsers.parser import Parser
+from aiida.common import exceptions
+
+from aiida_castep.parsers.raw_parser import units, RawParser
 from aiida_castep.parsers.utils import (structure_from_input,
                                         add_last_if_exists, desort_structure,
                                         get_desort_args)
 from aiida_castep.common import OUTPUT_LINKNAMES as out_ln
 from aiida_castep.common import EXIT_CODES_SPEC as calc_exit_code
 from aiida_castep._version import CALC_PARSER_VERSION
-import six
+
+# pylint: disable=invalid-name,too-many-locals,too-many-statements,too-many-branches
 __version__ = CALC_PARSER_VERSION
 
-Dict = DataFactory("dict")
-BandsData = DataFactory("array.bands")
-
 ERR_FILE_WARNING_MSG = ".err files found in workdir"
-
-# No need to have consistent raw parser version
-#assert __version__ == raw_parser_version, "Inconsistent version numbers"
 
 
 class CastepParser(Parser):
     """
     This is the class for Parsing results from a CASTEP calculation
     Supported calculations types:
-    signlepoint
+    singlepoint
     geom
     """
 
@@ -39,8 +40,6 @@ class CastepParser(Parser):
         Receives a dictionary of retrieved nodes.retrieved.
         Top level logic of operation
         """
-        from aiida.common import exceptions
-        import os
 
         try:
             output_folder = self.retrieved
@@ -50,10 +49,10 @@ class CastepParser(Parser):
         warnings = []
         exit_code_1 = None
 
-        # TODO Enable parser options
+        # NOTE parser options not used for not
         parser_opts = {}
 
-        # NOT READLLY IN USE
+        # NOT READILY IN USE
         input_dict = {}
 
         # check what is inside the folder
@@ -103,12 +102,6 @@ class CastepParser(Parser):
             '\n')
 
         ###### CALL THE RAW PASSING FUNCTION TO PARSE DATA #######
-        # out_dict, trajectory_data, structure_data, bands_data, exit_code\
-        #     = parse_raw_ouput(out_lines=out_file_content,
-        #                       input_dict=input_dict,
-        #                       parser_opts=parser_opts,
-        #                       md_geom_lines=out_md_geom_name_content,
-        #                       bands_lines=out_bands_content)
 
         raw_parser = RawParser(out_lines=out_file_content,
                                input_dict=input_dict,
@@ -145,21 +138,27 @@ class CastepParser(Parser):
             self.out(out_ln['bands'], bands_node)
 
         ######## --- PROCESSING STRUCTURE DATA --- ########
+        no_optimise = False
         try:
             cell = structure_data["cell"]
             positions = structure_data["positions"]
             symbols = structure_data["symbols"]
 
         except KeyError:
-            # No final structure can be used - that is OK
-            pass
+            # Handle special case where CASTEP founds nothing to optimise,
+            # hence we attached the input geometry as the output
+            for warning in out_dict["warnings"]:
+                if "there is nothing to optimise" in warning:
+                    no_optimise = True
+            if no_optimise is True:
+                self.out(out_ln['structure'],
+                         deepcopy(self.node.inputs.structure))
         else:
             structure_node = structure_from_input(cell=cell,
                                                   positions=positions,
                                                   symbols=symbols)
-            calc_in = self.node
             # Use the output label as the input label
-            input_structure = calc_in.inputs.structure
+            input_structure = self.node.inputs.structure
             structure_node = desort_structure(structure_node, input_structure)
             structure_node.label = input_structure.label
             self.out(out_ln['structure'], structure_node)
@@ -169,17 +168,17 @@ class CastepParser(Parser):
         # It should...
         if trajectory_data:
 
-            import numpy as np
-            from aiida.orm.nodes.data.array.trajectory import TrajectoryData
-            from aiida.orm.nodes.data.array import ArrayData
-
+            # Resorting indices - for recovering the original ordering of the
+            # species in the input structure
+            input_structure = self.node.inputs.structure
+            idesort = get_desort_args(input_structure)
             # If we have .geom file, save as in a trajectory data
             if has_md_geom:
                 try:
-                    idesort = get_desort_args(input_structure)
                     positions = np.asarray(
                         trajectory_data["positions"])[:, idesort]
                     cells = trajectory_data["cells"]
+                    # Assume symbols do not change - symbols are the same for all frames
                     symbols = np.asarray(trajectory_data["symbols"])[idesort]
                     stepids = np.arange(len(positions))
 
@@ -187,7 +186,6 @@ class CastepParser(Parser):
                     out_dict["parser_warning"].append(
                         "Cannot "
                         "extract data from .geom file.")
-                    pass
 
                 else:
                     traj = TrajectoryData()
@@ -198,17 +196,53 @@ class CastepParser(Parser):
                     # Save the rest
                     for name, value in six.iteritems(trajectory_data):
                         # Skip saving empty arrays
-                        if len(value) > 0:
-                            traj.set_array(name, np.asarray(value))
+                        if len(value) == 0:
+                            continue
+
+                        array = np.asarray(value)
+                        # For forces/velocities we also need to resort the array
+                        if ("force" in name) or ("velocities" in name):
+                            array = array[:, idesort]
+                        traj.set_array(name, np.asarray(value))
                     self.out(out_ln['trajectory'], traj)
 
+            # Or may there is nothing to optimise? still save a Trajectory data
+            elif no_optimise is True:
+                traj = TrajectoryData()
+                input_structure = self.node.inputs.structure
+                traj.set_trajectory(stepids=np.asarray([1]),
+                                    cells=np.asarray([input_structure.cell]),
+                                    symbols=np.asarray([
+                                        site.kind_name
+                                        for site in input_structure.sites
+                                    ]),
+                                    positions=np.asarray([[
+                                        site.position
+                                        for site in input_structure.sites
+                                    ]]))
+                # Save the rest
+                for name, value in six.iteritems(trajectory_data):
+                    # Skip saving empty arrays
+                    if len(value) == 0:
+                        continue
+
+                    array = np.asarray(value)
+                    # For forces/velocities we also need to resort the array
+                    if ("force" in name) or ("velocities" in name):
+                        array = array[:, idesort]
+                    traj.set_array(name, np.asarray(value))
+                self.out(out_ln['trajectory'], traj)
             # Otherwise, save data into a ArrayData node
             else:
                 out_array = ArrayData()
                 for name, value in six.iteritems(trajectory_data):
                     # Skip saving empty arrays
-                    if len(value) > 0:
-                        out_array.set_array(name, np.asarray(value))
+                    if len(value) == 0:
+                        continue
+                    array = np.asarray(value)
+                    if ("force" in name) or ("velocities" in name):
+                        array = array[:, idesort]
+                    out_array.set_array(name, np.asarray(value))
                 self.out(out_ln['array'], out_array)
 
         ######## ---- PROCESSING OUTPUT DATA --- ########
@@ -217,49 +251,6 @@ class CastepParser(Parser):
 
         # Return the exit code
         return self.exit_codes.__getattr__(exit_code)
-
-
-#TODO: NEED TO MIGRATE THIS
-class Pot1dParser(Parser):
-    """
-    Parser for Pot1d
-    """
-    def parse_with_retrieved(self, retrieved):
-        # NOT READLLY IN USE
-
-        # Check that the retrieved folder is there
-        try:
-            output_folder = retrieved[self._calc._get_linkname_retrieved()]
-        except KeyError:
-            self.logger.error("No retrieved folder found")
-            return False, ()
-
-        # check what is inside the folder
-        filenames = output_folder.get__list()
-
-        # at least the stdout should exist
-        oname = self._calc._OUTPUT_FILE_NAME
-        if oname not in filenames:
-            self.logger.error("Standard output not found")
-            successful = False
-            return successful, ()
-
-        # The calculation is failed if there is any err file.
-        for f in filenames:
-            if ".err" in f:
-                successful = False
-                self.logger.warning("Error files found in workdir.")
-                break
-
-        # Check for keyword
-        castep_file = output_folder.get_file_content(
-            self._calc._OUTPUT_FILE_NAME)
-        if "Finished pot1d" in castep_file:
-            successful = True
-        else:
-            successful = False
-
-        return successful, []
 
 
 def bands_to_bandsdata(bands_info, kpoints, bands):
@@ -275,7 +266,6 @@ def bands_to_bandsdata(bands_info, kpoints, bands):
     :rtype: ``aiida.orm.bands.data.array.bands.BandsData``
     """
 
-    import numpy as np
     bands_node = BandsData()
 
     # Extract the index of the kpoints

@@ -66,7 +66,7 @@ The node is constructed based on a dictionary::
                        "write_formatted_density": True,
              },
              "CELL":  {
-                       "syemmetry_generate": True,
+                       "symmetry_generate": True,
              }}
 
 To construct the node, call::
@@ -118,7 +118,7 @@ Alternatively, one can pass a ``ase.Atoms`` object to the constructive as keywor
 
 To define the k points mesh, run::
 
- KpointsData = Datafactory("array.kpoints")
+ KpointsData = DataFactory("array.kpoints")
  kpoints = KpointsData()
  kpoints.set_kpoints_mesh((4, 4, 4))
 
@@ -128,7 +128,7 @@ See AiiDA's `documentation <https://aiida-core.readthedocs.io/en/v0.12.0/datatyp
 Finally, we save them in the builder as inputs::
 
  builder.kpoints = kpoints
- builder.structure = structure
+ builder.structure = silicon
 
 .. note::
    There are several useful routines in :py:mod:`aiida_castep.utils` to work with ``ase``,

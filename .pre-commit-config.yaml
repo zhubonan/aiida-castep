@@ -1,19 +1,26 @@
-# modernizer: make sure our code-base is Python 3 ready
-- repo: https://github.com/python-modernize/python-modernize.git
-  sha: a234ce4e185cf77a55632888f1811d83b4ad9ef2
+# Install pre-commit hooks via:
+# pre-commit install
+
+# yapf = yet another python formatter
+- repo: https://github.com/pre-commit/mirrors-yapf
+  rev: v0.28.0
   hooks:
-  - id: python-modernize
-    exclude: ^docs/
-    args:
-      - --write
-      - --nobackups
+  - id: yapf
+    name: yapf
+    args: ["-i"]
+
+- repo: https://github.com/PyCQA/prospector
+  rev: 1.1.7
+  hooks:
+  - id: prospector
+    language: system
+    types: [python]
+    exclude: "(^docs)|(^.github)"
 
 - repo: local
   hooks:
-  # yapf = yet another python formatter
-  - id: yapf
-    name: yapf
-    entry: yapf
+  - id: version-number
+    name: Check version numbers
+    entry: python ./.github/check_version.py
     language: system
-    types: [python]
-    args: ["-i"]
+    files: '^(setup.json)|(aiida_fireworks_scheduler/__init__.py)'

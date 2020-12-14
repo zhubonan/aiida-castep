@@ -1,5 +1,10 @@
 """
-Module for Relxation WorkChain
+Module for Relaxation WorkChain
+
+CHANGELOG:
+
+- 0.1.0: Added ``bypass`` option to skip convergence checking.
+  The user is still responsible to setting the correct inputs.
 """
 
 from __future__ import absolute_import
@@ -9,10 +14,16 @@ from aiida.common import AttributeDict
 import aiida.orm as orm
 from aiida.orm.nodes.data.base import to_aiida_type
 
+from aiida.common.exceptions import NotExistent, MultipleObjectsError
+from aiida_castep.common import INPUT_LINKNAMES as IN_LINKS
+from aiida_castep.common import OUTPUT_LINKNAMES as OUT_LINKS
+from aiida_castep.calculations.helper import CastepHelper
 from aiida_castep.calculations.tools import flat_input_param_validator
 from .base import CastepBaseWorkChain
 
-__version__ = '0.0.1'
+# pylint: disable=protected-access,no-member,import-outside-toplevel
+
+__version__ = '0.1.0'
 
 
 class CastepRelaxWorkChain(WorkChain):
@@ -23,6 +34,14 @@ class CastepRelaxWorkChain(WorkChain):
     if the number of iteration is exceeded (*geom_max_iter*).
     This workchain try to restart such calculations (wrapped in CastepBaseWorkChain)
     until the structure is fully relaxed
+
+    ``relax_options`` is a Dict of the options avaliable fields are:
+
+    - restart_mode: mode of restart, choose from ``reuse`` (default), ``structure``,
+      ``continuation``.
+    - bypass: Bypass relaxation control - e.g. no checking of the convergence.
+      Can be used for doing singlepoint calculation.
+
     """
 
     _max_meta_iterations = 10
@@ -48,18 +67,19 @@ class CastepRelaxWorkChain(WorkChain):
 
         spec.input('structure',
                    valid_type=orm.StructureData,
-                   help='Structure to be used for relxation',
+                   help='Structure to be used for relaxation.',
                    required=True)
         spec.input('relax_options',
                    valid_type=orm.Dict,
                    serializer=to_aiida_type,
                    required=False,
-                   help='Options for relaxation')
+                   help='Options for relaxation.')
 
         spec.expose_outputs(CastepBaseWorkChain, exclude=['output_structure'])
         spec.output('output_structure',
                     valid_type=orm.StructureData,
-                    required=True)
+                    required=False,
+                    help='The relaxed structure.')
 
         spec.outline(
             cls.setup,
@@ -96,6 +116,7 @@ class CastepRelaxWorkChain(WorkChain):
         assert restart_mode in [
             "reuse", "continuation", "structure"
         ], "Invalid restart mode: {}".format(restart_mode)
+        self.ctx.bypass_relax = relax_options.pop('bypass', False)
         self.ctx.restart_mode = restart_mode
         self.ctx.relax_options = relax_options
 
@@ -125,8 +146,14 @@ class CastepRelaxWorkChain(WorkChain):
         if 'metadata' in inputs:
             inputs.metadata = AttributeDict(inputs['metadata'])
             inputs.metadata['call_link_label'] = link_label
+            if 'label' not in inputs.metadata:
+                inputs.metadata['label'] = self.inputs.metadata.get(
+                    'label', '')
         else:
-            inputs['metadata'] = {'call_link_label': link_label}
+            inputs['metadata'] = {
+                'call_link_label': link_label,
+                'label': self.inputs.metadata.get('label', '')
+            }
 
         running = self.submit(CastepBaseWorkChain, **inputs)
 
@@ -139,6 +166,10 @@ class CastepRelaxWorkChain(WorkChain):
         """
         Inspet the relaxation results, check if convergence is reached.
         """
+        if self.ctx.get('bypass_relax', False):
+            self.report("Bypass mode, convergence checking skipped")
+            self.ctx.is_converged = True
+            return None
 
         workchain = self.ctx.workchains[-1]
 
@@ -176,7 +207,7 @@ class CastepRelaxWorkChain(WorkChain):
             self.ctx.is_converged = True
             self.report('Geometry optimisation is converged')
 
-        return
+        return None
 
     def result(self):
         """Attach the output parameters and structure of the last workchain to the outputs."""
@@ -191,10 +222,11 @@ class CastepRelaxWorkChain(WorkChain):
             exit_code = self.exit_codes.ERROR_CONVERGE_NOT_REACHED
 
         workchain = self.ctx.workchains[-1]
-        structure = workchain.outputs.output_structure
+        if 'output_structure' in workchain.outputs:
+            structure = workchain.outputs.output_structure
+            self.out('output_structure', structure)
 
         self.out_many(self.exposed_outputs(workchain, CastepBaseWorkChain))
-        self.out('output_structure', structure)
 
         return exit_code
 
@@ -202,22 +234,19 @@ class CastepRelaxWorkChain(WorkChain):
         """
         Push the parameters for completed calculation to the current inputs
         """
-        from aiida.orm import QueryBuilder, WorkChainNode, CalcJobNode, Dict
-        from aiida.common.exceptions import NotExistent, MultipleObjectsError
-        from aiida_castep.common import INPUT_LINKNAMES as IN_LINKS
-        from aiida_castep.common import OUTPUT_LINKNAMES as OUT_LINKS
-        from aiida_castep.calculations.helper import CastepHelper
-        query = QueryBuilder()
-        query.append(WorkChainNode, filters={'id': workchain.pk}, tag='work')
-        query.append(Dict,
+        query = orm.QueryBuilder()
+        query.append(orm.WorkChainNode,
+                     filters={'id': workchain.pk},
+                     tag='work')
+        query.append(orm.Dict,
                      with_incoming='work',
                      tag='output_dict',
                      edge_filters={'label': OUT_LINKS['results']})
-        query.append(CalcJobNode,
+        query.append(orm.CalcJobNode,
                      with_outgoing='output_dict',
                      filters={'attributes.exit_status': 0},
                      tag='final_calc')
-        query.append(Dict,
+        query.append(orm.Dict,
                      with_outgoing='final_calc',
                      edge_filters={'label': IN_LINKS['parameters']},
                      project=['attributes'])
@@ -244,8 +273,9 @@ class CastepRelaxWorkChain(WorkChain):
             self.report(
                 'Pushed the input parameters of the last completed calculation to the next iteration'
             )
-            self.ctx.calc_update[IN_LINKS['parameters']] = Dict(
+            self.ctx.calc_update[IN_LINKS['parameters']] = orm.Dict(
                 dict=last_param)
+        return None
 
 
 class CastepAlterRelaxWorkChain(CastepRelaxWorkChain):
@@ -299,10 +329,17 @@ class CastepAlterRelaxWorkChain(CastepRelaxWorkChain):
         self.ctx.restart_mode = 'reuse'
         self.ctx.is_fixed_cell = False
 
+        return None
+
     def inspect_relax(self):
         """
         Inspet the relaxation results, check if convergence is reached.
         """
+
+        if self.ctx.get('bypass_relax', False):
+            self.report("Bypass mode, convergence checking skipped")
+            self.ctx.is_converged = True
+            return None
 
         workchain = self.ctx.workchains[-1]
 
@@ -353,11 +390,12 @@ class CastepAlterRelaxWorkChain(CastepRelaxWorkChain):
                 self.report(
                     'Variable cell relax not converged. Turning cell constraints off'
                 )
+        # Variable cell + converged geometry
         else:
             self.ctx.is_converged = True
             self.report('Geometry optimisation is converged')
 
-        return
+        return None
 
     def set_cons_and_imax(self, cell_cons, iter_max):
         """Set the cell constraints"""

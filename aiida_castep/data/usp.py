@@ -12,7 +12,8 @@ from aiida.common.files import md5_file
 from .utils import get_usp_element
 import six
 
-USPGROUP_TYPE = "data.castep.usp.family"
+OLD_USPGROUP_TYPE = "data.castep.usp.family"
+USPGROUP_TYPE = "castep.otfg"
 
 SinglefileData = DataFactory("singlefile")
 
@@ -40,9 +41,9 @@ def upload_usp_family(folder,
 
     import aiida.common
     #from aiida.common import aiidalogger
-    from aiida.orm import Group
     from aiida.common import UniquenessError, NotExistent
     from aiida.orm.querybuilder import QueryBuilder
+    from .otfg import OTFGGroup
 
     files = [
         os.path.realpath(os.path.join(folder, i)) for i in os.listdir(folder)
@@ -54,13 +55,10 @@ def upload_usp_family(folder,
     nfiles = len(files)
 
     try:
-        group = Group.get(label=group_label, type_string=USPGROUP_TYPE)
+        group = OTFGGroup.get(label=group_label)
         group_created = False
     except NotExistent:
-        group = Group(
-            label=group_label,
-            type_string=USPGROUP_TYPE,
-        )
+        group = OTFGGroup(label=group_label, )
         group_created = True
 
     # Update the descript even if the group already existed
@@ -221,13 +219,19 @@ class UspData(SinglefileData):
 
     @classproperty
     def uspfamily_type_string(cls):
+        """
+        Type string of the underlying group deprecated as new 
+        Group should be access by sub-classing
+        """
         return USPGROUP_TYPE
 
     def store(self, *args, **kwargs):
         """
         Store the node. Automatically set md5 and element
         """
-        self._validate()
+        # Cannot revalidate the stored nodes
+        if not self.is_stored:
+            self._validate()
 
         return super(UspData, self).store(*args, **kwargs)
 
@@ -274,15 +278,19 @@ class UspData(SinglefileData):
         """MD5 sum of the usp/recpot file"""
         return self.get_attribute('md5', None)
 
+    @property
+    def string(self):
+        """Alias of the md5sum"""
+        return self.md5sum
+
     @classmethod
     def get_usp_group(cls, group_label):
         """
         Return the UspFamily group with the given name.
         """
-        from aiida.orm import Group
+        from .otfg import OTFGGroup
 
-        return Group.objects.get(label=group_label,
-                                 type_string=cls.uspfamily_type_string)
+        return OTFGGroup.objects.get(label=group_label)
 
     @classmethod
     def get_usp_groups(cls, filter_elements=None, user=None):
@@ -297,14 +305,13 @@ class UspData(SinglefileData):
                If defined, it should be either a DbUser instance, or a string
                for the username (that is, the user email).
         """
-        from aiida.orm import Group
+        from .otfg import OTFGGroup
         from aiida.orm import QueryBuilder
         from aiida.orm import User
 
         query = QueryBuilder()
-        filters = {'type_string': {'==': str(USPGROUP_TYPE)}}
 
-        query.append(Group, filters=filters, tag='group', project='*')
+        query.append(OTFGGroup, tag='group', project=['*'])
 
         if user:
             query.append(User,
@@ -313,7 +320,7 @@ class UspData(SinglefileData):
                          }},
                          with_group='group')
 
-        if isinstance(filter_elements, six.string_types):
+        if isinstance(filter_elements, str):
             filter_elements = [filter_elements]
 
         if filter_elements is not None:
@@ -325,7 +332,7 @@ class UspData(SinglefileData):
                 }},
                 with_group='group')
 
-        query.order_by({Group: {'id': 'asc'}})
+        query.order_by({OTFGGroup: {'id': 'asc'}})
         return [_[0] for _ in query.all()]
 
     def _validate(self):

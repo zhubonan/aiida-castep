@@ -5,7 +5,7 @@ from aiida_castep.parsers.raw_parser import (parse_castep_text_output,
                                              parse_geom_text_output,
                                              parse_dot_bands, RawParser)
 
-from ..common import Path
+from pathlib import Path
 import os
 
 

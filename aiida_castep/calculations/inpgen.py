@@ -4,17 +4,17 @@ Module for generating text based CASTEP inputs
 from __future__ import absolute_import, print_function
 
 import six
-import numpy as np
-from .datastructure import ParamFile, CellFile
-from aiida.common import InputValidationError, MultipleObjectsError
-from .utils import get_castep_ion_line, _lowercase_dict, _uppercase_dict
-
-from aiida.orm import UpfData
-from ..data.otfg import OTFGData
-from ..data.usp import UspData
 from six.moves import zip
 
+import numpy as np
+from aiida.orm import UpfData
+from aiida.common import InputValidationError, MultipleObjectsError
 from aiida_castep.common import INPUT_LINKNAMES as in_ln
+
+from .datastructure import ParamFile, CellFile
+from .utils import get_castep_ion_line, _lowercase_dict, _uppercase_dict
+from ..data.otfg import OTFGData
+from ..data.usp import UspData
 
 
 class CastepInputGenerator(object):
@@ -155,7 +155,13 @@ class CastepInputGenerator(object):
 
         # Check the consistency of spin in parameters
         if spin_list:
-            total_spin = sum(s for s in spin_list if s)
+            # In case of non-collinear spin
+            if isinstance(spin_list[0], (list, tuple)):
+                non_collinear = True
+                total_spin = np.linalg.norm(spin_list, axis=1).sum()
+            else:
+                non_collinear = False
+                total_spin = sum(s for s in spin_list if s)
             param_spin = self.param_dict["PARAM"].get("spin", None)
             if param_spin is not None:
                 # If spin is specified - check consistency
@@ -168,7 +174,11 @@ class CastepInputGenerator(object):
                 # If no spin specified, do it automatically
                 # Note that we don't check if spin polarized calculation is
                 # requested in the first place
-                self.param_dict["PARAM"]["spin"] = total_spin
+                # self.param_dict["PARAM"]["spin"] = total_spin
+                # Explicitly setting `spin` is not need since 18.1 - having those in CELL
+                # is enough
+                pass
+            # Validate if spin_treatment: vector is activated.
 
         # --------- KPOINTS ---------
         kpoints = self.inputs.get('kpoints')
@@ -228,6 +238,65 @@ class CastepInputGenerator(object):
             self.cell_file[key] = value
 
         self._prepare_pseudo_potentials()
+
+    def _include_extra_kpoints(self,
+                               kpn_node,
+                               kpn_name,
+                               kpn_settings,
+                               report_fn=None):
+        """Write extra kpoints to the cell"""
+
+        try:
+            mesh, offset = kpn_node.get_kpoints_mesh()
+            has_mesh = True
+        except AttributeError:
+            # Not defined as mesh
+            try:
+                bs_kpts_list = kpn_node.get_kpoints()
+                num_kpoints = len(bs_kpts_list)
+                has_mesh = False
+                if num_kpoints == 0:
+                    raise InputValidationError(
+                        "At least one k points must be provided")
+            except AttributeError:
+                raise InputValidationError(
+                    "No valid {}_kpoints have been found from node {}".format(
+                        kpn_name.lower(), kpn_node.pk))
+
+            # Do we have weights defined?
+            try:
+                _, weights = kpn_node.get_kpoints(also_weights=True)
+            except AttributeError:
+                # If not, fill with fractions
+                if kpn_settings['need_weights'] is True:
+                    weights = np.ones(num_kpoints, dtype=float) / num_kpoints
+                    if report_fn is not None:
+                        report_fn(
+                            'Warning:filling evenly distributed weights for {}_kpoints'
+                            .format(kpn_name))
+
+        # now add to the cell file
+        if has_mesh is True:
+            mesh_name = "{}_kpoint_mp_grid".format(kpn_name)
+            self.cell_file[mesh_name] = "{} {} {}".format(*mesh)
+            if offset != [0., 0., 0.]:
+                self.cell_file[mesh_name.replace(
+                    "grid", "offset")] = "{} {} {}".format(*offset)
+        else:
+            extra_kpts_lines = []
+            for kpoint, weight in zip(bs_kpts_list, weights):
+                if kpn_settings['need_weights'] is True:
+                    extra_kpts_lines.append("{:18.10f} {:18.10f} "
+                                            "{:18.10f} {:18.14f}".format(
+                                                kpoint[0], kpoint[1],
+                                                kpoint[2], weight))
+                else:
+                    extra_kpts_lines.append("{:18.10f} {:18.10f} "
+                                            "{:18.10f}".format(
+                                                kpoint[0], kpoint[1],
+                                                kpoint[2]))
+            bname = "{}_kpoint_list".format(kpn_name).upper()
+            self.cell_file[bname] = extra_kpts_lines
 
     def _prepare_pseudo_potentials(self):
 

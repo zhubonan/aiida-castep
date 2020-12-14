@@ -2,10 +2,8 @@
 Utility module
 """
 from __future__ import absolute_import
+from collections import Counter
 from aiida.common import InputValidationError
-import six
-from six.moves import range
-from six.moves import zip
 
 
 def get_castep_ion_line(name,
@@ -15,7 +13,7 @@ def get_castep_ion_line(name,
                         occupation=None,
                         mix_num=None):
     """
-    Generate a line in POSITIONS_ABS or POSISTIONS_FRAC block
+    Generate a line in POSITIONS_ABS or POSITIONS_FRAC block
 
     :param name: A sting or tuple of the names
     :param pos: Position, a sequence of 3
@@ -62,76 +60,72 @@ def get_castep_ion_line(name,
 
         if isinstance(spin[0], (list, tuple)):
             lines = [
-                l + " SPIN=( {:.2f} {.2f} {.2f} )".format(*s)
+                l + " SPIN=( {:.6f} {:6.f} {:.6f} )".format(*s)
                 for l, s in zip(lines, spin)
             ]
         else:
             if None not in spin:
-                lines = [l + " SPIN={}".format(s) for l, s in zip(lines, spin)]
+                lines = [l + " SPIN={:.3f} ".format(s) for l, s in zip(lines, spin)]
 
         return "\n".join(lines)
 
-    else:
-        line = "{name:18} {x:18.10f} {y:18.10f} {z:18.10f}".format(name=name,
-                                                                   x=pos[0],
-                                                                   y=pos[1],
-                                                                   z=pos[2])
+    line = "{name:18} {x:18.10f} {y:18.10f} {z:18.10f}".format(name=name,
+                                                               x=pos[0],
+                                                               y=pos[1],
+                                                               z=pos[2])
 
-        if spin is not None:
+    if spin is not None:
 
-            if isinstance(spin, (list, tuple)):
-                line += " SPIN=({}, {}, {}) ".format(*spin)
-            else:
-                line += " SPIN={:.3f} ".format(spin)
+        if isinstance(spin, (list, tuple)):
+            line += " SPIN=( {:.6f} {:.6f} {:.6f} ) ".format(*spin)
+        else:
+            line += " SPIN={:.3f} ".format(spin)
 
-        if label is not None:
+    if label is not None:
 
-            line += " LABEL={} ".format(label)
+        line += " LABEL={} ".format(label)
 
-        return line
+    return line
 
 
-def _lowercase_dict(d, dict_name):
+def _lowercase_dict(in_dict, dict_name):
     """
     Make sure the dictionary's keys are in lower case
     :param dict_name: A string of the name for the dictionary. Only used in
     warning message.
     """
-    from collections import Counter
 
-    if isinstance(d, dict):
-        new_dict = dict((str(k).lower(), v) for k, v in six.iteritems(d))
-        if len(new_dict) != len(d):
-            num_items = Counter(str(k).lower() for k in d.keys())
-            double_keys = ",".join([k for k, v in num_items if v > 1])
+    if isinstance(in_dict, dict):
+        new_dict = dict(
+            (str(key).lower(), value) for key, value in in_dict.items())
+        if len(new_dict) != len(in_dict):
+            num_items = Counter(str(key).lower() for key in in_dict.keys())
+            double_keys = ",".join(
+                [key for key, value in num_items if value > 1])
             raise InputValidationError(
                 "Inside the dictionary '{}' there are the following keys that "
                 "are repeated more than once when compared case-insensitively: {}."
                 "This is not allowed.".format(dict_name, double_keys))
         return new_dict
-    else:
-        raise TypeError(
-            "_lowercase_dict accepts only dictionaries as argument")
+    raise TypeError("_lowercase_dict accepts only dictionaries as argument")
 
 
-def _uppercase_dict(d, dict_name):
+def _uppercase_dict(in_dict, dict_name):
     """
     Make sure the dictionary's keys are in upper case
     :param dict_name: A string of the name for the dictionary. Only used in
     warning message.
     """
-    from collections import Counter
-
-    if isinstance(d, dict):
-        new_dict = dict((str(k).upper(), v) for k, v in six.iteritems(d))
-        if len(new_dict) != len(d):
-            num_items = Counter(str(k).upper() for k in d.keys())
-            double_keys = ",".join([k for k, v in num_items if v > 1])
+    if isinstance(in_dict, dict):
+        new_dict = dict(
+            (str(key).upper(), value) for key, value in in_dict.items())
+        if len(new_dict) != len(in_dict):
+            num_items = Counter(str(key).upper() for key in in_dict.keys())
+            double_keys = ",".join(
+                [key for key, value in num_items if value > 1])
             raise InputValidationError(
                 "Inside the dictionary '{}' there are the following keys that "
                 "are repeated more than once when compared case-insensitively: {}."
                 "This is not allowed.".format(dict_name, double_keys))
         return new_dict
-    else:
-        raise TypeError(
-            "_uppercase_dict accepts only dictionaries as argument")
+    raise TypeError("_uppercase_dict accepts only dictionaries as argument")

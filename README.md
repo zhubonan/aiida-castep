@@ -1,11 +1,8 @@
 AiiDA plugin for working with CASTEP
 ====================================
-[![Documentation Status](https://readthedocs.org/projects/aiida-castep/badge/?version=master)](https://aiida-castep.readthedocs.io/en/master/?badge=master)
-[![pipeline status](https://gitlab.com/bz1/aiida-castep/badges/master/pipeline.svg)](https://gitlab.com/bz1/aiida-castep/commits/master)
-(master)  
-[![Documentation Status](https://readthedocs.org/projects/aiida-castep/badge/?version=dev)](https://aiida-castep.readthedocs.io/en/dev/?badge=dev)
-[![pipeline status](https://gitlab.com/bz1/aiida-castep/badges/dev/pipeline.svg)](https://gitlab.com/bz1/aiida-castep/commits/dev)
-(dev)  
+[![Docs status](https://readthedocs.org/projects/aiida-castep/badge)](http://aiida-castep.readthedocs.io/)
+
+[![pipeline status](https://github.com/zhubonan/aiida-castep/workflows/aiida-castep/badge.svg)](https://github.com/zhubonan/aiida-castep/actions)
 
 A plugin for [AiiDA](www.aiida.net) to work with plane-wave pseudopotential DFT code [CASTEP](www.castep.org).
 CASTEP has a single binary executable and calculation is primarily controlled by the *task* keyword.
@@ -15,11 +12,11 @@ Most output files are retrieved if present, and it is possible to explicitly req
 The goal of this plugin is not to provide a comprehensive parser of the CASTEP results, but to build a graph of calculations performed for provenance preservation and workflow automation.
 Input and output of a simple calculation:
 
-![Asingle calculation](https://gitlab.com/bz1/aiida-castep/raw/dev/docs/source/images/Si_bs_example.png)
+![Asingle calculation](https://github.com/zhubonan/aiida-castep/raw/dev/docs/source/images/Si_bs_example.png)
 
 or a series of operations and automated calculations:
 
-![A series of calculations](https://gitlab.com/bz1/aiida-castep/raw/dev/docs/source/images/calc_series_example.png)
+![A series of calculations](https://github.com/zhubonan/aiida-castep/raw/dev/docs/source/images/calc_series_example.png)
 
 The raw files can always be extracted from the database and analysed by the post-processing tools of choice. 
 Even better, such tools may be integrated with the AiiDA framework and have the analysis appended to the provenance graph.

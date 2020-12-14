@@ -3,6 +3,7 @@ Test input generation
 """
 from __future__ import absolute_import
 import pytest
+import numpy as np
 from aiida_castep.calculations.inpgen import CastepInputGenerator
 from aiida.engine.processes.ports import PortNamespace
 
@@ -36,9 +37,7 @@ def param_dict():
     return out
 
 
-@pytest.mark.parametrize('entry_point',
-                         ('castep.bs', 'castep.castep', 'castep.ts',
-                          'castep.pot1d', 'castep.spec', 'castep.phonon'))
+@pytest.mark.parametrize('entry_point', ('castep.castep', 'castep.ts'))
 def test_get_builder(db_test_app, entry_point):
     from aiida.plugins import CalculationFactory
     cls = CalculationFactory(entry_point)
@@ -65,6 +64,37 @@ def test_inp_gen_cell(gen_instance, sto_calc_inputs):
     assert "LATTICE_CART" in gen_instance.cell_file
     assert isinstance(gen_instance.cell_file["cell_constraints"], list)
     assert 'C9' in gen_instance.cell_file['SPECIES_POT'][0]
+
+    # Test extra-kpoints
+    from aiida.orm import KpointsData
+    kpn1 = KpointsData()
+    kpn1.set_kpoints_mesh((4, 4, 4))
+    gen_instance._include_extra_kpoints(kpn1, 'phonon', {
+        'task': ('phonon', ),
+        'need_weights': False
+    })
+    assert 'phonon_kpoint_mp_grid' in gen_instance.cell_file
+
+    kpn1.set_kpoints_mesh((
+        4,
+        4,
+        4,
+    ), (0.25, 0.25, 0.25))
+    gen_instance._include_extra_kpoints(kpn1, 'phonon', {
+        'task': ('phonon', ),
+        'need_weights': False
+    })
+    assert 'phonon_kpoint_mp_offset' in gen_instance.cell_file
+
+    kpn2 = KpointsData()
+    kpn_points = [[0, 0, 0], [0.5, 0.5, 0.5]]
+    kpn_weights = [0.3, 0.6]
+    kpn2.set_kpoints(kpn_points, weights=kpn_weights)
+    gen_instance._include_extra_kpoints(kpn2, 'bs', {
+        'task': ('bandstructure', ),
+        'need_weights': True
+    })
+    assert 'BS_KPOINT_LIST' in gen_instance.cell_file
 
 
 def test_cell_with_tags(gen_instance, sto_calc_inputs):
@@ -97,14 +127,51 @@ def test_cell_with_tags(gen_instance, sto_calc_inputs):
     assert ('O:O2', 'C9') in species_pots
 
 
+def test_cell_with_spin(gen_instance, sto_calc_inputs):
+    """Test input geneation with spins"""
+    import aiida.orm as orm
+    from aiida.common.exceptions import InputValidationError
+
+    sto_calc_inputs.settings = orm.Dict(dict={'SPINS': [1, 1, 1, 1, 1]})
+    gen_instance.inputs = sto_calc_inputs
+    gen_instance.prepare_inputs()
+
+    positions = gen_instance.cell_file['POSITIONS_ABS']
+    for i in range(5):
+        assert positions[i].endswith(" SPIN=1.000 ")
+
+    # Test non-collinear spins
+    sto_calc_inputs.settings = orm.Dict(dict={'SPINS': [[1., 1., 1.]] * 5})
+    gen_instance.prepare_inputs()
+    positions = gen_instance.cell_file['POSITIONS_ABS']
+    for i in range(5):
+        assert positions[i].endswith(" SPIN=( 1.000000 1.000000 1.000000 ) ")
+
+    # Test spin consistency checks
+    d = sto_calc_inputs.parameters.get_dict()
+    d['PARAM']['spin'] = 1.0  # This is wrong
+    sto_calc_inputs.parameters = orm.Dict(dict=d)
+    with pytest.raises(InputValidationError):
+        gen_instance.prepare_inputs()
+
+    # Summation of spins for non-collinear spins
+    d['PARAM']['spin'] = 3**(1 / 2) * 5
+    sto_calc_inputs.parameters = orm.Dict(dict=d)
+    gen_instance.prepare_inputs()
+
+
 @pytest.mark.process_execution
-def test_submission(new_database, sto_calc_inputs):
+def test_submission(new_database, sto_calc_inputs, sto_spectral_inputs):
     """
     Test submitting a CastepCalculation
     """
     from aiida_castep.calculations.castep import CastepCalculation
     from aiida.engine import run_get_node
     _, return_node = run_get_node(CastepCalculation, **sto_calc_inputs)
+    assert return_node.exit_status == 106  # No castep output found
+
+    # test with extra kpoints
+    _, return_node = run_get_node(CastepCalculation, **sto_spectral_inputs)
     assert return_node.exit_status == 106
 
 
