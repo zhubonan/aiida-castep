@@ -123,7 +123,7 @@ class CastepBaseWorkChain(WorkChain):
             400, 'USER_REQUESTED_STOP',
             'The stop flag has been put in the .param file to request termination of the calculation.'
         )
-        spec.exit_code(1000, 'UNKOWN_ERROR', 'Error is not kown')
+        spec.exit_code(1000, 'UNKOWN_ERROR', 'Error is not known')
         spec.exit_code(
             901, 'ERROR_ITERATION_RETURNED_NO_CALCULATION',
             'Completed one iteration but found not calculation returned')
