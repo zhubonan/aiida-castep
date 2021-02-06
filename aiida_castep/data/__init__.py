@@ -32,11 +32,11 @@ def get_pseudos_from_structure(structure, family_name):
     family_pseudos = {}
 
     try:
-        family_upf = UpfData.get_upf_group(family_name)
+        family_upf = [UpfData.get_upf_group(family_name)]
     except NotExistent:
         family_upf = []
     try:
-        family_otfg = OTFGData.get_otfg_group(family_name)
+        family_otfg = [OTFGData.get_otfg_group(family_name)]
     except NotExistent:
         family_otfg = []
 
