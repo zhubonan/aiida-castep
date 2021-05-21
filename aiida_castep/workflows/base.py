@@ -168,7 +168,7 @@ class CastepBaseWorkChain(WorkChain):
         self.ctx.inputs['metadata'] = AttributeDict(self.inputs.calc.metadata)
 
         # Ensure that the label is carried over to the calculation
-        if not self.ctx.inputs['metadata'].get_label('label'):
+        if not self.ctx.inputs['metadata'].get('label'):
             self.ctx.inputs['metadata']['label'] = self.inputs.metadata.label
 
         self.ctx.inputs['metadata']['options'] = AttributeDict(
