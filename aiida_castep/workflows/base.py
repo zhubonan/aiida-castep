@@ -87,9 +87,8 @@ class CastepBaseWorkChain(WorkChain):
             valid_type=orm.Dict,
             serializer=to_aiida_type,
             required=False,
-            help=
-            ('Options specifying resources, labels etc. Passed to the CalcJob.'
-             'Avaliable options: queue_wallclock_limit, use_castep_bin'))
+            help=('Options specific to the workchain.'
+                  'Avaliable options: queue_wallclock_limit, use_castep_bin'))
         spec.expose_inputs(cls._calculation_class, namespace='calc')
         spec.input('calc.parameters',
                    valid_type=orm.Dict,
@@ -167,6 +166,11 @@ class CastepBaseWorkChain(WorkChain):
 
         # Copy over the metadata
         self.ctx.inputs['metadata'] = AttributeDict(self.inputs.calc.metadata)
+
+        # Ensure that the label is carried over to the calculation
+        if not self.ctx.inputs['metadata'].get_label('label'):
+            self.ctx.inputs['metadata']['label'] = self.inputs.metadata.label
+
         self.ctx.inputs['metadata']['options'] = AttributeDict(
             self.inputs.calc.metadata.options)
 

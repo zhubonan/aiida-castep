@@ -169,7 +169,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
             required=False)
         spec.input_namespace(
             'pseudos',
-            valid_type=(UspData, OTFGData, UpfData),
+            #valid_type=(UspData, OTFGData, UpfData),
             help=("Use nodes for the pseudopotentails of one of"
                   "the element in the structure. You should pass a"
                   "a dictionary specifying the pseudpotential node for"
