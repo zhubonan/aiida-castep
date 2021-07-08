@@ -34,6 +34,8 @@ The plugin system allows plugin classes to be loaded using *factory* functions::
 The first step
 --------------
 
+.. highlight:: python
+
 The inputs of the calculation needs to be stored in a nested dictionary.
 It is often more convenient to work with a ``ProcessBuilder`` which enables tab completions
 for link names and can also display doc strings::
@@ -43,17 +45,50 @@ for link names and can also display doc strings::
 First, we need to define the *code* of the calculation which represents the actual executable
 to be used to do the work::
 
- code = Code.get_from_string("castep-xx.xx@your_computer")
- builder.code = code
- # If in any doubt, this give help string in IPython
- builder.code?
+  code = Code.get_from_string("castep-xx.xx@your_computer")
+  builder.code = code
+
+.. note::
+  While defining calculations may seem to be complicated here, in practice most calculations will be performed by ``CastepBaseWorkChain`` which supports more concise and flexible inputs.
 
 
 Setup CASTEP parameters
 -----------------------
 
 For most CASTEP calculations we need a ``<seed>.param`` file and a ``<seed>.cell`` file.
-To work with, ``aiida_castep`` we need a single ``Dict`` node that includes the keyword-value pairs that should have been put into the two files.
+
+.. highlight:: none
+
+The the ``<seed>.cell`` file contains the input geometry related parameters and should look like this::
+
+  %BLOCK LATTICE_CART
+        2.6954645000       2.6954645000       0.0000000000
+        2.6954645000       0.0000000000       2.6954645000
+        0.0000000000       2.6954645000       2.6954645000
+  %ENDBLOCK LATTICE_CART
+  %BLOCK POSITIONS_ABS
+  Si                       0.0000000000       0.0000000000       0.0000000000
+  Si                       1.3477325500       1.3477325500       1.3477325500
+  %ENDBLOCK POSITIONS_ABS
+  kpoints_mp_grid     : 4 4 4
+  symmetry_generate   : True
+  %BLOCK SPECIES_POT
+  Si    C19
+  %ENDBLOCK SPECIES_POT
+
+The ``<seed>.param`` file contains the other controlling parameters::
+
+  task                : singlepoint
+  basis_precision     : medium
+  fix_occupancy       : True
+  opt_strategy        : speed
+  num_dump_cycles     : 0
+  xc_functional       : lda
+  write_formatted_density: True
+
+.. highlight:: python
+
+With ``aiida_castep`` we need a single ``Dict`` node that includes the keyword-value pairs that should have been put into the two files.
 The node is constructed based on a dictionary::
 
  param_in = {"PARAM": {
@@ -177,15 +212,35 @@ To let the builder use the pseudo potential::
 
 Alternatively, and in fact used more commonly, is to create a family of the potentials::
 
- from aiida_castep.data.usp import upload_usp_family
- upload_usp_family("./", "LDA_test", "A family of LDA potentials for testing")
+  from aiida_castep.data.usp import upload_usp_family
+  upload_usp_family("./", "LDA_test", "A family of LDA potentials for testing")
 
-A family is just a collection of pseudopoentials. It can be applied to a calculation using::
+This will upload all valid pseudopotentials inside the current working directory into a family named "LDA_test".
+More commonly, CASTEP calculations are done with on-the-fly generated pseudopoentials (OTFG), for which built-in libraries are available to use.
+However, these built-in libraries still have to be registered with AiiDA. To do so, one can upload a single family with the library string::
 
- CastepCalculation.use_pseudos_from_family(builder, "LDA_test")
+  from aiida_castep.data.otfg import upload_otfg_family
+  upload_otfg_family(["C19"], "C19", "The C19 library shipped with CASTEP")
 
-For this to work, the ``structure`` file of the builder must be define beforehand.
-of the calculation.
+This family contains a single OTFG string that is the library named "C19".
+The library name is treated specially in a way such that it will match to any elements, unless an explicity entry exists within the same family.
+For example, the following ::
+
+  upload_otfg_family(["C19", "O 2|1.5|12|13|15|20:21(qc=5)"], "MyFamily", "The family that uses a specific OTFG for oxygen and C19 for everything else.")
+
+uploads a family "MyFamily", which uses "C19" for any elements except for "O", for which generation setting "2|1.5|12|13|15|20:21(qc=5)" will be used instead.
+
+A family is just a collection of pseudopoentials and/or a library name. 
+To apply it to a calculation, one can use an utility function::
+
+  CastepCalculation.use_pseudos_from_family(builder, "C19")
+
+This sets the `pseudos` port of the builder to::
+
+  {'Si': <OTFGData: uuid: ca9d4083-e96e-4b12-a02a-81a6a4c34929 (pk: 32)>}
+
+For this shortcut to work, the ``structure`` file of the builder must be define beforehand.
+Otherwise, one can also pass a dictionary manually to the `pseudos` port with keys and values being the specie names and the pseudopotential node to be used for each.
 
 Setting the resources
 ---------------------
@@ -223,7 +278,7 @@ A dictionary is returned as a summary of the inputs of the calculation::
     'xc_functional': 'lda'},
    'kpoints': 'Kpoints mesh: 4x4x4 (+0.0,0.0,0.0)',
    'label': None,
-   'pseudos': {'Si': u'Si_00.usp'},
+   'pseudos': {'Si': <OTFGData: uuid: ca9d4083-e96e-4b12-a02a-81a6a4c34929 (pk: 32)>},
    'structure': {'cell': [[2.6954645, 2.6954645, 0.0],
      [2.6954645, 0.0, 2.6954645],
      [0.0, 2.6954645, 2.6954645]],
@@ -276,3 +331,10 @@ This does not mean that the underlying task has succeeded.
 For example, an unconverged geometry optimization due to the maximum iteration being reached is still a successful  calculation,
 as CASTEP has done  what the user requested.
 On the other hand, if the calculation is terminated due to the time limit (cleanly exited or not), it will have an none-zero exit_status.
+
+
+Further Reading
+===============
+
+As mentioned above, most calculation will be done using ``CastepBaseWorkChain`` which make it easier for defining the inputs and also adds the ability to correct some common
+problems, such as SCF convergence problems and running out of walltimes.
