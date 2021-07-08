@@ -780,8 +780,14 @@ def parse_dot_bands(bands_lines):
             bands_info['neigns'] = int(float(neigns))
             continue
         if "Fermi energ" in line:  # NOTE possible different format with spin polarisation?
-            efermi = line.strip().split()[-1]
-            bands_info['efermi'] = float(efermi)
+            tokens = line.strip().split()
+            # Check if there are two fermi energies
+            if re.match(r'^[-.0-9eE]+$', tokens[-2]):
+                efermi = [float(tokens[-2]), float(tokens[-1])]
+            else:
+                efermi = float(tokens[-1])
+
+            bands_info['efermi'] = efermi
             continue
         if "Unit cell" in line:
             i_finish = i + 3

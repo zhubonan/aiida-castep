@@ -290,7 +290,13 @@ def bands_to_bandsdata(bands_info, kpoints, bands):
     if bands_array.shape[0] == 1:
         bands_array = bands_array[0]
     bands_array = bands_array * units['Eh']
-    bands_info['efermi'] *= units['Eh']
+    bands_info = dict(bands_info)  # Create a copy
+    # Convert the units for the fermi energies
+    if isinstance(bands_info['efermi'], list):
+        bands_info['efermi'] = [x * units['Eh'] for x in bands_info['efermi']]
+    else:
+        bands_info['efermi'] = bands_info['efermi'] * units['Eh']
+
     bands_info['units'] = "eV"
 
     bands_node.set_bands(bands_array)
