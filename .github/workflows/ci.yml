@@ -80,6 +80,8 @@ jobs:
         run: pip install 'psycopg2-binary~=2.8.3' 'aiida-core==1.6.3'
       - name: Install aiida-castep
         run: pip install -e ".[testing]" && pip freeze
+      - name: Refresh the entrypoints
+        run: reentry scan -r aiida
       - name: Remove dot in Python version for passing version to tox
         uses: frabert/replace-string-action@master
         id: tox
