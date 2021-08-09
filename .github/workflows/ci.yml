@@ -67,7 +67,6 @@ jobs:
         run: |
           curl https://bazel.build/bazel-release.pub.gpg | sudo apt-key add -
           sudo apt update
-          sudo .ci/enable_ssh_localhost.sh
           sudo apt install locate
           sudo updatedb
           sudo apt install postgresql-10
