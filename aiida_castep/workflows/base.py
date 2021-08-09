@@ -7,6 +7,7 @@ import re
 import numpy as np
 
 from aiida.engine import WorkChain, if_, while_, ToContext, append_
+from aiida.common.lang import override
 from aiida.orm.nodes.data.base import to_aiida_type
 from aiida.common import AttributeDict
 import aiida.orm as orm
@@ -89,6 +90,14 @@ class CastepBaseWorkChain(WorkChain):
             required=False,
             help=('Options specific to the workchain.'
                   'Avaliable options: queue_wallclock_limit, use_castep_bin'))
+        spec.input(
+            'clean_workdir',
+            valid_type=orm.Bool,
+            serializer=to_aiida_type,
+            required=False,
+            help=
+            'Wether to clean the workdir of the calculations or not, the default is not clean.'
+        )
         spec.expose_inputs(cls._calculation_class, namespace='calc')
         spec.input('calc.parameters',
                    valid_type=orm.Dict,
@@ -464,6 +473,45 @@ class CastepBaseWorkChain(WorkChain):
         self.report('failure of {}<{}> could not be handled'.format(
             self.ctx.calc_name, calculation.pk))
         return self.exit_codes.UNKOWN_ERROR
+
+    @override
+    def on_terminated(self):
+        """
+        Clean the working directories of all child calculation jobs if `clean_workdir=True` in the inputs and
+        the calculation is finished without problem.
+        """
+        # Directly called the WorkChain method as this method replaces that of the BaseRestartWorkChain
+        WorkChain.on_terminated(self)
+        clean_workdir = self.inputs.get('clean_workdir', None)
+        if clean_workdir is not None:
+            clean_workdir = clean_workdir.value
+        else:
+            clean_workdir = False
+
+        if clean_workdir is False:
+            self.report('remote folders will not be cleaned')
+            return
+
+        if not self.ctx.is_finished:
+            self.report(
+                'remote folders will not be cleaned because the workchain finished with error.'
+            )
+            return
+
+        cleaned_calcs = []
+
+        for called_descendant in self.node.called_descendants:
+            if isinstance(called_descendant, orm.CalcJobNode):
+                try:
+                    called_descendant.outputs.remote_folder._clean()  # pylint: disable=protected-access
+                    cleaned_calcs.append(str(called_descendant.pk))
+                except (IOError, OSError, KeyError):
+                    pass
+
+        if cleaned_calcs:
+            self.report(
+                f"cleaned remote folders of calculations: {' '.join(cleaned_calcs)}"
+            )
 
 
 @register_error_handler(CastepBaseWorkChain, 900)

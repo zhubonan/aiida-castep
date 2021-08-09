@@ -58,7 +58,14 @@ class CastepRelaxWorkChain(WorkChain):
         spec.expose_inputs(CastepBaseWorkChain._calculation_class,
                            namespace='calc',
                            exclude=['structure'])
-
+        spec.input(
+            'clean_workdir',
+            valid_type=orm.Bool,
+            serializer=to_aiida_type,
+            required=False,
+            help=
+            ('Wether to clean the workdir of the calculations at the end of the workchain. '
+             'The default is not performing any cleaning.'))
         spec.input('calc.parameters',
                    valid_type=orm.Dict,
                    serializer=to_aiida_type,
@@ -84,7 +91,9 @@ class CastepRelaxWorkChain(WorkChain):
         spec.outline(
             cls.setup,
             while_(cls.should_run_relax)(cls.run_relax, cls.inspect_relax),
-            cls.result)
+            cls.result,
+            cls.finalize,
+        )
         spec.exit_code(101, 'ERROR_SUB_PROCESS_FAILED_RELAX',
                        'Subprocess lauched has failed in the relax stage')
 
@@ -229,6 +238,54 @@ class CastepRelaxWorkChain(WorkChain):
         self.out_many(self.exposed_outputs(workchain, CastepBaseWorkChain))
 
         return exit_code
+
+    def finalize(self):
+        """
+        Finalize the workchain.
+        Clean the remote working directories of the called calcjobs
+        """
+        # Check if we are cleaning the working directory
+        clean_workdir = self.inputs.get('clean_workdir', None)
+        if clean_workdir is not None:
+            clean_workdir = clean_workdir.value
+        if not clean_workdir:
+            return
+
+        # Proceed with cleaning the calculations
+        try:
+            cleaned_calcs = []
+            qbd = orm.QueryBuilder()
+            qbd.append(orm.WorkChainNode, filters={'id': self.node.pk})
+            qbd.append(orm.WorkChainNode,
+                       filters={
+                           'id': {
+                               'in': [node.pk for node in self.ctx.workchains]
+                           }
+                       })
+            qbd.append(orm.CalcJobNode)
+
+            # Find the CalcJobs to clean
+            if qbd.count() > 0:
+                calcjobs = [tmp[0] for tmp in qbd.all()]
+            else:
+                self.report('Cannot found called CalcJobNodes to clean.')
+                return
+            # Clean the remote directories one by one
+            for calculation in calcjobs:
+                try:
+                    calculation.outputs.remote_folder._clean()  # pylint: disable=protected-access
+                    cleaned_calcs.append(calculation.pk)
+                except BaseException:
+                    pass
+
+            if cleaned_calcs:
+                self.report(
+                    'cleaned remote folders of calculations: {}'.format(
+                        ' '.join(map(str, cleaned_calcs))))  # pylint: disable=not-callable
+        except BaseException as exception:
+            self.report(
+                'Exception occurred during the cleaning of the remote contents: {}'
+                .format(exception.args))
 
     def _push_parameters(self, workchain):
         """
