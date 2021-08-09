@@ -20,7 +20,7 @@ jobs:
           pip install --upgrade pip
           pip --version
       - name: Install aiida-castep
-        run: pip install -e ".[testing,pre-commit]" && pip freeze 
+        run: pip install -e ".[testing,pre-commit]" && pip freeze
       - name: Run pre-commit
         run: echo "SKIPED" #pre-commit run --all-files || ( git diff; git status; exit 1; )
 
@@ -76,7 +76,8 @@ jobs:
         if: ${{ matrix.python }} == '3.8'
         run: pip install coveralls
       - name: Install AiiDA
-        run: pip install -e git+https://github.com/aiidateam/aiida_core@master#egg=aiida-core
+        #run: pip install -e git+https://github.com/aiidateam/aiida_core@master#egg=aiida-core
+        run: pip install 'psycopg2-binary~=2.8.3' 'aiida-core>=1.6.1,<2'
       - name: Install aiida-castep
         run: pip install -e ".[testing]" && pip freeze
       - name: Remove dot in Python version for passing version to tox
@@ -98,4 +99,4 @@ jobs:
         uses: codecov/codecov-action@v1.0.13
         with:
           name: aiida-castep
-          fail_ci_if_error: false 
+          fail_ci_if_error: false
