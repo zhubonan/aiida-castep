@@ -20,9 +20,7 @@ jobs:
           pip install --upgrade pip
           pip --version
       - name: Install aiida-castep
-        run:
-          pip install -e ".[testing,pre-commit]" 
-          pip freeze
+        run: pip install -e ".[testing,pre-commit]" && pip freeze 
       - name: Run pre-commit
         run: echo "SKIPED" #pre-commit run --all-files || ( git diff; git status; exit 1; )
 
@@ -85,9 +83,7 @@ jobs:
       - name: Install AiiDA
         run: pip install -e git+https://github.com/aiidateam/aiida_core@master#egg=aiida-core
       - name: Install aiida-castep
-        run: |
-          pip install -e ".[testing]"
-          pip freeze
+        run: pip install -e ".[testing]" && pip freeze
       - name: Remove dot in Python version for passing version to tox
         uses: frabert/replace-string-action@master
         id: tox
