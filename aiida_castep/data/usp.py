@@ -6,7 +6,6 @@ from __future__ import absolute_import
 import os
 import warnings
 from aiida.plugins import DataFactory
-from aiida.orm import GroupTypeString
 from aiida.common.utils import classproperty
 from aiida.common.files import md5_file
 from .utils import get_usp_element
