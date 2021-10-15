@@ -2,15 +2,18 @@
 Tests for utils module
 """
 
-from __future__ import absolute_import
 import pytest
-from ..utils import *
 import numpy as np
+
+from aiida_castep.utils.dos import DOSProcessor
+from ..utils import ase_to_castep_index, is_castep_sorted, sort_atoms_castep, desort_atoms_castep, compute_kpoints_spacing
 
 try:
     import ase
 except ImportError:
     ase = None
+
+# pylint: disable=redefined-outer-name
 
 
 @pytest.fixture
@@ -39,9 +42,9 @@ def test_ase_to_castep_index(unsorted_atoms):
 
 @pytest.mark.skipif(ase is None, reason="No ase module")
 def test_sort_atoms(unsorted_atoms, sorted_atoms):
-    unsorted_atoms = sort_atoms_castep(unsorted_atoms, order=None)
-    assert np.all(unsorted_atoms.numbers == sorted_atoms.numbers)
-    assert np.all(unsorted_atoms.positions == sorted_atoms.positions)
+    atoms = sort_atoms_castep(unsorted_atoms, order=None)
+    assert np.all(atoms.numbers == sorted_atoms.numbers)
+    assert np.all(atoms.positions == sorted_atoms.positions)
 
 
 @pytest.mark.skipif(ase is None, reason="No ase module")
@@ -53,8 +56,8 @@ def test_desort_atoms(unsorted_atoms, sorted_atoms):
 
 @pytest.mark.skipif(ase is None, reason="No ase module")
 def test_check_sorted(unsorted_atoms, sorted_atoms):
-    assert is_castep_sorted(unsorted_atoms) == False
-    assert is_castep_sorted(sorted_atoms) == True
+    assert is_castep_sorted(unsorted_atoms) is False
+    assert is_castep_sorted(sorted_atoms) is True
 
 
 def test_k_spacing():
@@ -63,3 +66,32 @@ def test_k_spacing():
 
     spacing = compute_kpoints_spacing([4, 4, 4], [2, 2, 2])
     assert np.all(spacing == np.array([1. / 8, 1. / 8, 1. / 8]))
+
+
+@pytest.fixture
+def bands_data():
+
+    bands = np.arange(40).reshape((2, 4, 5))
+    weights = np.ones(4) / 4
+    return bands, weights
+
+
+def test_dos_compute(bands_data):
+    """Test calculation for the density of states"""
+
+    bands, weights = bands_data
+
+    dos = DOSProcessor(bands, weights)
+    energy, values = dos.get_dos(npoints=2000)
+
+    assert energy.size == 1000
+    assert values.size == 2000
+
+    dos = DOSProcessor(bands[0], weights)
+    energy, values = dos.get_dos(dropdim=True, npoints=2000)
+
+    assert energy.size == 1000
+    assert values.size == 1000
+    assert values.shape == (1000, )
+    np.testing.assert_approx_equal(values[0], 0)
+    np.testing.assert_approx_equal(values[-1], 0)
