@@ -28,7 +28,7 @@ class DOSProcessor:
         """
 
         # Reshape to ensure always 3 dimensions
-        if len(bands_data.shape) == 2:
+        if bands_data.ndim == 2:
             bands_data = np.reshape(bands_data, (1, ) + bands_data.shape)
 
         self.bands_data = bands_data
@@ -128,4 +128,4 @@ def gaussian_kernel(sigma, bin_width, truncate=10):
 
     nbins = sigma * truncate // bin_width
     bins = np.arange(-bin_width * nbins, bin_width * (nbins + 1), bin_width)
-    return np.exp(-0.5 * bins**2 / (sigma**2)) * 1 / sigma / np.sqrt(2)
+    return np.exp(-0.5 * bins**2 / (sigma**2)) * 1 / sigma / np.sqrt(2 * np.pi)

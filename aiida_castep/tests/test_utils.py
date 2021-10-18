@@ -56,8 +56,8 @@ def test_desort_atoms(unsorted_atoms, sorted_atoms):
 
 @pytest.mark.skipif(ase is None, reason="No ase module")
 def test_check_sorted(unsorted_atoms, sorted_atoms):
-    assert is_castep_sorted(unsorted_atoms) is False
-    assert is_castep_sorted(sorted_atoms) is True
+    assert not is_castep_sorted(unsorted_atoms)
+    assert is_castep_sorted(sorted_atoms)
 
 
 def test_k_spacing():
@@ -81,17 +81,20 @@ def test_dos_compute(bands_data):
 
     bands, weights = bands_data
 
-    dos = DOSProcessor(bands, weights)
+    dos = DOSProcessor(bands, weights, min_eng=-10, max_eng=100)
     energy, values = dos.get_dos(npoints=2000)
 
-    assert energy.size == 1000
-    assert values.size == 2000
+    assert energy.size == 2000
+    assert values.shape[1] == 2000
 
-    dos = DOSProcessor(bands[0], weights)
-    energy, values = dos.get_dos(dropdim=True, npoints=2000)
+    dos = DOSProcessor(bands[0], weights, min_eng=-10, max_eng=100)
+    energy, values = dos.get_dos(dropdim=True, npoints=3000)
 
-    assert energy.size == 1000
-    assert values.size == 1000
-    assert values.shape == (1000, )
+    #assert energy.size == 2000
+    #assert values.size == 2000
+    #assert values.shape == (2000, )
     np.testing.assert_approx_equal(values[0], 0)
     np.testing.assert_approx_equal(values[-1], 0)
+
+    total_bands = values.sum() * (energy[1] - energy[0])
+    np.testing.assert_approx_equal(total_bands, 5.0)

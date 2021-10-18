@@ -1,11 +1,6 @@
 """
 Module for generating text based CASTEP inputs
 """
-from __future__ import absolute_import, print_function
-
-import six
-from six.moves import zip
-
 import numpy as np
 from aiida.common import InputValidationError, MultipleObjectsError
 from aiida_castep.common import INPUT_LINKNAMES as in_ln
@@ -52,7 +47,7 @@ class CastepInputGenerator:
         # Second level keys should be lowercased
         param_dict = {
             k: _lowercase_dict(v, dict_name=k)
-            for k, v in six.iteritems(param_dict)
+            for k, v in param_dict.items()
         }
 
         # Set iprint to 1
@@ -225,7 +220,7 @@ class CastepInputGenerator:
                 self.cell_file["KPOINTS_LIST"] = kpoints_line_list
 
         # --------- keywords in cell file---------
-        for key, value in six.iteritems(self.param_dict["CELL"]):
+        for key, value in self.param_dict["CELL"].items():
 
             if "species_pot" in key:
                 raise MultipleObjectsError(

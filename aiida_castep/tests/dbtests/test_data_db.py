@@ -1,12 +1,10 @@
 """
-Use pytest 
+Use pytest
 """
 # pylint: disable=unused-import,unused-argument,redefined-outer-name,too-many-function-args,
 # pylint: disable=protected-access,abstract-class-instantiated,no-value-for-parameter,unexpected-keyword-arg
 
-from __future__ import absolute_import
 import pytest
-import six
 from pathlib import Path
 from aiida.common import ValidationError
 
@@ -236,7 +234,7 @@ def test_usp_upload_family(new_database, usp_folder):
     upload_usp_family(str(usp_folder), "Test", "Test")
 
     new = usp_folder / "O_00.usp"
-    new.write_text(six.text_type("asdfgghhd"))
+    new.write_text("asdfgghhd")
     # This will raise an exception as the same file is being uploaded
     with pytest.raises(ValueError):
         upload_usp_family(str(usp_folder),
@@ -285,13 +283,13 @@ def test_usp_element_validation(new_database, usp_folder):
         usp.UspData.get_or_create(fpath, element="Ti", store_usp=True)
 
     fpath = usp_folder / "foo.usp"
-    fpath.write_text(six.text_type("adfalal"))
+    fpath.write_text("adfalal")
     # This should work since the element is defined explicitly
     usp.UspData.get_or_create(fpath, element="Ti", store_usp=True)
 
     # This should also work
     fpath = usp_folder / "bar.usp"
-    fpath.write_text(six.text_type("asdfddf"))
+    fpath.write_text("asdfddf")
     pp, _ = usp.UspData.get_or_create(fpath, store_usp=False)
     pp.set_element("Ti")
     pp.store()

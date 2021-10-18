@@ -10,6 +10,7 @@ from aiida.plugins import WorkflowFactory
 
 from ..common import OUTPUT_LINKNAMES as out_ln
 from ..common import INPUT_LINKNAMES as inp_ln
+from ..utils.dos import DOSProcessor
 
 
 class CastepBandsWorkChain(WorkChain):
@@ -22,11 +23,11 @@ class CastepBandsWorkChain(WorkChain):
     2. Optionally: Do a SCF singlepoint calculation
     3. Do combined SCF + non-SCF calculation for bands and dos.
 
-    Inputs must be passed for the SCF calculation (dispatched to bands and DOS), 
+    Inputs must be passed for the SCF calculation (dispatched to bands and DOS),
     others are optional.
 
     Input for bands and dos calculations are optional. However, if they are needed, the full list of inputs must
-    be passed. For the `parameters` node, one may choose to only specify those fields that need to be updated. 
+    be passed. For the `parameters` node, one may choose to only specify those fields that need to be updated.
     """
     _base_wk_string = 'castep.base'
     _relax_wk_string = 'castep.relax'
@@ -353,7 +354,8 @@ class CastepBandsWorkChain(WorkChain):
                     format(dos.exit_status))
                 exit_code = self.exit_codes.ERROR_SUB_PROC_DOS_FAILED
             self.out('dos_bands', dos.outputs[out_ln['bands']])
-
+            # Compute DOS from bands
+            self.out('dos', dos_from_bands(dos.outputs[out_ln['bands']]))
         else:
             dos = None
 
@@ -447,3 +449,32 @@ def ensure_checkpoint(pdict):
     elif value.lower() == 'none':
         pdict['write_checkpoint'] = 'minimal'
     return pdict
+
+
+@calcfunction
+def dos_from_bands(bands, smearing, npoints):
+    """
+    Compute DOS from bands
+
+    :param bands: The `BandsData` to be used as input.
+    :param smearing: Smearing width in eV
+    :param npoints: Number of points
+    """
+    bands_data = bands.get_bands(also_occupations=False, also_labels=False)
+    _, weights = bands.get_kpoints(also_weights=True)
+
+    processor = DOSProcessor(bands_data, weights, smearing.value)
+
+    # Ensure there are three dimensions
+    eng, dos = processor.get_dos(npoints=npoints.value, dropdim=False)
+
+    # Output as XyData
+    out = orm.XyData()
+    out.set_x(eng, "Energy", "eV")
+    nspin = dos.shape[0]
+    out.set_y(y_arrays=[arr for arr in dos],
+              y_names=[f"DOS_SPIN_{i}" for i in range(nspin)],
+              y_units=["eV^-1"] * nspin)
+
+    out.set_attribute("fermi_energy", bands.get_attribute('efermi'))
+    return out

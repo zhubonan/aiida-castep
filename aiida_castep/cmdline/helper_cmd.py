@@ -7,8 +7,6 @@ from __future__ import absolute_import
 import click
 import sys
 from aiida.cmdline.commands.cmd_data import verdi_data
-from six.moves import map
-from six.moves import zip
 
 
 def dot_proc(iterable):

@@ -1,9 +1,6 @@
 """
 Tools for calculations
 """
-from __future__ import absolute_import
-from __future__ import print_function
-import six
 import warnings
 
 from aiida.tools import CalculationTools
@@ -14,7 +11,6 @@ from aiida.plugins import DataFactory
 from aiida.engine import CalcJob, ProcessBuilder
 
 from aiida_castep.common import INPUT_LINKNAMES, OUTPUT_LINKNAMES
-from six.moves import zip
 
 __all__ = [
     'CastepCalcTools', 'create_restart', 'castep_input_summary',
@@ -34,7 +30,7 @@ class CastepCalcTools(CalculationTools):
         :params reverse: reverse the comparison, by default this node
         is the "new" and the one compared with is "old".
         """
-        if isinstance(the_other_calc, (int, six.string_types)):
+        if isinstance(the_other_calc, (int, str)):
             from aiida.orm import load_node
             calc2 = load_node(the_other_calc)
         else:
