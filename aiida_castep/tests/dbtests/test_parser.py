@@ -3,8 +3,6 @@ Test the parsers that interacte with the AiiDA database.
 Check if various AiiDA types are created correctly.
 """
 
-from __future__ import absolute_import
-import six
 import pytest
 from aiida_castep.common import OUTPUT_LINKNAMES
 

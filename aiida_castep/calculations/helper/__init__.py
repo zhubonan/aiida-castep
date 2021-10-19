@@ -6,14 +6,11 @@ Check for errors in input dictionary
 
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
 import os
 import json
 from glob import glob
 
 import logging
-from six.moves import zip
 logger = logging.getLogger(__name__)
 
 path = os.path.abspath(__file__)

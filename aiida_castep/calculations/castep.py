@@ -1,10 +1,6 @@
 """
 Calculations of CASTEP
 """
-from __future__ import print_function
-from __future__ import absolute_import
-import six
-from six.moves import zip
 
 from aiida.common import InputValidationError
 from aiida.common import CalcInfo, CodeInfo
@@ -24,7 +20,7 @@ from .tools import (castep_input_summary, update_parameters,
                     use_pseudos_from_family, input_param_validator,
                     check_restart)
 
-from .._version import CALC_PARSER_VERSION
+from aiida_castep._version import CALC_PARSER_VERSION
 __version__ = CALC_PARSER_VERSION
 
 KpointsData = DataFactory("array.kpoints")
@@ -267,10 +263,10 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         param_fn = seedname + ".param"
 
         with folder.open(cell_fn, mode='w') as incell:
-            incell.write(six.text_type(self.cell_file.get_string()))
+            incell.write(self.cell_file.get_string())
 
         with folder.open(param_fn, mode="w") as inparam:
-            inparam.write(six.text_type(self.param_file.get_string()))
+            inparam.write(self.param_file.get_string())
 
         # IMPLEMENT OPERATIONS FOR RESTART
 

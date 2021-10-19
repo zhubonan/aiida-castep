@@ -7,14 +7,12 @@ from __future__ import absolute_import
 import re
 import logging
 from collections import defaultdict
-from six.moves import map
-from six.moves import range
 
 import numpy as np
 
 from aiida_castep.parsers.utils import CASTEPOutputParsingError
 from aiida_castep.common import EXIT_CODES_SPEC
-from .._version import CALC_PARSER_VERSION
+from aiida_castep._version import CALC_PARSER_VERSION
 
 # pylint: disable=invalid-name,logging-format-interpolation,too-many-instance-attributes,too-many-branches,too-many-statements,too-many-locals
 LOGGER = logging.getLogger("aiida")
@@ -744,6 +742,8 @@ def parse_dot_bands(bands_lines):
     We reorder the kpoints and the bands to match the original order in
     the input file.
 
+    Note that many other quantities indexed by kpoints, such as the optical matrix
+    elements, follows the order of appearance in the `bands` file.
 
     :param bands_lines: A list of lines to be parsed parse
     :return: A list of bands_info, kpoints and bands:

@@ -1,9 +1,6 @@
 """
 Parsers for CASTEP
 """
-from __future__ import absolute_import
-from copy import deepcopy
-import six
 import numpy as np
 
 from aiida.orm import TrajectoryData, ArrayData, Dict, BandsData
@@ -194,7 +191,7 @@ class CastepParser(Parser):
                                         symbols=np.asarray(symbols),
                                         positions=np.asarray(positions))
                     # Save the rest
-                    for name, value in six.iteritems(trajectory_data):
+                    for name, value in trajectory_data.items():
                         # Skip saving empty arrays
                         if len(value) == 0:
                             continue
@@ -221,7 +218,7 @@ class CastepParser(Parser):
                                         for site in input_structure.sites
                                     ]]))
                 # Save the rest
-                for name, value in six.iteritems(trajectory_data):
+                for name, value in trajectory_data.items():
                     # Skip saving empty arrays
                     if len(value) == 0:
                         continue
@@ -235,7 +232,7 @@ class CastepParser(Parser):
             # Otherwise, save data into a ArrayData node
             else:
                 out_array = ArrayData()
-                for name, value in six.iteritems(trajectory_data):
+                for name, value in trajectory_data.items():
                     # Skip saving empty arrays
                     if len(value) == 0:
                         continue
@@ -297,9 +294,8 @@ def bands_to_bandsdata(bands_info, kpoints, bands):
     else:
         bands_info['efermi'] = bands_info['efermi'] * units['Eh']
 
-    bands_info['units'] = "eV"
-
-    bands_node.set_bands(bands_array)
+    bands_node.set_bands(bands_array, units="eV")
+    # PBC is always true as this is PW DFT....
     bands_node.set_cell(bands_info['cell'], pbc=(True, True, True))
 
     # Store information from *.bands in the attributes

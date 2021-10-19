@@ -2,15 +2,12 @@
 Module for storing usp files into the database
 """
 
-from __future__ import absolute_import
-import os
 import warnings
 from aiida.plugins import DataFactory
 from aiida.orm import GroupTypeString
 from aiida.common.utils import classproperty
 from aiida.common.files import md5_file
 from .utils import get_usp_element
-import six
 
 OLD_USPGROUP_TYPE = "data.castep.usp.family"
 USPGROUP_TYPE = "castep.otfg"
@@ -220,7 +217,7 @@ class UspData(SinglefileData):
     @classproperty
     def uspfamily_type_string(cls):
         """
-        Type string of the underlying group deprecated as new 
+        Type string of the underlying group deprecated as new
         Group should be access by sub-classing
         """
         return USPGROUP_TYPE
