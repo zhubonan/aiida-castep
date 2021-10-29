@@ -54,10 +54,7 @@ the results should look like::
 
  Registered entry points for aiida.calculations:
   * arithmetic.add
-  * castep.bs
   * castep.castep
-  * castep.pot1d
-  * castep.spec
   * castep.ts
   * templatereplacer
 
