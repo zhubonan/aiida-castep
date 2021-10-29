@@ -71,7 +71,7 @@ The json file should be stored as ``$HOME/.castep_help_info_<version>.json``.
 
 To generate the file, use command::
 
- verdi data castep-help generate
+ verdi data castep-helper generate
 
 By default, ``castep.serial`` executable will be used of it is available in ``PATH``..
 This can be overridden using optional argument ``-e <path_to_executable>``.
