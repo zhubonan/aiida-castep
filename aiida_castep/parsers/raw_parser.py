@@ -386,10 +386,17 @@ def parse_castep_text_output(out_lines, input_dict):
             box = body_lines[count:(count + num_lines)]
             i, forces = parse_force_box(box)
 
+            # Resolve force names
+            # For backward compatibility symmetrised_forces are stored as forces
             if "Constrained" in line:
                 force_name = "cons_forces"
             else:
-                force_name = "forces"
+                tmp = line.replace('*').strip().lower()
+                if tmp == 'symmetrised_forces':
+                    force_name = "forces"
+                else:
+                    force_name = tmp
+
             if not forces:
                 LOGGER.error("Cannot parse force lines {}".format(box))
             trajectory_data[force_name].append(forces)
