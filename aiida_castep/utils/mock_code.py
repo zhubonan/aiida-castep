@@ -270,7 +270,7 @@ class MockRegistry:
         """
         from aiida.orm import CalcJobNode
         from aiida.plugins import CalculationFactory
-        calc_class = CalculationFactory('vasp.vasp')
+        calc_class = CalculationFactory('castep.castep')
         to_upload = []
         for node in worknode.called_descendants:
             if isinstance(node,
