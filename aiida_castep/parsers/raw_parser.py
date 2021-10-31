@@ -391,7 +391,7 @@ def parse_castep_text_output(out_lines, input_dict):
             if "Constrained" in line:
                 force_name = "cons_forces"
             else:
-                tmp = line.replace('*').strip().lower()
+                tmp = line.replace('*', ' ').strip().lower().replace(' ', '_')
                 if tmp == 'symmetrised_forces':
                     force_name = "forces"
                 else:
