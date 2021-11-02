@@ -356,8 +356,8 @@ def compute_kpoints_spacing(cell, grid, unit="2pi"):
     Spacing = 1 / cell_length / mesh for each dimension.
     Assume orthogonal cell shape.
     """
-    cell = np.asarray(cell, dtype=np.float)
-    grid = np.asarray(grid, dtype=np.float)
+    cell = np.asarray(cell, dtype=float)
+    grid = np.asarray(grid, dtype=float)
 
     spacings = 1. / cell / grid
     if unit == "1/A":

@@ -3,73 +3,27 @@ conftest that prepares fixtures with tests involving orm of aiida
 """
 import tempfile
 import shutil
-import pytest
-import os
-from aiida.common.exceptions import NotExistent
-from aiida.common import AttributeDict
 from pathlib import Path
 
+import pytest
+
+from aiida.orm import Computer, Dict, Code, KpointsData, Node
+from aiida.plugins import DataFactory, ParserFactory
+from aiida.common.exceptions import NotExistent
+from aiida.common import AttributeDict
+
+from aiida.common.links import LinkType
+from aiida.orm import CalcJobNode, FolderData
+from aiida.plugins import CalculationFactory
+from aiida.plugins.entry_point import format_entry_point_string
+
+from aiida.manage.tests.pytest_fixtures import aiida_profile, clear_database_before_test
+
+from aiida_castep.data.otfg import OTFGData
+from aiida_castep.calculations.castep import CastepCalculation
+from ..utils import get_sto_structure
+
 this_folder = Path(__file__).parent
-
-
-def get_backend_str():
-    """ Return database backend string.
-
-    Reads from 'TEST_AIIDA_BACKEND' environment variable.
-    Defaults to django backend.
-    """
-    from aiida.backends.profile import BACKEND_DJANGO, BACKEND_SQLA
-    backend_env = os.environ.get('TEST_AIIDA_BACKEND')
-    if not backend_env:
-        return BACKEND_DJANGO
-    elif backend_env in (BACKEND_DJANGO, BACKEND_SQLA):
-        return backend_env
-
-    raise ValueError(
-        "Unknown backend '{}' read from TEST_AIIDA_BACKEND environment variable"
-        .format(backend_env))
-
-
-@pytest.fixture(scope='session')
-def aiida_profile():
-    """setup a test profile for the duration of the tests
-    If the environmental variable AIIDA_TEST_PROFILE is present
-    will use an alternative fixture_manager that uses the test profile"""
-    # import os
-    # test_profile = os.environ.get('AIIDA_TEST_PROFILE', None)
-    # if test_profile is not None:
-    #     from fixture import fixture_manager
-    # else:
-    #     from aiida.manage.fixtures import fixture_manager
-    from aiida.manage.fixtures import fixture_manager
-    #from .fixture import fixture_manager
-    with fixture_manager() as fixture_mgr:
-        yield fixture_mgr
-
-
-@pytest.fixture(scope='function')
-def new_database(aiida_profile):
-    """clear the database after each test"""
-    yield aiida_profile
-    aiida_profile.reset_db()
-
-
-@pytest.fixture(scope="module")
-def imps(aiida_profile):
-    return Imports()
-
-
-class Imports:
-    def __init__(self):
-        from aiida.plugins import CalculationFactory
-        from aiida.plugins import DataFactory
-        import aiida_castep.data.otfg as otfg
-        from aiida_castep.data.otfg import OTFGData
-        from aiida.orm import (KpointsData, StructureData, BandsData, Code,
-                               Dict, Computer)
-        for k, v in locals().items():
-            if k not in ['self']:
-                setattr(self, k, v)
 
 
 class CastepTestApp(object):
@@ -80,14 +34,12 @@ class CastepTestApp(object):
     def __init__(self, profile, workdir):
         self._profile = profile
         self._workdir = Path(workdir)
-        self.imps = Imports()
 
     def create_computer(self, **kwargs):
         """
         Return a generator for the Computers
         """
-        from aiida.orm import Computer
-        defaults = dict(name='localhost',
+        defaults = dict(label='localhost',
                         hostname='localhost',
                         transport_type='local',
                         scheduler_type='direct',
@@ -105,18 +57,19 @@ class CastepTestApp(object):
         Fixture for a local computer called localhost.
         This is currently not in the AiiDA fixtures."""
         try:
-            computer = self.imps.Computer.objects.get(**kwargs)
+            computer = Computer.objects.get(**kwargs)
         except NotExistent:
             computer = self.create_computer(**kwargs)
         return computer
 
     @property
     def localhost(self):
-        return self.get_or_create_computer(name='localhost')
+        """Return an localhost computer"""
+        return self.get_or_create_computer(label='localhost')
 
     def code_mock_factory(self, overide=None):
         """Mock calculation, can overide by prepend path"""
-        code = self.imps.Code()
+        code = Code()
         exec_path = this_folder.parent.parent / 'utils/mock.py'
         code.set_remote_computer_exec((self.localhost, str(exec_path)))
         code.set_input_plugin_name('castep.castep')
@@ -134,7 +87,6 @@ class CastepTestApp(object):
     @property
     def code_echo(self):
         """Fixture of a code that just echos"""
-        from aiida.orm import Code
         code = Code()
         code.set_remote_computer_exec((self.localhost, "/bin/echo"))
         code.set_input_plugin_name("castep.castep")
@@ -152,7 +104,7 @@ class CastepTestApp(object):
 
     def get_kpoints_mesh(self, mesh):
         """Factory for kpoints with mesh"""
-        kpoints_data = self.imps.KpointsData()
+        kpoints_data = KpointsData()
         kpoints_data.set_kpoints_mesh(mesh)
         return kpoints_data
 
@@ -163,7 +115,7 @@ class CastepTestApp(object):
 
     @property
     def c9_otfg(self):
-        return self.imps.OTFGData.get_or_create('C9')[0]
+        return OTFGData.get_or_create('C9')[0]
 
     @property
     def create_group(self):
@@ -224,7 +176,6 @@ def sto_calc_inputs(
         inputs_default,
 ):
 
-    from ..utils import get_sto_structure
     sto_structure = get_sto_structure()
     inputs = inputs_default
 
@@ -238,7 +189,7 @@ def sto_calc_inputs(
         }
     }
     # pdict["CELL"].pop("block species_pot")
-    inputs.parameters = db_test_app.imps.Dict(dict=pdict)
+    inputs.parameters = Dict(dict=pdict)
     inputs.structure = sto_structure
     c9 = db_test_app.c9_otfg
     inputs.pseudos = AttributeDict({"Sr": c9, 'Ti': c9, 'O': c9})
@@ -249,7 +200,7 @@ def sto_calc_inputs(
 
 @pytest.fixture
 def sto_spectral_inputs(sto_calc_inputs, db_test_app):
-    kpoints = db_test_app.imps.KpointsData()
+    kpoints = KpointsData()
     kpoints.set_kpoints([[0.0, 0.5, 0.5], [0.0, 0.0, 0.0]])
     sto_calc_inputs.spectral_kpoints = kpoints
     return sto_calc_inputs
@@ -271,7 +222,6 @@ def inps_or_builder(inps, num):
     if num == 0:
         return inps
     elif num == 1:
-        from aiida_castep.calculations.castep import CastepCalculation
         builder = CastepCalculation.get_builder()
         builder._update(inps)
         return builder
@@ -298,7 +248,7 @@ def h2_calc_inputs(
         }
     }
     # pdict["CELL"].pop("block species_pot")
-    inputs.parameters = db_test_app.imps.Dict(dict=pdict)
+    inputs.parameters = Dict(dict=pdict)
     inputs.structure = h2_structure
     inputs.pseudos = AttributeDict({"H": db_test_app.c9_otfg})
     inputs.kpoints = db_test_app.get_kpoints_mesh((3, 3, 3))
@@ -309,7 +259,7 @@ def h2_calc_inputs(
 
 @pytest.fixture
 def h2_structure(aiida_profile, db_test_app):
-    StructureData = db_test_app.imps.DataFactory("structure")
+    StructureData = DataFactory("structure")
     a = 10
 
     cell = ((a, 0., 0.), (0., a, 0.), (0., 0., a))
@@ -349,8 +299,6 @@ def generate_calc_job_node(db_test_app):
     """
     Generate CalcJobNode
     """
-    from aiida.orm import Node
-
     def _generate_calc_job_node(
             entry_point_name,
             results_folder,
@@ -362,10 +310,6 @@ def generate_calc_job_node(db_test_app):
         Generate a CalcJob node with fake retrieved node in the
         tests/data
         """
-        from aiida.common.links import LinkType
-        from aiida.orm import CalcJobNode, FolderData
-        from aiida.plugins import CalculationFactory
-        from aiida.plugins.entry_point import format_entry_point_string
 
         calc_class = CalculationFactory(entry_point_name)
         entry_point = format_entry_point_string('aiida.calculations',
@@ -425,7 +369,6 @@ def generate_calc_job_node(db_test_app):
 @pytest.fixture
 def generate_parser():
     def _generate_parser(entry_point_name):
-        from aiida.plugins import ParserFactory
         return ParserFactory(entry_point_name)
 
     return _generate_parser

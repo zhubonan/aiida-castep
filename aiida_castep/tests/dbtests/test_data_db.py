@@ -7,6 +7,7 @@ Use pytest
 import pytest
 from pathlib import Path
 from aiida.common import ValidationError
+from aiida_castep.data.otfg import upload_otfg_family
 
 Ti_otfg = "Ti 3|1.8|9|10|11|30U:40:31:32(qc=5.5)"
 Sr_otfg = "Sr 3|2.0|5|6|7|40U:50:41:42"
@@ -29,16 +30,7 @@ def otfg():
     return otfg
 
 
-@pytest.fixture(scope="module")
-def imps(aiida_profile):
-    class Imports(object):
-        from aiida.plugins import DataFactory
-        import aiida_castep.data.otfg as otfg
-
-    return Imports
-
-
-def test_otfg_create(new_database, imps, otfg, otfgdata):
+def test_otfg_create(clear_database_before_test, otfg, otfgdata):
     """
     Test for creating OTFGData notes
     """
@@ -64,7 +56,7 @@ def test_otfg_create(new_database, imps, otfg, otfgdata):
         Sr.store()
 
 
-def test_otfg_get_or_create(new_database, otfg, otfgdata):
+def test_otfg_get_or_create(clear_database_before_test, otfg, otfgdata):
     Ti, create = otfgdata.get_or_create(Ti_otfg, store_otfg=False)
     assert create is True
 
@@ -114,22 +106,21 @@ def otfg_nodes(aiida_profile, otfgdata):
     return list(otfgs.values())
 
 
-def test_set_up_family_from_string(new_database, imps, otfg_nodes, otfgdata):
+def test_set_up_family_from_string(clear_database_before_test, otfg_nodes,
+                                   otfgdata):
 
     text_entries = [n.entry for n in otfg_nodes]
-    entry, uploaded = imps.otfg.upload_otfg_family(text_entries[:1], "Test",
-                                                   "Test")
+    entry, uploaded = upload_otfg_family(text_entries[:1], "Test", "Test")
     assert (entry, uploaded) == (1, 1)
 
     # Creating duplicated family - should fail
     with pytest.raises(ValidationError):
-        entry, uploaded = imps.otfg.upload_otfg_family(text_entries, "Test",
-                                                       "Test")
+        entry, uploaded = upload_otfg_family(text_entries, "Test", "Test")
 
-    entry, uploaded = imps.otfg.upload_otfg_family(text_entries,
-                                                   "Test",
-                                                   "Test",
-                                                   stop_if_existing=False)
+    entry, uploaded = upload_otfg_family(text_entries,
+                                         "Test",
+                                         "Test",
+                                         stop_if_existing=False)
 
     assert (entry, uploaded) == (3, 2)
 
@@ -141,7 +132,8 @@ def test_set_up_family_from_string(new_database, imps, otfg_nodes, otfgdata):
         assert txt in retrieved_entries
 
 
-def test_set_up_family_from_nodes(new_database, otfg, otfg_nodes, otfgdata):
+def test_set_up_family_from_nodes(clear_database_before_test, otfg, otfg_nodes,
+                                  otfgdata):
 
     entry, uploaded = otfg.upload_otfg_family(otfg_nodes[:1],
                                               "Test",
@@ -182,7 +174,7 @@ def test_set_up_family_from_nodes(new_database, otfg, otfg_nodes, otfgdata):
 
 
 def test_assign_from_structure(
-        new_database,
+        clear_database_before_test,
         db_test_app,
 ):
     """
@@ -218,14 +210,13 @@ def test_assign_from_structure(
 
 @pytest.fixture
 def usp_folder(new_workdir):
-    import os
-    for fn in ["Sr_00.usp", "Ti-00.usp", "Ce_00.recpot"]:
-        with open(str(new_workdir / fn), "w") as fh:
-            fh.write("Bla " + fn)
+    for filename in ["Sr_00.usp", "Ti-00.usp", "Ce_00.recpot"]:
+        with open(str(new_workdir / filename), "w") as fhandle:
+            fhandle.write("Bla " + filename)
     return new_workdir
 
 
-def test_usp_upload_family(new_database, usp_folder):
+def test_usp_upload_family(clear_database_before_test, usp_folder):
     """
     Test uploading the usp family
     """
@@ -251,7 +242,7 @@ def test_usp_upload_family(new_database, usp_folder):
     upload_otfg_family(nodes, "Test2", "Test", stop_if_existing=False)
 
 
-def test_usp_get_or_create(new_database, usp_folder):
+def test_usp_get_or_create(clear_database_before_test, usp_folder):
     """Testing the logic or get_or_create"""
     import aiida_castep.data.usp as usp
     fpath = usp_folder / "Sr_00.usp"
@@ -273,7 +264,7 @@ def test_usp_get_or_create(new_database, usp_folder):
     assert node4.pk in (node1.pk, node2.pk)
 
 
-def test_usp_element_validation(new_database, usp_folder):
+def test_usp_element_validation(clear_database_before_test, usp_folder):
     """Test the validation mechanism"""
 
     import aiida_castep.data.usp as usp

@@ -2,13 +2,16 @@
 Test the parsers that interacte with the AiiDA database.
 Check if various AiiDA types are created correctly.
 """
-
+from io import StringIO
 import pytest
 from ase.build import bulk
-from aiida_castep.common import OUTPUT_LINKNAMES
-from aiida_castep.tests.conftest import data_path
 from aiida.orm import StructureData
+
+from aiida_castep.common import OUTPUT_LINKNAMES
+from aiida_castep.common import EXIT_CODES_SPEC as CODES
 from aiida_castep.parsers.constants import units
+
+#pylint: disable=protected-access
 
 ln_name = OUTPUT_LINKNAMES
 
@@ -16,7 +19,7 @@ folders = ["H2-geom", "O2-geom-spin", "Si-geom-stress", "N2-md"]
 
 
 def test_parsing_base(
-        new_database,
+        clear_database_before_test,
         db_test_app,
         generate_calc_job_node,
         generate_parser,
@@ -41,7 +44,7 @@ def test_parsing_base(
 
 
 def test_parse_warnings(
-        new_database,
+        clear_database_before_test,
         db_test_app,
         generate_calc_job_node,
         generate_parser,
@@ -50,7 +53,6 @@ def test_parse_warnings(
     """
     Test basic parsing
     """
-    from aiida_castep.common import EXIT_CODES_SPEC as CODES
 
     node = generate_calc_job_node(
         'castep.castep',
@@ -63,25 +65,31 @@ def test_parse_warnings(
     content_orig = folder.get_object_content('aiida.castep').split('\n')
     content = content_orig[:-20]
     content.append('Insufficient time for another iteration')
-    with node.outputs.retrieved.open('aiida.castep', 'w') as fh:
-        fh.write('\n'.join(content))
+    buf = StringIO('\n'.join(content))
+    node.outputs.retrieved._repository.put_object_from_filelike(buf,
+                                                                'aiida.castep',
+                                                                force=True)
+
     results, return_node = parser.parse_from_node(node, store_provenance=False)
     assert return_node.exit_status == CODES['ERROR_TIMELIMIT_REACHED'][0]
 
     content.append(
         'SCF cycles performed but system has not reached the groundstate')
-    with node.outputs.retrieved.open('aiida.castep', 'w') as fh:
-        fh.write('\n'.join(content))
+    buf = StringIO('\n'.join(content))
+    node.outputs.retrieved._repository.put_object_from_filelike(buf,
+                                                                'aiida.castep',
+                                                                force=True)
     results, return_node = parser.parse_from_node(node, store_provenance=False)
     assert return_node.exit_status == CODES['ERROR_SCF_NOT_CONVERGED'][0]
 
-    node.outputs.retrieved.delete_object('aiida.castep', force=True)
+    node.outputs.retrieved._repository.delete_object('aiida.castep',
+                                                     force=True)
     results, return_node = parser.parse_from_node(node, store_provenance=False)
     assert return_node.exit_status == CODES['ERROR_NO_OUTPUT_FILE'][0]
 
 
 def test_parse_errs(
-        new_database,
+        clear_database_before_test,
         db_test_app,
         generate_calc_job_node,
         generate_parser,
@@ -90,8 +98,6 @@ def test_parse_errs(
     """
     Test basic parsing
     """
-    from aiida_castep.common import EXIT_CODES_SPEC as CODES
-    from io import StringIO
 
     node = generate_calc_job_node(
         'castep.castep',
@@ -104,13 +110,15 @@ def test_parse_errs(
 
     error_string = u'Error Message\nError'
     err_handle = StringIO(error_string)
-    folder.put_object_from_filelike(err_handle, 'aiida.0001.err', force=True)
+    folder._repository.put_object_from_filelike(err_handle,
+                                                'aiida.0001.err',
+                                                force=True)
     results, return_node = parser.parse_from_node(node, store_provenance=False)
     assert return_node.exit_status == CODES['ERROR_CASTEP_ERROR'][0]
 
 
-def test_parsing_geom(new_database, db_test_app, generate_calc_job_node,
-                      generate_parser, h2_calc_inputs):
+def test_parsing_geom(clear_database_before_test, db_test_app,
+                      generate_calc_job_node, generate_parser, h2_calc_inputs):
     """
     Test if geom is converted to trajectory data
     """
@@ -176,7 +184,7 @@ def test_parser_retrieved(db_test_app, output_folder, generate_parser,
     for k in common_keys:
         assert k in out_traj.get_arraynames()
 
-    if output_folder == "O2-geom-spin" or output_folder == "Si-geom-stress":
+    if output_folder in ("O2-geom-spin", "Si-geom-stress"):
         bands = out.get(ln_name['bands'], None)
         assert bands is not None
 

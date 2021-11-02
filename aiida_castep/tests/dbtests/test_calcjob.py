@@ -160,8 +160,8 @@ def test_cell_with_spin(gen_instance, sto_calc_inputs):
     gen_instance.prepare_inputs()
 
 
-@pytest.mark.process_execution
-def test_submission(new_database, sto_calc_inputs, sto_spectral_inputs):
+def test_submission(clear_database_before_test, sto_calc_inputs,
+                    sto_spectral_inputs):
     """
     Test submitting a CastepCalculation
     """
@@ -175,7 +175,7 @@ def test_submission(new_database, sto_calc_inputs, sto_spectral_inputs):
     assert return_node.exit_status == 106
 
 
-def test_submit_test(new_database, sto_calc_inputs):
+def test_submit_test(clear_database_before_test, sto_calc_inputs):
     """
     Test the ``submit_test`` method
     """
@@ -189,7 +189,7 @@ def test_submit_test(new_database, sto_calc_inputs):
     assert 'aiida.param' in fcontent
 
 
-def test_submit_test_function(new_database, sto_calc_inputs):
+def test_submit_test_function(clear_database_before_test, sto_calc_inputs):
     """
     Test the ``submit_test`` method
     """
