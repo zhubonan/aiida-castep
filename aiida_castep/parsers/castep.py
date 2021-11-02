@@ -378,13 +378,12 @@ def bands_from_castepbin(seedname, fmanager):
     sort_idx = np.argsort(kidx)
     # Generated sorted arrays
     kpoints = binfile.kpoints[sort_idx, :]
-    weights = binfile.kpoint_weights[sort_idx]
+    weights = binfile.kpoint_weights[sort_idx].astype(float)
     eigenvalues = binfile.eigenvalues[:, sort_idx, :]
     occupancies = binfile.occupancies[:, sort_idx, :]
-    weights = binfile.kpoint_weights
     efermi = binfile.fermi_energy
 
-    bands_node.set_kpoints(kpoints, weights)
+    bands_node.set_kpoints(kpoints, weights=weights)
     bands_node.set_bands(eigenvalues, occupations=occupancies, units="eV")
     bands_node.set_cell(binfile.cell, pbc=(True, True, True))
     bands_node.set_attribute('efermi', efermi)

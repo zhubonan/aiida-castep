@@ -508,7 +508,7 @@ def get_iter_parser():
     return parser
 
 
-def parse_geom_text_output(out_lines, input_dict):
+def parse_geom_text_output(out_lines, input_dict) -> dict:
     """
     Parse output of .geom file
 

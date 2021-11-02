@@ -4,7 +4,11 @@ Check if various AiiDA types are created correctly.
 """
 
 import pytest
+from ase.build import bulk
 from aiida_castep.common import OUTPUT_LINKNAMES
+from aiida_castep.tests.conftest import data_path
+from aiida.orm import StructureData
+from aiida_castep.parsers.constants import units
 
 ln_name = OUTPUT_LINKNAMES
 
@@ -189,3 +193,32 @@ def test_parser_retrieved(db_test_app, output_folder, generate_parser,
     if output_folder == "N2-md":
         for k in md_keys:
             assert k in out_traj.get_arraynames()
+
+
+def test_bands_from_castepbin(db_test_app, generate_parser, data_path,
+                              generate_calc_job_node, sto_calc_inputs):
+    """
+    Iterate through internal test cases.
+    Check if the results are parsed correctly.
+    """
+
+    inputs = sto_calc_inputs
+    output_folder = "Si2-castepbin"
+    atoms = bulk("Si2", "zincblende", a=4.0)
+    inputs.structure = StructureData(ase=atoms).store()
+    inputs.metadata.options.seedname = "Si2"
+
+    # Swap the correct structure to allow desort to work
+    parser = generate_parser('castep.castep')
+    node = generate_calc_job_node('castep.castep', output_folder, inputs)
+
+    out, _ = parser.parse_from_node(node, store_provenance=False)
+
+    out_bands = out[ln_name['bands']]
+
+    bands, occ = out_bands.get_bands(also_occupations=True)
+
+    assert bands.shape == (1, 4, 8)
+    assert occ.shape == (1, 4, 8)
+    assert out_bands.attributes['efermi'][0] == pytest.approx(
+        0.248809 * units['Eh'], 1e-5)
