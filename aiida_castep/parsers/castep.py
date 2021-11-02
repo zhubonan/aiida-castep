@@ -1,6 +1,7 @@
 """
 Parsers for CASTEP
 """
+from typing import Union, List
 from pathlib import Path
 from contextlib import contextmanager
 from copy import deepcopy
@@ -38,7 +39,10 @@ class RetrievedFileManager:
         self.node = retrieved_node
         if retrieved_temporary_folder is not None:
             self.tmp_folder = Path(retrieved_temporary_folder)
-            self.tmp_content_names = list(map(str, self.tmp_folder.iterdir()))
+            # Store the relative paths as strings
+            self.tmp_content_names = list(
+                map(lambda x: str(x.relative_to(self.tmp_folder)),
+                    self.tmp_folder.iterdir()))
         else:
             self.tmp_folder = None
             self.tmp_content_names = []
@@ -55,10 +59,20 @@ class RetrievedFileManager:
         elif name in self.tmp_content_names:
             with open(self.tmp_folder / name, mode=mode) as handle:
                 yield handle
+        else:
+            raise FileNotFoundError(f"Object {name} is not found!")
 
-    def has_file(self, name):
+    def has_file(self, name) -> bool:
         """Return if we have this file"""
         return name in self.all_content_names
+
+    def list_object_names(self) -> List[str]:
+        """Return all object names avalaible"""
+        return self.all_content_names
+
+    def get_object_content(self, name, mode='r') -> Union[str, bytes]:
+        with self.open(name, mode=mode) as handle:
+            return handle.read()
 
 
 class CastepParser(Parser):
@@ -78,12 +92,12 @@ class CastepParser(Parser):
         """
 
         try:
-            output_folder = self.retrieved
+            retrieved = self.retrieved
         except exceptions.NotExistent:
             return self.exit_codes.ERROR_NO_RETRIEVED_FOLDER
 
-        fmanger = RetrievedFileManager(
-            output_folder, kwargs.get('retrieved_temporary_folder'))
+        output_folder = RetrievedFileManager(
+            retrieved, kwargs.get('retrieved_temporary_folder'))
 
         warnings = []
         exit_code_1 = None
@@ -95,7 +109,7 @@ class CastepParser(Parser):
         input_dict = {}
 
         # check what is inside the folder
-        filenames = [f.name for f in output_folder.list_objects()]
+        filenames = output_folder.list_object_names()
 
         # Get calculation options
         options = self.node.get_options()
@@ -172,9 +186,9 @@ class CastepParser(Parser):
         out_dict["error_messages"] = list(err_contents)
 
         ######## --- PROCESSING BANDS DATA -- ########
-        if has_bands or fmanger.has_file(seedname + '.castep_bin'):
-            if fmanger.has_file(seedname + '.castep_bin'):
-                bands_node = bands_from_castepbin(seedname, fmanger)
+        if has_bands or output_folder.has_file(seedname + '.castep_bin'):
+            if output_folder.has_file(seedname + '.castep_bin'):
+                bands_node = bands_from_castepbin(seedname, output_folder)
             else:
                 bands_node = bands_to_bandsdata(**bands_data)
             self.out(out_ln['bands'], bands_node)
