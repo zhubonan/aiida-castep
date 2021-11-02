@@ -9,18 +9,13 @@ from castepxbin import read_castep_bin
 from .constants import units
 
 
-class CastepBinParser:
+class CastepbinFile:
     """
     Parser for the `castep_bin` file.
 
     The heavy lifting is done by the `castepxbin` package, but here we need to do unit
     conversion and reorganisation.
     """
-
-    _supported_quantities = ('eigenvalues', 'occupations', 'kpoints', 'forces',
-                             'fermi_energy', 'total_energy',
-                             'scaled_positions')
-
     def __init__(self, fileobj=None, filename=None):
         """
         Instantiate from an file object
@@ -74,9 +69,42 @@ class CastepBinParser:
         array = self.raw_data.get('kpoints_of_eigenvalues')
         if array is None:
             return None
-        # Change from nb, nk, ns to ns, nk, nb
+        # Change from (3, nk) to (nk, 3)
         array = np.swapaxes(array, 0, 1)
         return array
+
+    @property
+    def kpoints_indices(self):
+        """
+        Return the indices of the kpoints
+
+        The kpoints, eigenvalues, and occupations may not be in the original
+        order as defined by the cell file, if the calculations is parallelised
+        over the kpoints.
+
+        This property gives the index of the kpoints so that the original order
+        can be recovered.
+
+        Note that most properties are in the "internal" order of kpoints, the original
+        order is mostly useful for band structure calculations where the list of kpoints
+        is explicitly given.
+        """
+        eigen_kpoints = self.kpoints
+        current_kpoints = np.swapaxes(self.raw_data.get('kpoints'), 0, 1)
+        output_indices = np.zeros(len(current_kpoints), dtype=int)
+        # Search through original list of kpoints
+        for idx, kpt in enumerate(eigen_kpoints):
+            this_idx = -1
+            for (idx_orig, orig_kpt) in enumerate(current_kpoints):
+                if np.all(np.abs((kpt - orig_kpt)) < 1e-10):
+                    this_idx = idx_orig
+                    break
+            if this_idx == -1:
+                raise RuntimeError(
+                    f"Kpoint {kpt} is not found in the kpoints list of the current cell"
+                )
+            output_indices[idx] = this_idx
+        return output_indices
 
     @property
     def forces(self):
