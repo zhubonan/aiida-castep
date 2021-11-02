@@ -49,11 +49,6 @@ class CastepbinFile:
         return self.raw_data['total_energy'] * units['Eh']
 
     @property
-    def fermi_energy(self):
-        """Fermi energy in eV"""
-        return self.raw_data['fermi_energy'] * units['Eh']
-
-    @property
     def occupancies(self):
         """Return the occupation array with shape (ns, nk, nb)"""
         array = self.raw_data.get('occupancies')
@@ -72,6 +67,26 @@ class CastepbinFile:
         # Change from (3, nk) to (nk, 3)
         array = np.swapaxes(array, 0, 1)
         return array
+
+    @property
+    def kpoints_current_cell(self):
+        """
+        Return the ordered kpoints array of the current cell with shape (nk, 3)
+        The order of these kpoints may not be consistent with the eigenvalues.
+        """
+        array = self.raw_data.get('kpoints')
+        if array is None:
+            return None
+        # Change from (3, nk) to (nk, 3)
+        array = np.swapaxes(array, 0, 1)
+        return array
+
+    @property
+    def kpoint_weights(self):
+        """Return the weights of the kpoints in the internal order"""
+        raw_weights = self.raw_data['kpoint_weights'].copy()
+        sort_idx = self.kpoints_indices
+        return raw_weights[sort_idx]
 
     @property
     def kpoints_indices(self):
@@ -123,6 +138,14 @@ class CastepbinFile:
         if array is None:
             return None
         return self._reindex3(array)
+
+    @property
+    def fermi_energy(self):
+        """Return the feremi energies"""
+        out = [self.raw_data['fermi_energy'] * units['Eh']]
+        if "fermi_energy_second_spin" in self.raw_data:
+            out.append(self.raw_data['fermi_energy_second_spin'] * units['Eh'])
+        return out
 
     @property
     def cell(self):

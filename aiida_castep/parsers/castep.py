@@ -1,12 +1,17 @@
 """
 Parsers for CASTEP
 """
+from pathlib import Path
+from contextlib import contextmanager
+from copy import deepcopy
+
 import numpy as np
 
 from aiida.orm import TrajectoryData, ArrayData, Dict, BandsData
 
 from aiida.parsers.parser import Parser
 from aiida.common import exceptions
+from aiida_castep.parsers.castep_bin import CastepbinFile
 
 from aiida_castep.parsers.raw_parser import units, RawParser
 from aiida_castep.parsers.utils import (structure_from_input,
@@ -20,6 +25,40 @@ from aiida_castep._version import CALC_PARSER_VERSION
 __version__ = CALC_PARSER_VERSION
 
 ERR_FILE_WARNING_MSG = ".err files found in workdir"
+
+
+class RetrievedFileManager:
+    """
+    Wrapper for supplying an unified file-handler interface for the retrieved content
+    """
+    def __init__(self, retrieved_node, retrieved_temporary_folder=None):
+        """
+        Instantiate the manager object
+        """
+        self.node = retrieved_node
+        if retrieved_temporary_folder is not None:
+            self.tmp_folder = Path(retrieved_temporary_folder)
+            self.tmp_content_names = list(map(str, self.tmp_folder.iterdir()))
+        else:
+            self.tmp_folder = None
+            self.tmp_content_names = []
+
+        self.perm_content_names = self.node.list_object_names()
+        self.all_content_names = self.perm_content_names + self.tmp_content_names
+
+    @contextmanager
+    def open(self, name, mode='r'):
+        """Open a file from either the retrieved node or the temporary folder"""
+        if name in self.perm_content_names:
+            with self.node.open(name, mode=mode) as handle:
+                yield handle
+        elif name in self.tmp_content_names:
+            with open(self.tmp_folder / name, mode=mode) as handle:
+                yield handle
+
+    def has_file(self, name):
+        """Return if we have this file"""
+        return name in self.all_content_names
 
 
 class CastepParser(Parser):
@@ -42,6 +81,9 @@ class CastepParser(Parser):
             output_folder = self.retrieved
         except exceptions.NotExistent:
             return self.exit_codes.ERROR_NO_RETRIEVED_FOLDER
+
+        fmanger = RetrievedFileManager(
+            output_folder, kwargs.get('retrieved_temporary_folder'))
 
         warnings = []
         exit_code_1 = None
@@ -130,8 +172,11 @@ class CastepParser(Parser):
         out_dict["error_messages"] = list(err_contents)
 
         ######## --- PROCESSING BANDS DATA -- ########
-        if has_bands:
-            bands_node = bands_to_bandsdata(**bands_data)
+        if has_bands or fmanger.has_file(seedname + '.castep_bin'):
+            if fmanger.has_file(seedname + '.castep_bin'):
+                bands_node = bands_from_castepbin(seedname, fmanger)
+            else:
+                bands_node = bands_to_bandsdata(**bands_data)
             self.out(out_ln['bands'], bands_node)
 
         ######## --- PROCESSING STRUCTURE DATA --- ########
@@ -303,4 +348,31 @@ def bands_to_bandsdata(bands_info, kpoints, bands):
     # and the fermi energy
     for key, value in bands_info.items():
         bands_node.set_attribute(key, value)
+    return bands_node
+
+
+def bands_from_castepbin(seedname, fmanager):
+    """
+    Acquire and prepare bands data from the castep_bin file instead
+    """
+
+    with fmanager.open(seedname + '.castep_bin', 'rb') as handle:
+        binfile = CastepbinFile(fileobj=handle)
+
+    bands_node = BandsData()
+    kidx = binfile.kpoints_indices
+    sort_idx = np.argsort(kidx)
+    # Generated sorted arrays
+    kpoints = binfile.kpoints[sort_idx, :]
+    weights = binfile.kpoint_weights[sort_idx]
+    eigenvalues = binfile.eigenvalues[:, sort_idx, :]
+    occupancies = binfile.occupancies[:, sort_idx, :]
+    weights = binfile.kpoint_weights
+    efermi = binfile.fermi_energy
+
+    bands_node.set_kpoints(kpoints, weights)
+    bands_node.set_bands(eigenvalues, occupations=occupancies, units="eV")
+    bands_node.set_cell(binfile.cell, pbc=(True, True, True))
+    bands_node.set_attribute('efermi', efermi)
+
     return bands_node
