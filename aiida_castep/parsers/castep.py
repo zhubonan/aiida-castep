@@ -188,6 +188,7 @@ class CastepParser(Parser):
         ######## --- PROCESSING BANDS DATA -- ########
         if has_bands or output_folder.has_file(seedname + '.castep_bin'):
             if output_folder.has_file(seedname + '.castep_bin'):
+                self.logger.info("Using castep_bin file for the bands data.")
                 bands_node = bands_from_castepbin(seedname, output_folder)
             else:
                 bands_node = bands_to_bandsdata(**bands_data)
