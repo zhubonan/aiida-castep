@@ -613,6 +613,45 @@ def _handle_walltime_limit(self, calculation):
     return None
 
 
+@register_error_handler(CastepBaseWorkChain, 600)
+def _handle_no_empty_bands(self, calculation):
+    """Handle the case where there is no empty bands"""
+    has_error = False
+    for warning in calculation.res.warnings:
+        if "At least one kpoint has no empty bands" in warning:
+            has_error = True
+            break
+    if has_error is False:
+        return None
+
+    # Need to handle this error
+    dot_castep = _get_castep_output_file(calculation)
+    nextra_bands = None
+    # Scan for the warning line and record the suggested nextra bands
+    for line in dot_castep:
+        match = re.match(r"Recommend using nextra_bands of (\d+) to (\d+).",
+                         line)
+        if match:
+            nextra_bands = int(match.group(2))
+    param = self.node.inputs.parameters.get_dict()
+
+    # No warning found? Increase the extra bands by 50%
+    if nextra_bands is None:
+        perc = param['PARAM'].get('perc_extra_bands')
+        if perc is None:
+            param['PARAM']['perc_extra_bands'] = 0.3
+        else:
+            perc *= 1.5
+            param['PARAM']['perc_extra_bands'] *= perc
+        self.report(f'Increased <perc_extra_bands> to {perc}.')
+    else:
+        # Apply the suggested bands
+        param['PARAM']['nextra_bands'] = nextra_bands
+        self.report(f'Increased <nextra_bands> to {nextra_bands}.')
+
+    return ErrorHandlerReport(True, False)
+
+
 @register_error_handler(CastepBaseWorkChain, 10000)
 def _handle_stop_by_request(self, calculation):
     """Handle the case when the stop flag is raised by the user"""

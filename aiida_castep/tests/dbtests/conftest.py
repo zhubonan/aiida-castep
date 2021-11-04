@@ -334,6 +334,7 @@ def generate_calc_job_node(db_test_app):
                                       link_label=k)
 
         options = builder.metadata.options
+        options.update(inputs.metadata.options)
         node.set_attribute('input_filename', options.input_filename)
         node.set_attribute('seedname', options.seedname)
         node.set_attribute('output_filename', options.output_filename)

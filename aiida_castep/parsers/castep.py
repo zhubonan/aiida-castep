@@ -190,6 +190,13 @@ class CastepParser(Parser):
             if output_folder.has_file(seedname + '.castep_bin'):
                 self.logger.info("Using castep_bin file for the bands data.")
                 bands_node = bands_from_castepbin(seedname, output_folder)
+                if not self._has_empty_bands(bands_node):
+                    # Set if no other errors
+                    out_dict["warnings"].append(
+                        "At least one kpoint has no empty bands, energy/forces returned are not reliable."
+                    )
+                    if exit_code == 'CALC_FINISHED':
+                        exit_code = "ERROR_NO_EMPTY_BANDS"
             else:
                 bands_node = bands_to_bandsdata(**bands_data)
             self.out(out_ln['bands'], bands_node)
@@ -308,6 +315,39 @@ class CastepParser(Parser):
 
         # Return the exit code
         return self.exit_codes.__getattr__(exit_code)
+
+    def _has_empty_bands(self, bands_data: BandsData, thresh=0.005):
+        """
+        Check for the occupation of the BandsData
+
+        There should be some empty bands if the calculation is a not a fixed occupation one.
+        Otherwise, the final energy and forces are not reliable.
+        """
+
+        # Check if occupation is allowed to vary
+        param = self.node.inputs.parameters.get_dict()['PARAM']
+        # If it is a fixed occupation calculation we do not need to do anything about it....
+        fix_occ = (param.get('fix_occupancy', False)
+                   or param.get('metals_method', 'dm').lower() == 'none'
+                   or param.get('elec_method', 'dm').lower() == 'none')
+        if fix_occ:
+            return True
+
+        _, occ = bands_data.get_bands(also_occupations=True)
+
+        nspin, nkppts, _ = occ.shape
+        problems = []
+        for ispin in range(nspin):
+            for ikpts in range(nkppts):
+                if occ[ispin, ikpts, -1] >= thresh:
+                    problems.append((ispin, ikpts, occ[ispin, ikpts, -1]))
+        if problems:
+            for ispin, ikpts, val in problems:
+                self.logger.warning(
+                    "No empty bands for spin %d, kpoint %d - occ: %.5f", ispin,
+                    ikpts, val)
+            return False
+        return True
 
 
 def bands_to_bandsdata(bands_info, kpoints, bands):
