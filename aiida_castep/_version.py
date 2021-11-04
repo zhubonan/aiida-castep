@@ -23,6 +23,10 @@ to be differentiated with the calculation being killed (by scheduler).
 1.0.2 -> Fix a bug of parsing cons'd forces
 
 1.0.3 -> Fix a bug where the forces are not reorderred as for the case of StructureData
+
+1.1.0 -> Enabled parsing of castep_bin files and return error codes when there is no empty
+band in at least one kpoint.
+
 """
 
 CALC_PARSER_VERSION = "1.1.0"
