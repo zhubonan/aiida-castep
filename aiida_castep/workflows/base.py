@@ -656,7 +656,7 @@ def _handle_no_empty_bands(self, calculation):
     if nextra_bands is None:
         perc = param['PARAM'].get('perc_extra_bands')
         if perc is None:
-            param['PARAM']['perc_extra_bands'] = 0.3
+            param['PARAM']['perc_extra_bands'] = 30
         else:
             perc *= 1.5
             param['PARAM']['perc_extra_bands'] *= perc
