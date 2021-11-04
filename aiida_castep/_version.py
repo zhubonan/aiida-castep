@@ -25,6 +25,6 @@ to be differentiated with the calculation being killed (by scheduler).
 1.0.3 -> Fix a bug where the forces are not reorderred as for the case of StructureData
 """
 
-CALC_PARSER_VERSION = "1.0.3"
-PLUGIN_VERSION = "1.2.0a5"
+CALC_PARSER_VERSION = "1.1.0"
+PLUGIN_VERSION = "1.2.0"
 __version__ = PLUGIN_VERSION
