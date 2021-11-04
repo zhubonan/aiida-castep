@@ -83,6 +83,11 @@ class CastepBaseWorkChain(WorkChain):
                    required=False,
                    serializer=to_aiida_type,
                    help="Kpoint spacing")
+        spec.input('ensure_gamma_centering',
+                   valid_type=orm.Bool,
+                   serializer=to_aiida_type,
+                   required=False,
+                   help='Ensure the kpoint grid is gamma centred.')
         spec.input(
             'options',
             valid_type=orm.Dict,
@@ -244,6 +249,18 @@ class CastepBaseWorkChain(WorkChain):
                     "This only makes sense for molecules-in-a-box input structures."
                     "Bear in mind that plane-wave DFT calculations are always periodic internally."
                 ))
+
+            # CASTEP uses the original MP grid definition such that only dimensions with odd number
+            # of points are Gamma-centred.
+            # Shifts of the grid is needed to ensure Gamma-centering needs to be enforced.
+            mesh, _ = kpoints.get_kpoints_mesh()
+            use_gamma = self.inputs.get('ensure_gamma_centering')
+            if use_gamma is not None and use_gamma.value is True:
+                castep_offset = _compute_castep_gam_offset(mesh)
+                kpoints.set_kpoints_mesh(mesh, castep_offset)
+                self.report("Offset used for Gamma-centering: {}".format(
+                    castep_offset))
+
             self.report("Using kpoints: {}".format(kpoints.get_description()))
             self.ctx.inputs.kpoints = kpoints
         else:
@@ -672,3 +689,18 @@ def _get_castep_output_file(calculation):
     fname = calculation.get_option('output_filename')
     fcontent = calculation.outputs.retrieved.get_object_content(fname)
     return fcontent.split('\n')
+
+
+def _compute_castep_gam_offset(grids):
+    """
+    Compute the offset need to get gamma-centred grids for a given grid specification
+
+    Note that the offset are expressed in the reciprocal cell units.
+    """
+    shifts = []
+    for grid in grids:
+        if grid % 2 == 0:
+            shifts.append(-1 / grid / 2)
+        else:
+            shifts.append(0.)
+    return shifts

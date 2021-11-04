@@ -41,7 +41,7 @@ A plain python dictionary may also be used as the input and will be *serialized*
 .. note:
    Passing ``force=True`` will create a new ``Dict`` if the existing ``Dict`` is stored.
    Be aware that the unstored node may be linked to more than one calculations and the
-   change will be shared. 
+   change will be shared.
 
 
 Get a summary of the inputs and compare them
@@ -51,3 +51,37 @@ The method ``get_castep_inputs_summary`` can be called to  get a summary of the 
 of a ``CastepCalculation`` at any time. In addition, the ``compare_with`` method
 can be used to compare the inputs between another calculation and returns the
 difference in the inputs as a dictionary. The `deepdiff <https://pypi.org/project/deepdiff/>`_ package is used behind the scene.
+
+
+Convention of kpoints
+----------------------
+
+CASTEP uses the Monkhorst-Pack grid formula following `this <https://journals.aps.org/prb/abstract/10.1103/PhysRevB.13.5188>` paper,
+where the directions with odd numbers are centred to the origin, and those with even numbers are not.
+To get Gamma-centered grid, ``kpoint_mp_offset`` needs to be specified with  ``-1/N`` for each direction with odd ``N``.
+
+For example, to use a Gamma-centered ``8x8x8`` grid, the follwing lines are required in the ``<seed>.cell``::
+
+ kpoint_mp_grid: 8 8 8
+ kpoint_mp_offset: -0.0625 -0.0625 -0.0625
+
+The pulgin follows the same convention as used by the code, with the grid and the offsets passed to the code as they are.
+This does mean that the same ``KpointsData`` used for other DFT code can mean differently.
+For example, a ``KpointsData`` with ``(8, 8, 8)`` mesh given to ``aiida-vasp`` is Gamma-centered, but is it not
+when passed to ``aiida-castep``.
+
+Certain quantities returned by methods of ``KpointData`` assumes that grid is Gamma-centering,
+so care should be taken to use them with ``aiida-castep``.
+
+To select Gamma-centered kpoint grid, one can set the ``ensure_gamma_centering`` port of the ``CastepBaseWorkchain`` to be ``Bool(True)``.
+This will automatically compute the offset and include it in the ``KpointsData`` generated and passed to the underlying ``CastepCalculation``.
+
+
+Reading occupantions
+--------------------
+
+The standard ``bands`` output file written by CASTEP does not included the occupations for each band.
+To read the occupation nubmers, one has to include the ``castep_bin`` output in the retrieve list.
+This will trigger the plugin to read the band information directly from this binary checkpoint file,
+which contains the occupation numbers.
+The will check if all kpoints contain empty bands, as otherwise the calculation results can have large errors.
