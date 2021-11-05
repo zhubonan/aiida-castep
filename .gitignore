@@ -9,3 +9,5 @@ build/*
 *.sublime-project
 *.sublime-workspace
 /aiida_castep/tests/tmp
+**/submit_test/*
+.vscode

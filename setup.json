@@ -34,7 +34,7 @@
         "click",
         "castepinput==0.1.4",
         "seekpath~=1.9,>=1.9.3",
-        "castepxbin@git+https://github.com/zhubonan/castepxbin.git@fdbac976b3c647177d51d98fae635806897a636a#egg=castepxbin"
+        "castepxbin~=0.2.0"
     ],
     "entry_points": {
         "console_scripts": [
