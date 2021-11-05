@@ -38,7 +38,7 @@
     ],
     "entry_points": {
         "console_scripts": [
-            "castep.mock = aiida_castep.utils.mock:main"
+            "castep.mock = aiida_castep.cmdline.mock_castep:mock_castep"
         ],
         "aiida.calculations": [
             "castep.castep = aiida_castep.calculations.castep:CastepCalculation",
