@@ -11,3 +11,4 @@ build/*
 /aiida_castep/tests/tmp
 **/submit_test/*
 .vscode
+.check

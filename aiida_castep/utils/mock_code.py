@@ -20,13 +20,6 @@ from castepinput import ParamInput, CellInput
 
 from aiida.repository import FileType
 
-
-def data_path(name):
-    """Return a path relative to the test data folder"""
-    this_file = __file__
-    return Path(this_file).parent.parent / 'tests' / 'data' / name
-
-
 # pylint: disable=logging-format-interpolation, import-outside-toplevel
 
 INPUT_OBJECTS = ('aiida.param', 'aiida.cell')
@@ -85,7 +78,7 @@ class MockRegistry:
 
     Calculations are identified using the hash of the parsed inputs.
     """
-    def __init__(self, base_path=data_path('registry')):
+    def __init__(self, base_path):
         """
         Instantiate and Registry
         """
