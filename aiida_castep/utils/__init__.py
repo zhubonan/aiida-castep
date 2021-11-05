@@ -7,7 +7,7 @@ import numpy as np
 # pylint: disable=import-outside-toplevel, too-many-locals
 
 
-def band_array_ensure_ndim(array: np.ndarray):
+def band_array_ensure_ndim(array):
     """
     Ensure there are three dimensions for a band-like array.
 

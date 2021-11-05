@@ -9,7 +9,7 @@ Step-by-step example - Silicon
 
 Here we setup a simple calculations of silicon that is identical to the ones in the
 CASTEP's `on-line tutorial <http://www.castep.org/Tutorials/BasicsAndBonding>`__.
-Before we start, AiiDA should be setup properly already. 
+Before we start, AiiDA should be setup properly already.
 You should have a working *profile* with a CASTEP ``Code`` node and
 a ``Computer`` node.
 Both of them can be added using ``verdi`` command-line interface.
@@ -126,7 +126,7 @@ The downside is that a new ``Dict`` node is always created even the contents are
    No internal type check or enforcement is implemented.
    The bottom line is that the text files generated needs to be understood by CASTEP.
 
-.. note:: 
+.. note::
   Block type keywords can be set using a list of strings each for a single line.
 
 Setup structure and k-points
@@ -138,7 +138,7 @@ For now, we can write::
 
  StructureData = DataFactory("structure")
  silicon = StructureData()
- cell = [[2.6954645, 2.6954645, 0], 
+ cell = [[2.6954645, 2.6954645, 0],
          [2.6954645, 0, 2.6954645],
          [0, 2.6954645, 2.6954645]]
  silicon.set_cell(cell)
@@ -146,7 +146,7 @@ For now, we can write::
  silicon.append_atom(position=[1.34773255, 1.34773255, 1.34773255], symbols="Si")
 
 Alternatively, one can pass a ``ase.Atoms`` object to the constructive as keyword argument::
- 
+
  from ase import Atoms
  a_si = Atoms("Si2", cell=cell, scaled_positions=[[0, 0, 0], [0.25, 0.25, 0.25]])
  silicon = StructureData(ase=a_si)
@@ -169,13 +169,13 @@ Finally, we save them in the builder as inputs::
    There are several useful routines in :py:mod:`aiida_castep.utils` to work with ``ase``,
    such as generating constraints or converting trajectory to a list of ``Atoms`` for visualisation.
    The output structure of a ``CastepCalculation`` is automatically sorted to have a index consistent with the input structure.
-         
+
 
 Setup pseudo potentials
 -----------------------
 
 CASTEP has the ability to generate pseudopotentials on-the-fly.
-Of course, using a pre-generated pseudo potential set is also supported and you 
+Of course, using a pre-generated pseudo potential set is also supported and you
 can reuse the on-the-fly generated (OTFG)) potential files.
 There are several libraries built-in in CASTEP and new, revised versions comes out at new releases.
 Internally, OTFG potentials are generated based on a 1 line specification string which can be defined manually.
@@ -230,7 +230,7 @@ For example, the following ::
 
 uploads a family "MyFamily", which uses "C19" for any elements except for "O", for which generation setting "2|1.5|12|13|15|20:21(qc=5)" will be used instead.
 
-A family is just a collection of pseudopoentials and/or a library name. 
+A family is just a collection of pseudopoentials and/or a library name.
 To apply it to a calculation, one can use an utility function::
 
   CastepCalculation.use_pseudos_from_family(builder, "C19")
@@ -298,7 +298,7 @@ The input keywords for cell and param file will be check, and if there is any mi
    The dryrun test can be performed locally with::
 
      CastepCalculation.dryrun_test(builder)
-   
+
 
 Finally, we are ready to submit the calculation::
 
@@ -308,24 +308,51 @@ Finally, we are ready to submit the calculation::
 The first line stores the calculation and all of its inputs. The seconds line mark our calculation for submission.
 The actual submission is handled by one of AiiDA's daemon process, so you need to have it running in the background.
 
+.. note::
+   Don't forget to launch the daemon with ``verdi daemon start`` if you have not done so.
+   When the ``submit`` function is called, the workchain and its inputs are serialized to the AiiDA database.
+   Then task is sent to the RabbitMQ server to indicate that this workflow is ready to launch.
+   It is then up to the daemon process to check-in the job and deserialize the inputs from the database to
+   actually run the job.
+
 Monitoring
 ==========
 
-Monitoring the state of calculations can be done using ``verdi process list``. 
+Monitoring the state of calculations can be done using ``verdi process list``.
 Inside a interactive shell, the state of a calculation may be checked with
 ``calcjob.get_process_state()``.
 
 Once the calculation is finished, the state can be access with ``calcjob.exit_status`` and ``calcjob.exit_message``.
 If the calculation has finished without error then the ``exit_status`` should be 0.
 
+Another way to monitor the jobs is to use ``verdi process list`` command, which lists all running calculations/workflows
+by default. It is also possible to filter the jobs by state/age using various optional arguments.
+
+You will see that the just submitted job to be in ``Waiting`` state, and the *process status* going through several stages,
+such as *upload*, *submit*, *update*, *retrieve*.
+
+Once the job is finished, it will be in the ``Finished`` state and no longer show up with ``verdi process list``.
+Use ``verdi process list -p1 -a`` to list all jobs created within the past 24 hours.
+
+Shell alias can be set to make interacting with ``verdi`` command easier. As an example, the following lines can be included
+in the ``.bashrc``:
+
+.. code-block:: console
+
+   alias vplp="verdi process list -P pk process_label label state scheduler_state"
+   alias vpl="verdi process list"
+   alias vco="verdi calcjob outputcat"
+   alias vcg="verdi calcjob gotocomputer"
+   alias vci="verdi calcjob inputcat"
+
 
 Accessing Results
 =================
 
 A series of node will be created when the calculation is finished and parsed.
-Use ``calc.get_outgoing().all()`` to access the output nodes. 
-Alternatively, the main ``Dict`` node's content can be return using ``calc.res.<tab completion>``. 
-Other nodes can be access using ``calc.outputs.<tab completion>``. 
+Use ``calc.get_outgoing().all()`` to access the output nodes.
+Alternatively, the main ``Dict`` node's content can be return using ``calc.res.<tab completion>``.
+Other nodes can be access using ``calc.outputs.<tab completion>``.
 The calculation's state is set to "FINISHED" after it is completed without error.
 This does not mean that the underlying task has succeeded.
 For example, an unconverged geometry optimization due to the maximum iteration being reached is still a successful  calculation,
