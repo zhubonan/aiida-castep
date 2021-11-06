@@ -47,5 +47,7 @@ def mock_castep(seed):
 
     mock_registry_path = os.environ.get('MOCK_CODE_BASE',
                                         data_path('registry'))
+    click.echo('DEBUG: MOCK REGSISTRY PATH = {}'.format(
+        str(mock_registry_path)))
     mock = MockCastep(pwd, MockRegistry(mock_registry_path))
     mock.run()
