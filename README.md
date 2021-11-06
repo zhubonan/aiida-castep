@@ -8,7 +8,7 @@ A plugin for [AiiDA](www.aiida.net) to work with plane-wave pseudopotential DFT 
 CASTEP has a single binary executable and calculation is primarily controlled by the *task* keyword.
 The generic `CastepCalculation` should work with all tasks, at least in terms of generating input files.
 Likewise a generic `CastepParser` class is implemented and can handle parsing most information we are interested in *singlepoint*, *geometryoptimisation*, *bandstructure/spectral* tasks.
-Most output files are retrieved if present, and it is possible to explicitly request retrieval from the remote computer. 
+Most output files are retrieved if present, and it is possible to explicitly request retrieval from the remote computer.
 The goal of this plugin is not to provide a comprehensive parser of the CASTEP results, but to build a graph of calculations performed for provenance preservation and workflow automation.
 Input and output of a simple calculation:
 
@@ -18,7 +18,7 @@ or a series of operations and automated calculations:
 
 ![A series of calculations](https://github.com/zhubonan/aiida-castep/raw/dev/docs/source/images/calc_series_example.png)
 
-The raw files can always be extracted from the database and analysed by the post-processing tools of choice. 
+The raw files can always be extracted from the database and analysed by the post-processing tools of choice.
 Even better, such tools may be integrated with the AiiDA framework and have the analysis appended to the provenance graph.
 
 Highlights of available features:
@@ -34,6 +34,19 @@ Highlights of available features:
 * A `get_castep_inputs_summary` function to print a summary of inputs of a calculations.
 * A `compare_with` method to compare the inputs of two calculations.
 
+Documentation
+-------------
+
+Quick glimpse into how to use the plugin for running calculations:
+
+- [Running CastepCalculation](https://nbviewer.org/github/zhubonan/aiida-castep/blob/dev/examples/aiida-castep-quick-start.ipynb)
+- [Running CastepBaseWorkChain](https://nbviewer.org/github/zhubonan/aiida-castep/blob/dev/examples/aiida-castep-quick-workchain.ipynb)
+
+Documentation is hosted at Read the Docs:  
+[dev version](https://aiida-castep.readthedocs.io/en/dev/)  
+[master version](https://aiida-castep.readthedocs.io/en/master/)
+
+
 Dependencies
 ------------
 
@@ -45,17 +58,10 @@ The primary dependency is the `aiida_core` package. The dependencies are:
 Due to major design and API changes in the `aiida_core`, scripts written are incompatible between and new versions.
 
 
-Documentation
--------------
-
-Documentation is hosted at Read the Docs:  
-[dev version](https://aiida-castep.readthedocs.io/en/dev/)  
-[master version](https://aiida-castep.readthedocs.io/en/master/)
-
 Todos and nice-to-haves
 -----------------------
 
-* Methods for importing existing calculations 
+* Methods for importing existing calculations
 * Support for submitting file based CASTEP calculations.
 * At the moment there is no enforcement on the type in `Dict` input node. For example, setting *smearing_width* to 0.1 and "0.1" is equivalent, but they will store differently in the database.
 
