@@ -4,11 +4,14 @@ Your first calculation
 
 This page contains a simple tutorial for setting up a CASTEP calculation with AiiDA using ``aidia_castep`` plugin.
 
+.. note::
+  A notebook example can be found `here <https://nbviewer.org/github/zhubonan/aiida-castep/blob/dev/examples/aiida-castep-quick-start.ipynb>`_.
+
 Step-by-step example - Silicon
 ==============================
 
 Here we setup a simple calculations of silicon that is identical to the ones in the
-CASTEP's `on-line tutorial <http://www.castep.org/Tutorials/BasicsAndBonding>`__.
+CASTEP's `on-line tutorial <http://www.castep.org/Tutorials/BasicsAndBonding>`_.
 Before we start, AiiDA should be setup properly already.
 You should have a working *profile* with a CASTEP ``Code`` node and
 a ``Computer`` node.
@@ -365,3 +368,6 @@ Further Reading
 
 As mentioned above, most calculation will be done using ``CastepBaseWorkChain`` which make it easier for defining the inputs and also adds the ability to correct some common
 problems, such as SCF convergence problems and running out of walltimes.
+
+.. seealso::
+  Example notebook can be found `here <https://nbviewer.org/github/zhubonan/aiida-castep/blob/dev/examples/aiida-castep-quick-workchain.ipynb>`__.
