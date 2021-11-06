@@ -1,13 +1,14 @@
 """
 conftest that prepares fixtures with tests involving orm of aiida
 """
+from io import BytesIO
 import tempfile
 import shutil
 from pathlib import Path
 
 import pytest
 
-from aiida.orm import Computer, Dict, Code, KpointsData, Node
+from aiida.orm import Computer, Dict, Code, KpointsData, Node, StructureData
 from aiida.plugins import DataFactory, ParserFactory
 from aiida.common.exceptions import NotExistent
 from aiida.common import AttributeDict
@@ -41,8 +42,8 @@ class CastepTestApp(object):
         """
         defaults = dict(label='localhost',
                         hostname='localhost',
-                        transport_type='local',
-                        scheduler_type='direct',
+                        transport_type='core.local',
+                        scheduler_type='core.direct',
                         workdir=str(self._workdir))
 
         kwargs.update(defaults)
@@ -259,7 +260,6 @@ def h2_calc_inputs(
 
 @pytest.fixture
 def h2_structure(aiida_profile, db_test_app):
-    StructureData = DataFactory("structure")
     a = 10
 
     cell = ((a, 0., 0.), (0., a, 0.), (0., 0., a))
@@ -305,6 +305,7 @@ def generate_calc_job_node(db_test_app):
             inputs=None,
             computer=None,
             outputs=None,
+            outfile_override=None,
     ):
         """
         Generate a CalcJob node with fake retrieved node in the
@@ -349,6 +350,16 @@ def generate_calc_job_node(db_test_app):
         filepath = this_folder.parent / 'data' / results_folder
         retrieved = FolderData()
         retrieved.put_object_from_tree(str(filepath.resolve()))
+
+        # Apply overriding output files
+        if outfile_override is not None:
+            for key, content in outfile_override.items():
+                if content is None:
+                    retrieved.delete_object(key)
+                    continue
+                buf = BytesIO(content.encode())
+                retrieved.put_object_from_filelike(buf, key)
+
         retrieved.add_incoming(node,
                                link_type=LinkType.CREATE,
                                link_label='retrieved')

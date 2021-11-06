@@ -3,15 +3,14 @@ Module for storing usp files into the database
 """
 
 import warnings
-from aiida.plugins import DataFactory
+from pathlib import Path
+from aiida.orm import SinglefileData
 from aiida.common.utils import classproperty
 from aiida.common.files import md5_file
 from .utils import get_usp_element
 
 OLD_USPGROUP_TYPE = "data.castep.usp.family"
 USPGROUP_TYPE = "castep.otfg"
-
-SinglefileData = DataFactory("singlefile")
 
 # Extract element from filename
 
@@ -142,7 +141,8 @@ class UspData(SinglefileData):
         """
         Initialize a UspData node
         :param file str: A full path to the file of the potential
-        :param element: The elemnt that this pseudo potential should be used for
+        :param filename str: The filename needs to be used if ``file`` is a file-like object.
+        :param element: The element that this pseudo potential should be used for
         """
 
         element = kwargs.pop("element", None)
@@ -231,15 +231,15 @@ class UspData(SinglefileData):
 
         return super(UspData, self).store(*args, **kwargs)
 
-    def set_file(self, filename):
+    def set_file(self, file, filename=None):
         """
         Extract element and compute the md5hash
         """
 
-        filename = str(filename)
+        filename = Path(file).name
 
         try:
-            element = get_usp_element(filename)
+            element = get_usp_element(file)
         except KeyError:
             element = None
         else:
@@ -250,14 +250,14 @@ class UspData(SinglefileData):
                 else:
                     warnings.warn(
                         "Cannot extract element form the usp/recpot file {}."
-                        "Please set it manually.".format(filename))
+                        "Please set it manually.".format(file))
             else:
                 # The element is already set, no need to process further
                 pass
 
-        md5sum = md5_file(filename)
+        md5sum = md5_file(file)
         self.set_attribute('md5', md5sum)
-        super(UspData, self).set_file(filename)
+        super(UspData, self).set_file(file, filename)
 
     def set_element(self, element):
         """

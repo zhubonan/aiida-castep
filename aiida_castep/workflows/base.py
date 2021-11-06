@@ -22,8 +22,6 @@ from aiida_castep.calculations.tools import flat_input_param_validator
 from .common import (UnexpectedCalculationFailure, register_error_handler,
                      ErrorHandlerReport)
 
-KpointsData = DataFactory("array.kpoints")  # pylint: disable=invalid-name
-StructureData = DataFactory("structure")  # pylint: disable=invalid-name
 Dict = DataFactory("dict")  # pylint: disable=invalid-name
 
 # pylint: disable=no-member
@@ -236,7 +234,7 @@ class CastepBaseWorkChain(WorkChain):
             self.ctx.inputs.kpoints = self.inputs.calc.kpoints
         elif self.inputs.get('kpoints_spacing'):
             spacing = self.inputs.kpoints_spacing.value
-            kpoints = KpointsData()
+            kpoints = orm.KpointsData()
             # Here the pbc settings of the structure is respected.
             # If a direction is not periodic it will have a single kpoint for the grid.
             # Care should be taken if a periodic structure incorrectly set to be
