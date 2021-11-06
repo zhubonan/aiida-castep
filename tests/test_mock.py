@@ -5,16 +5,12 @@ Tests for mock CASTEP
 # pylint: disable=wildcard-import,no-member, import-outside-toplevel, too-many-arguments
 from os import getcwd
 from pathlib import Path
-import shutil
 from tempfile import mkdtemp
 from shutil import rmtree, copy2
 
 import pytest
 
-from click.testing import CliRunner
-
 from aiida_castep.utils.mock_code import MockRegistry, MockCastep, get_hash
-from aiida_castep.cmdline.mock_castep import mock_castep
 
 
 def test_get_hash():
@@ -185,20 +181,3 @@ def test_mock_castep(mock_registry, temp_path, data_path):
     objects = [path.name for path in temp_path.glob('*')]
     assert 'aiida.castep' in objects
     assert 'aiida.geom' in objects
-
-
-def test_mock_command(data_path):
-    """Test the mock_castep command"""
-    import os
-
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        shutil.copy(data_path / "registry" / "H2-geom" / 'inp' / 'aiida.cell',
-                    getcwd() + '/aiida.cell')
-        shutil.copy(data_path / "registry" / "H2-geom" / 'inp' / 'aiida.param',
-                    getcwd() + '/aiida.param')
-        os.environ['MOCK_CODE_BASE'] = str(data_path / "registry")
-        output = runner.invoke(mock_castep, ['aiida'])
-
-        assert Path("aiida.castep").is_file()
-        assert output.exception is None
