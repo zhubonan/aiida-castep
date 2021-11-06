@@ -30,7 +30,8 @@ def mock_castep(seed):
     A 'mock' CASTEP code that throws out output files for a given input seed name.
     """
     from aiida.manage.configuration.settings import AIIDA_CONFIG_FOLDER  # pylint: disable=import-outside-toplevel
-    pwd = Path().absolute()
+    pwd = Path(os.getcwd()).absolute()
+
     aiida_path = Path(AIIDA_CONFIG_FOLDER)
     aiida_cfg = aiida_path / 'config.json'
     click.echo('DEBUG: AIIDA_PATH = {}'.format(os.environ.get('AIIDA_PATH')))
