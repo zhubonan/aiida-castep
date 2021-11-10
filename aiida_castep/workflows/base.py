@@ -650,7 +650,7 @@ def _handle_no_empty_bands(self, calculation):
                          line)
         if match:
             nextra_bands = int(match.group(2))
-    param = self.node.inputs.parameters.get_dict()
+    param = self.ctx.inputs.parameters.get_dict()
 
     # No warning found? Increase the extra bands by 50%
     if nextra_bands is None:
@@ -665,6 +665,8 @@ def _handle_no_empty_bands(self, calculation):
         # Apply the suggested bands
         param['PARAM']['nextra_bands'] = nextra_bands
         self.report(f'Increased <nextra_bands> to {nextra_bands}.')
+
+    self.ctx.inputs.parameters = orm.Dict(dict=param)
 
     return ErrorHandlerReport(True, False)
 
