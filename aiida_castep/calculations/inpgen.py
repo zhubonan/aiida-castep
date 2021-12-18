@@ -279,17 +279,30 @@ class CastepInputGenerator:
                     "grid", "offset")] = "{} {} {}".format(*offset)
         else:
             extra_kpts_lines = []
-            for kpoint, weight in zip(bs_kpts_list, weights):
-                if kpn_settings['need_weights'] is True:
-                    extra_kpts_lines.append("{:18.10f} {:18.10f} "
-                                            "{:18.10f} {:18.14f}".format(
-                                                kpoint[0], kpoint[1],
-                                                kpoint[2], weight))
-                else:
-                    extra_kpts_lines.append("{:18.10f} {:18.10f} "
-                                            "{:18.10f}".format(
-                                                kpoint[0], kpoint[1],
-                                                kpoint[2]))
+            count = 0
+            labels = dict(kpn_node.labels)
+            latex_labels = {'GAMMA':'\\Gamma', 'LAMBDA':'\\Lambda', 'SIGMA':'\\Sigma'}
+            if kpn_settings['need_weights'] is True:
+                for kpoint, weight in zip(bs_kpts_list, weights):
+                    if count in labels:
+                        label = labels[count]
+                        if label in latex_labels:
+                            extra_kpts_lines.append(f"{kpoint[0]} {kpoint[1]} {kpoint[2]} {weight} ! {latex_labels[label]}")
+                        else:
+                            extra_kpts_lines.append(f"{kpoint[0]} {kpoint[1]} {kpoint[2]} {weight} ! {label}")
+                    else:
+                        extra_kpts_lines.append(f"{kpoint[0]} {kpoint[1]} {kpoint[2]} {weight}")
+            else:
+                for kpoint in bs_kpts_list:
+                    if count in labels:
+                        label = labels[count]
+                        if label in latex_labels:
+                            extra_kpts_lines.append(f"{kpoint[0]} {kpoint[1]} {kpoint[2]} ! {latex_labels[label]}")
+                        else:
+                            extra_kpts_lines.append(f"{kpoint[0]} {kpoint[1]} {kpoint[2]} ! {label}")
+                    else:
+                        extra_kpts_lines.append(f"{kpoint[0]} {kpoint[1]} {kpoint[2]}")
+                    count += 1
             bname = "{}_kpoint_list".format(kpn_name).upper()
             self.cell_file[bname] = extra_kpts_lines
 
