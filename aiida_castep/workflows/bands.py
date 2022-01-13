@@ -266,10 +266,12 @@ class CastepBandsWorkChain(WorkChain):
         # Use the SCF inputs as the base
         inputs = AttributeDict(self.exposed_inputs(base_work, namespace='scf'))
         inputs.calc.structure = self.ctx.current_structure
-        # Setup the restart folders and relavant tags
-        self.setup_restart_folder(inputs)
-
         only_dos = self.inputs.get('only_dos')
+
+        # Setup the restart folders and relavant tags
+        if 'continuation_folder' in self.inputs.scf and not self.should_run_scf(
+        ):
+            self.ctx.restart_folder = self.inputs.scf.continuation_folder
 
         def generate_sub_input(inputs, namespace, task):
             """
@@ -314,6 +316,9 @@ class CastepBandsWorkChain(WorkChain):
             # Set the kpoints
             inputs.calc[self._task_name + '_kpoints'] = self.ctx.bands_kpoints
 
+            if 'restart_folder' in self.ctx:
+                self.setup_restart_folder(inputs)
+
             bands_calc = self.submit(base_work, **inputs)
             running['bands_workchain'] = bands_calc
             self.report(
@@ -327,9 +332,11 @@ class CastepBandsWorkChain(WorkChain):
             else:
                 inputs = generate_sub_input(inputs, 'scf', 'spectral')
 
-            inputs = generate_sub_input(inputs, 'dos', 'spectral')
             # Set the kpoints
             inputs.calc[self._task_name + '_kpoints'] = self.inputs.dos_kpoints
+            if 'restart_folder' in self.ctx:
+                self.setup_restart_folder(inputs)
+
             dos_calc = self.submit(base_work, **inputs)
             running['dos_workchain'] = dos_calc
             self.report(
@@ -348,13 +355,13 @@ class CastepBandsWorkChain(WorkChain):
         if write_checkpoint.lower() != 'none':
             allow_restart = True
             # Ensure we use the CASTEP bin file
-            if write_checkpoint == 'minimum':
+            if write_checkpoint == 'minimal':
                 # Update to use the castep_bin file
                 use_bin = True
 
             elif '=' in write_checkpoint:
                 # Cannot decide - visit the remote folder and check
-                contents = self.ctx.restart_folder.list_dir()
+                contents = self.ctx.restart_folder.listdir()
                 seed = self.ctx.restart_folder.creator.get_options(
                 )['seedname']
                 if f'{seed}.check' not in contents:
@@ -368,7 +375,8 @@ class CastepBandsWorkChain(WorkChain):
         if allow_restart:
             inputs.continuation_folder = self.ctx.restart_folder
             if use_bin is True:
-                options = inputs.options.get_dict()
+                options = inputs.options.get_dict(
+                ) if 'options' in inputs else {}
                 options['use_castep_bin'] = True
                 inputs.options = orm.Dict(dict=options)
 
