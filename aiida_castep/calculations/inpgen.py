@@ -281,10 +281,14 @@ class CastepInputGenerator:
             extra_kpts_lines = []
             if kpn_settings['need_weights'] is True:
                 for kpoint, weight in zip(bs_kpts_list, weights):
-                    extra_kpts_lines.append(f"{kpoint[0]} {kpoint[1]} {kpoint[2]} {weight}")
+                    extra_kpts_lines.append(
+                        f"{kpoint[0]:18.10f} {kpoint[1]:18.10f} {kpoint[2]:18.10f} {weight:18.14f}"
+                    )
             else:
                 for kpoint in bs_kpts_list:
-                    extra_kpts_lines.append(f"{kpoint[0]} {kpoint[1]} {kpoint[2]}")
+                    extra_kpts_lines.append(
+                        f"{kpoint[0]:18.10f} {kpoint[1]:18.10f} {kpoint[2]:18.10f}"
+                    )
             bname = "{}_kpoint_list".format(kpn_name).upper()
             self.cell_file[bname] = extra_kpts_lines
 
