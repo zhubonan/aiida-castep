@@ -279,17 +279,16 @@ class CastepInputGenerator:
                     "grid", "offset")] = "{} {} {}".format(*offset)
         else:
             extra_kpts_lines = []
-            for kpoint, weight in zip(bs_kpts_list, weights):
-                if kpn_settings['need_weights'] is True:
-                    extra_kpts_lines.append("{:18.10f} {:18.10f} "
-                                            "{:18.10f} {:18.14f}".format(
-                                                kpoint[0], kpoint[1],
-                                                kpoint[2], weight))
-                else:
-                    extra_kpts_lines.append("{:18.10f} {:18.10f} "
-                                            "{:18.10f}".format(
-                                                kpoint[0], kpoint[1],
-                                                kpoint[2]))
+            if kpn_settings['need_weights'] is True:
+                for kpoint, weight in zip(bs_kpts_list, weights):
+                    extra_kpts_lines.append(
+                        f"{kpoint[0]:18.10f} {kpoint[1]:18.10f} {kpoint[2]:18.10f} {weight:18.14f}"
+                    )
+            else:
+                for kpoint in bs_kpts_list:
+                    extra_kpts_lines.append(
+                        f"{kpoint[0]:18.10f} {kpoint[1]:18.10f} {kpoint[2]:18.10f}"
+                    )
             bname = "{}_kpoint_list".format(kpn_name).upper()
             self.cell_file[bname] = extra_kpts_lines
 
