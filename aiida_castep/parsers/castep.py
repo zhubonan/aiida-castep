@@ -27,6 +27,12 @@ __version__ = CALC_PARSER_VERSION
 
 ERR_FILE_WARNING_MSG = ".err files found in workdir"
 
+# Tasks where the bands (eigenvalues) that oen is interested in is not those
+# from the SCF calculation. In these cases, we have to get the bands from the .bands
+# file instead of the castep_bin/check outputs, since the latter only stored those
+# of the electronic ground state calculation (SCF
+NON_SCF_BAND_TASKS = ('spectral', 'bandstructure', 'optics')
+
 
 class RetrievedFileManager:
     """
@@ -84,6 +90,16 @@ class CastepParser(Parser):
     """
 
     _setting_key = 'parser_options'
+
+    @property
+    def castep_input_parameters(self):
+        """Access the original castep input parameters """
+        return self.node.inputs.parameters.get_dict()
+
+    @property
+    def castep_task(self):
+        """Task of the calculation"""
+        return self.castep_input_parameters['PARAM'].get('task', 'singlepoint')
 
     def parse(self, **kwargs):
         """
@@ -187,7 +203,9 @@ class CastepParser(Parser):
 
         ######## --- PROCESSING BANDS DATA -- ########
         if has_bands or output_folder.has_file(seedname + '.castep_bin'):
-            if output_folder.has_file(seedname + '.castep_bin'):
+            # Only use castep_bin if we are interested in SCF kpoints
+            if output_folder.has_file(seedname + '.castep_bin') and (
+                    self.castep_task.lower() not in NON_SCF_BAND_TASKS):
                 self.logger.info("Using castep_bin file for the bands data.")
                 bands_node = bands_from_castepbin(seedname, output_folder)
                 if not self._has_empty_bands(bands_node):
