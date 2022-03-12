@@ -85,6 +85,7 @@ def test_inp_gen_cell(gen_instance, sto_calc_inputs):
     })
     assert 'phonon_kpoint_mp_offset' in gen_instance.cell_file
 
+    # Explicit kpoints, with/without the weights
     kpn2 = KpointsData()
     kpn_points = [[0, 0, 0], [0.5, 0.5, 0.5]]
     kpn_weights = [0.3, 0.6]
@@ -93,6 +94,25 @@ def test_inp_gen_cell(gen_instance, sto_calc_inputs):
         'task': ('bandstructure', ),
         'need_weights': True
     })
+    assert len(gen_instance.cell_file['BS_KPOINT_LIST'][0].split()) == 4
+
+    kpn2 = KpointsData()
+    kpn_points = [[0, 0, 0], [0.5, 0.5, 0.5]]
+    kpn2.set_kpoints(kpn_points)
+    gen_instance._include_extra_kpoints(kpn2, 'bs', {
+        'task': ('bandstructure', ),
+        'need_weights': True
+    })
+    assert len(gen_instance.cell_file['BS_KPOINT_LIST'][0].split()) == 4
+    assert float(gen_instance.cell_file['BS_KPOINT_LIST'][0].split()[3]) == 0.5
+
+    # No weights
+    gen_instance._include_extra_kpoints(kpn2, 'bs', {
+        'task': ('bandstructure', ),
+        'need_weights': False
+    })
+    assert len(gen_instance.cell_file['BS_KPOINT_LIST'][0].split()) == 3
+
     assert 'BS_KPOINT_LIST' in gen_instance.cell_file
 
 
