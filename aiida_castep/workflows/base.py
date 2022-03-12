@@ -674,8 +674,8 @@ def _handle_no_empty_bands(self, calculation):
     nextra_bands = None
     # Scan for the warning line and record the suggested nextra bands
     for line in dot_castep:
-        match = re.match(r"Recommend using nextra_bands of (\d+) to (\d+).",
-                         line)
+        match = re.search(r"Recommend using nextra_bands of (\d+) to (\d+)",
+                          line)
         if match:
             nextra_bands = int(match.group(2))
     param = self.ctx.inputs.parameters
@@ -687,11 +687,13 @@ def _handle_no_empty_bands(self, calculation):
             param['PARAM']['perc_extra_bands'] = 30
         else:
             perc *= 1.5
-            param['PARAM']['perc_extra_bands'] *= perc
+            param['PARAM']['perc_extra_bands'] = perc
+        param['PARAM'].pop('nextra_bands', None)
         self.report(f'Increased <perc_extra_bands> to {perc}.')
     else:
         # Apply the suggested bands
         param['PARAM']['nextra_bands'] = nextra_bands
+        param['PARAM'].pop('perc_extra_bands', None)
         self.report(f'Increased <nextra_bands> to {nextra_bands}.')
 
     return ErrorHandlerReport(True, False)
