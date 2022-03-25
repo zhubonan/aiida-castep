@@ -1,35 +1,33 @@
 """
 Calculations of CASTEP
 """
-from __future__ import print_function
-from __future__ import absolute_import
-import six
-from six.moves import zip
 
+import re
+import time
+from fnmatch import fnmatch
+from subprocess import call, check_output
+from textwrap import TextWrapper
+
+from aiida.manage.manager import get_manager
+
+from aiida.common.folders import Folder
 from aiida.common import InputValidationError
 from aiida.common import CalcInfo, CodeInfo
-from aiida.plugins import DataFactory
-from aiida.engine import ProcessBuilder
+from aiida.engine import ProcessBuilder, run_get_node
 from aiida.orm.nodes.data.base import to_aiida_type
 
-from aiida.orm import UpfData, User
+import aiida.orm as orm
 from aiida.engine import CalcJob
 
+from aiida_castep._version import CALC_PARSER_VERSION
 from ..common import INPUT_LINKNAMES, OUTPUT_LINKNAMES, EXIT_CODES_SPEC
 from .inpgen import CastepInputGenerator
-from ..data.otfg import OTFGData
-from ..data.usp import UspData
 from .utils import get_castep_ion_line
 from .tools import (castep_input_summary, update_parameters,
                     use_pseudos_from_family, input_param_validator,
                     check_restart)
 
-from .._version import CALC_PARSER_VERSION
 __version__ = CALC_PARSER_VERSION
-
-KpointsData = DataFactory("array.kpoints")
-StructureData = DataFactory("structure")
-Dict = DataFactory("dict")
 
 inp_ln = INPUT_LINKNAMES
 out_ln = OUTPUT_LINKNAMES
@@ -98,7 +96,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
     # Extra kpoints - CASTEP has many calculation mode that take extra kpoints
     _extra_kpoints = {
         'spectral': {  # name XX_kpoints_list
-            'task': ('spectra', ),
+            'task': ('spectral', ),
             'need_weights':
             True  # Whether the explicit kpoints need weights or not
         },
@@ -134,7 +132,6 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
 
     @classmethod
     def define(cls, spec):
-        import aiida.orm as orm
         super(CastepCalculation, cls).define(spec)
 
         # Initialise interal params, saved as metadata.options
@@ -149,18 +146,17 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         # Begin defining the input nodes
         spec.input(inp_ln['structure'],
                    valid_type=orm.StructureData,
-                   help="Defines the input structure")
+                   help="The input structure")
         spec.input(inp_ln['settings'],
                    valid_type=orm.Dict,
                    serializer=to_aiida_type,
                    required=False,
-                   help="Use an additional node for sepcial settings")
+                   help="A node for additional settings")
         spec.input(inp_ln['parameters'],
                    valid_type=orm.Dict,
                    serializer=to_aiida_type,
                    validator=input_param_validator,
-                   help="Use a node that sepcifies the input parameters")
-        # TODO: implement logic to automaticall set the restart if such folder is given
+                   help="A node that defines the input parameters")
         spec.input(
             inp_ln['parent_calc_folder'],
             valid_type=orm.RemoteData,
@@ -169,14 +165,13 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
             required=False)
         spec.input_namespace(
             'pseudos',
-            valid_type=(UspData, OTFGData, UpfData),
             help=("Use nodes for the pseudopotentails of one of"
                   "the element in the structure. You should pass a"
                   "a dictionary specifying the pseudpotential node for"
                   "each kind such as {O: <PsudoNode>}"),
             dynamic=True)
         spec.input(inp_ln['kpoints'],
-                   valid_type=KpointsData,
+                   valid_type=orm.KpointsData,
                    required=False,
                    help="Use a node defining the kpoints for the calculation")
 
@@ -184,7 +179,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         for key, value in cls._extra_kpoints.items():
             tasks = ', '.join(value['task'])
             spec.input(key + '_' + inp_ln['kpoints'],
-                       valid_type=KpointsData,
+                       valid_type=orm.KpointsData,
                        required=False,
                        help="Extra kpoints input for task: {}".format(tasks))
 
@@ -195,7 +190,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         # Define the output nodes
         spec.output(out_ln['results'],
                     required=True,
-                    valid_type=Dict,
+                    valid_type=orm.Dict,
                     help='Parsed results in a dictionary format.')
 
         spec.outputs.dynamic = True
@@ -217,11 +212,6 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         remote_copy_list = []
         remote_symlink_list = []
 
-        # TODO allow checking of inputs
-        #if self.inputs.metadata.options._auto_input_validation is True:
-        #    self.check_castep_input(self.param_dict, auto_fix=False)
-
-        # If requested to reuse, check if the parent_calc_folder is defined
         require_parent = False
         for k in self.param_dict:
             if str(k).lower() in ["reuse", "continuation"]:
@@ -267,10 +257,10 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         param_fn = seedname + ".param"
 
         with folder.open(cell_fn, mode='w') as incell:
-            incell.write(six.text_type(self.cell_file.get_string()))
+            incell.write(self.cell_file.get_string())
 
         with folder.open(param_fn, mode="w") as inparam:
-            inparam.write(six.text_type(self.param_file.get_string()))
+            inparam.write(self.param_file.get_string())
 
         # IMPLEMENT OPERATIONS FOR RESTART
 
@@ -308,6 +298,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         codeinfo = CodeInfo()
         codeinfo.cmdline_params = [seedname] + list(cmdline_params)
         codeinfo.code_uuid = self.inputs.code.uuid
+
         calcinfo.codes_info = [codeinfo]
 
         # Retrieve by default the .castep file and the bands file
@@ -318,6 +309,10 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         settings_retrieve_list = self.settings_dict.pop(
             "ADDITIONAL_RETRIEVE_LIST", [])
         calcinfo.retrieve_list.extend(settings_retrieve_list)
+
+        calcinfo.retrieve_temporary_list = []
+        calcinfo.retrieve_temporary_list.extend(
+            self.settings_dict.pop("ADDITIONAL_RETRIEVE_TEMPORARY_LIST", []))
 
         calculation_mode = self.param_file.get("task", "singlepoint")
 
@@ -356,8 +351,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         """Test submission with a builder of inputs"""
         if args and isinstance(args[0], ProcessBuilder):
             return submit_test(args[0])
-        else:
-            return submit_test(cls, **kwargs)
+        return submit_test(cls, **kwargs)
 
     @classmethod
     def check_restart(cls, builder, verbose=False):
@@ -370,8 +364,6 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         Do a dryrun test in a folder with prepared builder or inputs
         """
 
-        from fnmatch import fnmatch
-        from aiida.common.folders import Folder
         if isinstance(inputs, ProcessBuilder):
             res = cls.submit_test(inputs)
         else:
@@ -385,12 +377,11 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
                 print(inp)
 
         # Do a dryrun
-        from subprocess import call, check_output
         try:
             output = check_output([castep_exe, "-v"], universal_newlines=True)
         except OSError:
             _print("CASTEP executable '{}' is not found".format(castep_exe))
-            return
+            return None
 
         # Now start dryrun
         _print("Running with {}".format(
@@ -402,19 +393,18 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
 
         # Check if any *err files
         contents = folder.get_content_list()
-        for n in contents:
-            if fnmatch(n, "*.err"):
-                with folder.open(n) as fh:
-                    _print("Error found in {}:\n".format(n))
-                    _print(fh.read())
+        for fname in contents:
+            if fnmatch(fname, "*.err"):
+                with folder.open(fname) as fhandle:
+                    _print("Error found in {}:\fname".format(fname))
+                    _print(fhandle.read())
                 raise InputValidationError("Error found during dryrun")
 
         # Gather information from the dryrun file
-        import re
         dryrun_results = {}
         out_file = seedname + '.castep'
-        with folder.open(out_file) as fh:
-            for line in fh:
+        with folder.open(out_file) as fhandle:
+            for line in fhandle:
                 mth = re.match(r"\s*k-Points For SCF Sampling:\s+(\d+)\s*",
                                line)
                 if mth:
@@ -470,12 +460,9 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         :param other_nodes: A list of pairs of (linkname, node)
 
         """
-        from textwrap import TextWrapper
-        import time
-        from aiida.manage.manager import get_manager
         profile = get_manager().get_profile()
         if not profile:
-            return
+            return None
 
         wrapper = TextWrapper(initial_indent="# ", subsequent_indent="# ")
         time_str = time.strftime("%H:%M:%S %d/%m/%Y %Z")
@@ -484,7 +471,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
             "#         author: Bonan Zhu (bz240@cam.ac.uk)",
             "# "
             "# AiiDA User: {}".format(
-                User.objects.get_default().get_full_name()),
+                orm.User.objects.get_default().get_full_name()),
             "# AiiDA profile: {}".format(profile.name),
             "# Information of the calculation node",
             #"# type: {}".format(self.get_name()),
@@ -549,7 +536,6 @@ class CastepTSCalculation(TaskSpecificCalculation):
 
     @classmethod
     def define(cls, spec):
-        import aiida.orm as orm
         super(CastepTSCalculation, cls).define(spec)
         spec.input(inp_ln['prod_structure'],
                    valid_type=orm.StructureData,
@@ -575,7 +561,6 @@ class CastepTSCalculation(TaskSpecificCalculation):
 
 def submit_test(arg, **kwargs):
     """This essentially test the submition"""
-    from aiida.engine import run_get_node
 
     # Deal with passing an process builder
     if isinstance(arg, ProcessBuilder):

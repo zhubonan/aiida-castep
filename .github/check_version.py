@@ -27,7 +27,7 @@ if version != setup_content['version']:
     print("Version number in '{}': {}".format(setup_fname,
                                               setup_content['version']))
     print("Version number in '{}/__init__.py': {}".format(
-        'aiida_fireworks_scheduler', version))
+        'aiida_castep', version))
     sys.exit(1)
 
 # Overwrite version in setup.json

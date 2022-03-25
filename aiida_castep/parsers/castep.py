@@ -1,15 +1,18 @@
 """
 Parsers for CASTEP
 """
-from __future__ import absolute_import
+from typing import Union, List
+from pathlib import Path
+from contextlib import contextmanager
 from copy import deepcopy
-import six
+
 import numpy as np
 
 from aiida.orm import TrajectoryData, ArrayData, Dict, BandsData
 
 from aiida.parsers.parser import Parser
 from aiida.common import exceptions
+from aiida_castep.parsers.castep_bin import CastepbinFile
 
 from aiida_castep.parsers.raw_parser import units, RawParser
 from aiida_castep.parsers.utils import (structure_from_input,
@@ -24,6 +27,59 @@ __version__ = CALC_PARSER_VERSION
 
 ERR_FILE_WARNING_MSG = ".err files found in workdir"
 
+# Tasks where the bands (eigenvalues) that oen is interested in is not those
+# from the SCF calculation. In these cases, we have to get the bands from the .bands
+# file instead of the castep_bin/check outputs, since the latter only stored those
+# of the electronic ground state calculation (SCF
+NON_SCF_BAND_TASKS = ('spectral', 'bandstructure', 'optics')
+
+
+class RetrievedFileManager:
+    """
+    Wrapper for supplying an unified file-handler interface for the retrieved content
+    """
+    def __init__(self, retrieved_node, retrieved_temporary_folder=None):
+        """
+        Instantiate the manager object
+        """
+        self.node = retrieved_node
+        if retrieved_temporary_folder is not None:
+            self.tmp_folder = Path(retrieved_temporary_folder)
+            # Store the relative paths as strings
+            self.tmp_content_names = list(
+                map(lambda x: str(x.relative_to(self.tmp_folder)),
+                    self.tmp_folder.iterdir()))
+        else:
+            self.tmp_folder = None
+            self.tmp_content_names = []
+
+        self.perm_content_names = self.node.list_object_names()
+        self.all_content_names = self.perm_content_names + self.tmp_content_names
+
+    @contextmanager
+    def open(self, name, mode='r'):
+        """Open a file from either the retrieved node or the temporary folder"""
+        if name in self.perm_content_names:
+            with self.node.open(name, mode=mode) as handle:
+                yield handle
+        elif name in self.tmp_content_names:
+            with open(self.tmp_folder / name, mode=mode) as handle:
+                yield handle
+        else:
+            raise FileNotFoundError(f"Object {name} is not found!")
+
+    def has_file(self, name) -> bool:
+        """Return if we have this file"""
+        return name in self.all_content_names
+
+    def list_object_names(self) -> List[str]:
+        """Return all object names avalaible"""
+        return self.all_content_names
+
+    def get_object_content(self, name, mode='r') -> Union[str, bytes]:
+        with self.open(name, mode=mode) as handle:
+            return handle.read()
+
 
 class CastepParser(Parser):
     """
@@ -35,6 +91,16 @@ class CastepParser(Parser):
 
     _setting_key = 'parser_options'
 
+    @property
+    def castep_input_parameters(self):
+        """Access the original castep input parameters """
+        return self.node.inputs.parameters.get_dict()
+
+    @property
+    def castep_task(self):
+        """Task of the calculation"""
+        return self.castep_input_parameters['PARAM'].get('task', 'singlepoint')
+
     def parse(self, **kwargs):
         """
         Receives a dictionary of retrieved nodes.retrieved.
@@ -42,9 +108,12 @@ class CastepParser(Parser):
         """
 
         try:
-            output_folder = self.retrieved
+            retrieved = self.retrieved
         except exceptions.NotExistent:
             return self.exit_codes.ERROR_NO_RETRIEVED_FOLDER
+
+        output_folder = RetrievedFileManager(
+            retrieved, kwargs.get('retrieved_temporary_folder'))
 
         warnings = []
         exit_code_1 = None
@@ -56,7 +125,7 @@ class CastepParser(Parser):
         input_dict = {}
 
         # check what is inside the folder
-        filenames = [f.name for f in output_folder.list_objects()]
+        filenames = output_folder.list_object_names()
 
         # Get calculation options
         options = self.node.get_options()
@@ -133,8 +202,21 @@ class CastepParser(Parser):
         out_dict["error_messages"] = list(err_contents)
 
         ######## --- PROCESSING BANDS DATA -- ########
-        if has_bands:
-            bands_node = bands_to_bandsdata(**bands_data)
+        if has_bands or output_folder.has_file(seedname + '.castep_bin'):
+            # Only use castep_bin if we are interested in SCF kpoints
+            if output_folder.has_file(seedname + '.castep_bin') and (
+                    self.castep_task.lower() not in NON_SCF_BAND_TASKS):
+                self.logger.info("Using castep_bin file for the bands data.")
+                bands_node = bands_from_castepbin(seedname, output_folder)
+                if not self._has_empty_bands(bands_node):
+                    # Set if no other errors
+                    out_dict["warnings"].append(
+                        "At least one kpoint has no empty bands, energy/forces returned are not reliable."
+                    )
+                    if exit_code == 'CALC_FINISHED':
+                        exit_code = "ERROR_NO_EMPTY_BANDS"
+            else:
+                bands_node = bands_to_bandsdata(**bands_data)
             self.out(out_ln['bands'], bands_node)
 
         ######## --- PROCESSING STRUCTURE DATA --- ########
@@ -194,7 +276,7 @@ class CastepParser(Parser):
                                         symbols=np.asarray(symbols),
                                         positions=np.asarray(positions))
                     # Save the rest
-                    for name, value in six.iteritems(trajectory_data):
+                    for name, value in trajectory_data.items():
                         # Skip saving empty arrays
                         if len(value) == 0:
                             continue
@@ -221,7 +303,7 @@ class CastepParser(Parser):
                                         for site in input_structure.sites
                                     ]]))
                 # Save the rest
-                for name, value in six.iteritems(trajectory_data):
+                for name, value in trajectory_data.items():
                     # Skip saving empty arrays
                     if len(value) == 0:
                         continue
@@ -235,7 +317,7 @@ class CastepParser(Parser):
             # Otherwise, save data into a ArrayData node
             else:
                 out_array = ArrayData()
-                for name, value in six.iteritems(trajectory_data):
+                for name, value in trajectory_data.items():
                     # Skip saving empty arrays
                     if len(value) == 0:
                         continue
@@ -251,6 +333,39 @@ class CastepParser(Parser):
 
         # Return the exit code
         return self.exit_codes.__getattr__(exit_code)
+
+    def _has_empty_bands(self, bands_data: BandsData, thresh=0.005):
+        """
+        Check for the occupation of the BandsData
+
+        There should be some empty bands if the calculation is a not a fixed occupation one.
+        Otherwise, the final energy and forces are not reliable.
+        """
+
+        # Check if occupation is allowed to vary
+        param = self.node.inputs.parameters.get_dict()['PARAM']
+        # If it is a fixed occupation calculation we do not need to do anything about it....
+        fix_occ = (param.get('fix_occupancy', False)
+                   or param.get('metals_method', 'dm').lower() == 'none'
+                   or param.get('elec_method', 'dm').lower() == 'none')
+        if fix_occ:
+            return True
+
+        _, occ = bands_data.get_bands(also_occupations=True)
+
+        nspin, nkppts, _ = occ.shape
+        problems = []
+        for ispin in range(nspin):
+            for ikpts in range(nkppts):
+                if occ[ispin, ikpts, -1] >= thresh:
+                    problems.append((ispin, ikpts, occ[ispin, ikpts, -1]))
+        if problems:
+            for ispin, ikpts, val in problems:
+                self.logger.warning(
+                    "No empty bands for spin %d, kpoint %d - occ: %.5f", ispin,
+                    ikpts, val)
+            return False
+        return True
 
 
 def bands_to_bandsdata(bands_info, kpoints, bands):
@@ -290,10 +405,15 @@ def bands_to_bandsdata(bands_info, kpoints, bands):
     if bands_array.shape[0] == 1:
         bands_array = bands_array[0]
     bands_array = bands_array * units['Eh']
-    bands_info['efermi'] *= units['Eh']
-    bands_info['units'] = "eV"
+    bands_info = dict(bands_info)  # Create a copy
+    # Convert the units for the fermi energies
+    if isinstance(bands_info['efermi'], list):
+        bands_info['efermi'] = [x * units['Eh'] for x in bands_info['efermi']]
+    else:
+        bands_info['efermi'] = bands_info['efermi'] * units['Eh']
 
-    bands_node.set_bands(bands_array)
+    bands_node.set_bands(bands_array, units="eV")
+    # PBC is always true as this is PW DFT....
     bands_node.set_cell(bands_info['cell'], pbc=(True, True, True))
 
     # Store information from *.bands in the attributes
@@ -301,4 +421,30 @@ def bands_to_bandsdata(bands_info, kpoints, bands):
     # and the fermi energy
     for key, value in bands_info.items():
         bands_node.set_attribute(key, value)
+    return bands_node
+
+
+def bands_from_castepbin(seedname, fmanager):
+    """
+    Acquire and prepare bands data from the castep_bin file instead
+    """
+
+    with fmanager.open(seedname + '.castep_bin', 'rb') as handle:
+        binfile = CastepbinFile(fileobj=handle)
+
+    bands_node = BandsData()
+    kidx = binfile.kpoints_indices
+    sort_idx = np.argsort(kidx)
+    # Generated sorted arrays
+    kpoints = binfile.kpoints[sort_idx, :]
+    weights = binfile.kpoint_weights[sort_idx].astype(float)
+    eigenvalues = binfile.eigenvalues[:, sort_idx, :]
+    occupancies = binfile.occupancies[:, sort_idx, :]
+    efermi = binfile.fermi_energy
+
+    bands_node.set_kpoints(kpoints, weights=weights)
+    bands_node.set_bands(eigenvalues, occupations=occupancies, units="eV")
+    bands_node.set_cell(binfile.cell, pbc=(True, True, True))
+    bands_node.set_attribute('efermi', efermi)
+
     return bands_node

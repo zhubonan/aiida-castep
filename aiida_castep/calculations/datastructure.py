@@ -54,7 +54,7 @@ class CastepInputFile(OrderedDict):
         return lines
 
     def get_string(self):
-        return "\n".join(self.get_file_lines())
+        return "\n".join(self.get_file_lines()) + "\n"
 
 
 class ParamFile(CastepInputFile):

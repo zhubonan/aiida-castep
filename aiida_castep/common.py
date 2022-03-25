@@ -51,6 +51,10 @@ EXIT_CODES_SPEC = OrderedDict((
       True)),  # Indicated by the lack of summary line
     ('ERROR_NO_OUTPUT_FILE', (106, 'No output .castep files found', True)),
     ('ERROR_NO_RETRIEVE_FOLDER', (108, 'No retrieve folder is found', True)),
+    ('ERROR_NO_EMPTY_BANDS',
+     (501,
+      'At least one kpoints/spin has no empty bands - please rerun with increased nextra_bands.',
+      False)),
     ('UNKOWN_ERROR', (200, 'UNKOWN ERROR', True)),
     ('CALC_FINISHED', (0, 'Calculation terminated gracefully, end found',
                        False)),

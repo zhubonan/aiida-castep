@@ -7,6 +7,7 @@ import re
 import numpy as np
 
 from aiida.engine import WorkChain, if_, while_, ToContext, append_
+from aiida.common.lang import override
 from aiida.orm.nodes.data.base import to_aiida_type
 from aiida.common import AttributeDict
 import aiida.orm as orm
@@ -82,15 +83,42 @@ class CastepBaseWorkChain(WorkChain):
                    required=False,
                    serializer=to_aiida_type,
                    help="Kpoint spacing")
+        spec.input('ensure_gamma_centering',
+                   valid_type=orm.Bool,
+                   serializer=to_aiida_type,
+                   required=False,
+                   help='Ensure the kpoint grid is gamma centred.')
         spec.input(
             'options',
             valid_type=orm.Dict,
             serializer=to_aiida_type,
             required=False,
+            help=('Options specific to the workchain.'
+                  'Avaliable options: queue_wallclock_limit, use_castep_bin'))
+        spec.input(
+            'calc_options',
+            valid_type=orm.Dict,
+            serializer=to_aiida_type,
+            required=False,
+            help="Options to be passed to calculations's metadata.options")
+        spec.input(
+            'clean_workdir',
+            valid_type=orm.Bool,
+            serializer=to_aiida_type,
+            required=False,
             help=
-            ('Options specifying resources, labels etc. Passed to the CalcJob.'
-             'Avaliable options: queue_wallclock_limit, use_castep_bin'))
+            'Wether to clean the workdir of the calculations or not, the default is not clean.'
+        )
         spec.expose_inputs(cls._calculation_class, namespace='calc')
+        # Ensure this port is not required
+        spec.input(
+            'calc.metadata.options.resources',
+            valid_type=dict,
+            required=False,
+            help=
+            'Set the dictionary of resources to be used by the scheduler plugin, like the number of nodes, '
+            'cpus etc. This dictionary is scheduler-plugin dependent. Look at the documentation of the '
+            'scheduler for more details.')
         spec.input('calc.parameters',
                    valid_type=orm.Dict,
                    serializer=to_aiida_type,
@@ -123,7 +151,7 @@ class CastepBaseWorkChain(WorkChain):
             400, 'USER_REQUESTED_STOP',
             'The stop flag has been put in the .param file to request termination of the calculation.'
         )
-        spec.exit_code(1000, 'UNKOWN_ERROR', 'Error is not kown')
+        spec.exit_code(1000, 'UNKOWN_ERROR', 'Error is not known')
         spec.exit_code(
             901, 'ERROR_ITERATION_RETURNED_NO_CALCULATION',
             'Completed one iteration but found not calculation returned')
@@ -167,8 +195,26 @@ class CastepBaseWorkChain(WorkChain):
 
         # Copy over the metadata
         self.ctx.inputs['metadata'] = AttributeDict(self.inputs.calc.metadata)
+
+        # Ensure that the label is carried over to the calculation
+        if not self.ctx.inputs['metadata'].get('label'):
+            self.ctx.inputs['metadata']['label'] = self.inputs.metadata.get(
+                'label', '')
+
+        # Set the metadata.options for the underlying CastepCalculation
+        # There are two ways to do this, one can either set it directly under the calc
+        # namespace, or supply a dedicated Dict under 'calc_options'
+        # The latter allows the get_builder_restart to work at the workchain level
         self.ctx.inputs['metadata']['options'] = AttributeDict(
             self.inputs.calc.metadata.options)
+        # Check if there is any content
+        if 'resources' in self.inputs.calc.metadata.options:
+            self.report(
+                'Direct input of calculations metadata is deprecated - please pass them with `calc_options` input port.'
+            )
+        if self.inputs.get('calc_options'):
+            self.ctx.inputs['metadata']['options'].update(
+                self.inputs['calc_options'])
 
         # propagate the settings to the inputs of the CalcJob
         if 'settings' in self.inputs.calc:
@@ -231,6 +277,18 @@ class CastepBaseWorkChain(WorkChain):
                     "This only makes sense for molecules-in-a-box input structures."
                     "Bear in mind that plane-wave DFT calculations are always periodic internally."
                 ))
+
+            # CASTEP uses the original MP grid definition such that only dimensions with odd number
+            # of points are Gamma-centred.
+            # Shifts of the grid is needed to ensure Gamma-centering needs to be enforced.
+            mesh, _ = kpoints.get_kpoints_mesh()
+            use_gamma = self.inputs.get('ensure_gamma_centering')
+            if use_gamma is not None and use_gamma.value is True:
+                castep_offset = _compute_castep_gam_offset(mesh)
+                kpoints.set_kpoints_mesh(mesh, castep_offset)
+                self.report("Offset used for Gamma-centering: {}".format(
+                    castep_offset))
+
             self.report("Using kpoints: {}".format(kpoints.get_description()))
             self.ctx.inputs.kpoints = kpoints
         else:
@@ -461,6 +519,45 @@ class CastepBaseWorkChain(WorkChain):
             self.ctx.calc_name, calculation.pk))
         return self.exit_codes.UNKOWN_ERROR
 
+    @override
+    def on_terminated(self):
+        """
+        Clean the working directories of all child calculation jobs if `clean_workdir=True` in the inputs and
+        the calculation is finished without problem.
+        """
+        # Directly called the WorkChain method as this method replaces that of the BaseRestartWorkChain
+        WorkChain.on_terminated(self)
+        clean_workdir = self.inputs.get('clean_workdir', None)
+        if clean_workdir is not None:
+            clean_workdir = clean_workdir.value
+        else:
+            clean_workdir = False
+
+        if clean_workdir is False:
+            self.report('remote folders will not be cleaned')
+            return
+
+        if not self.ctx.is_finished:
+            self.report(
+                'remote folders will not be cleaned because the workchain finished with error.'
+            )
+            return
+
+        cleaned_calcs = []
+
+        for called_descendant in self.node.called_descendants:
+            if isinstance(called_descendant, orm.CalcJobNode):
+                try:
+                    called_descendant.outputs.remote_folder._clean()  # pylint: disable=protected-access
+                    cleaned_calcs.append(str(called_descendant.pk))
+                except (IOError, OSError, KeyError):
+                    pass
+
+        if cleaned_calcs:
+            self.report(
+                f"cleaned remote folders of calculations: {' '.join(cleaned_calcs)}"
+            )
+
 
 @register_error_handler(CastepBaseWorkChain, 900)
 def _handle_scf_failure(self, calculation):
@@ -561,6 +658,47 @@ def _handle_walltime_limit(self, calculation):
     return None
 
 
+@register_error_handler(CastepBaseWorkChain, 600)
+def _handle_no_empty_bands(self, calculation):
+    """Handle the case where there is no empty bands"""
+    has_error = False
+    for warning in calculation.res.warnings:
+        if "At least one kpoint has no empty bands" in warning:
+            has_error = True
+            break
+    if has_error is False:
+        return None
+
+    # Need to handle this error
+    dot_castep = _get_castep_output_file(calculation)
+    nextra_bands = None
+    # Scan for the warning line and record the suggested nextra bands
+    for line in dot_castep:
+        match = re.search(r"Recommend using nextra_bands of (\d+) to (\d+)",
+                          line)
+        if match:
+            nextra_bands = int(match.group(2))
+    param = self.ctx.inputs.parameters
+
+    # No warning found? Increase the extra bands by 50%
+    if nextra_bands is None:
+        perc = param['PARAM'].get('perc_extra_bands')
+        if perc is None:
+            param['PARAM']['perc_extra_bands'] = 30
+        else:
+            perc *= 1.5
+            param['PARAM']['perc_extra_bands'] = perc
+        param['PARAM'].pop('nextra_bands', None)
+        self.report(f'Increased <perc_extra_bands> to {perc}.')
+    else:
+        # Apply the suggested bands
+        param['PARAM']['nextra_bands'] = nextra_bands
+        param['PARAM'].pop('perc_extra_bands', None)
+        self.report(f'Increased <nextra_bands> to {nextra_bands}.')
+
+    return ErrorHandlerReport(True, False)
+
+
 @register_error_handler(CastepBaseWorkChain, 10000)
 def _handle_stop_by_request(self, calculation):
     """Handle the case when the stop flag is raised by the user"""
@@ -581,3 +719,18 @@ def _get_castep_output_file(calculation):
     fname = calculation.get_option('output_filename')
     fcontent = calculation.outputs.retrieved.get_object_content(fname)
     return fcontent.split('\n')
+
+
+def _compute_castep_gam_offset(grids):
+    """
+    Compute the offset need to get gamma-centred grids for a given grid specification
+
+    Note that the offset are expressed in the reciprocal cell units.
+    """
+    shifts = []
+    for grid in grids:
+        if grid % 2 == 0:
+            shifts.append(-1 / grid / 2)
+        else:
+            shifts.append(0.)
+    return shifts

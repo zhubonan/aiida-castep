@@ -1,23 +1,18 @@
 """
 Module for generating text based CASTEP inputs
 """
-from __future__ import absolute_import, print_function
-
-import six
-from six.moves import zip
-
 import numpy as np
-from aiida.orm import UpfData
 from aiida.common import InputValidationError, MultipleObjectsError
 from aiida_castep.common import INPUT_LINKNAMES as in_ln
 
 from .datastructure import ParamFile, CellFile
 from .utils import get_castep_ion_line, _lowercase_dict, _uppercase_dict
 from ..data.otfg import OTFGData
-from ..data.usp import UspData
+
+# pylint: disable=no-member
 
 
-class CastepInputGenerator(object):
+class CastepInputGenerator:
     """
     Class for generating CASTEP inputs
     """
@@ -30,6 +25,8 @@ class CastepInputGenerator(object):
         self.param_file = ParamFile()
         self.cell_file = CellFile()
         self.local_copy_list_to_append = set()
+        self.param_dict = {}
+        self.settings_dict = {}
 
     def prepare_inputs(self, reset=True):
         """
@@ -50,7 +47,7 @@ class CastepInputGenerator(object):
         # Second level keys should be lowercased
         param_dict = {
             k: _lowercase_dict(v, dict_name=k)
-            for k, v in six.iteritems(param_dict)
+            for k, v in param_dict.items()
         }
 
         # Set iprint to 1
@@ -157,10 +154,8 @@ class CastepInputGenerator(object):
         if spin_list:
             # In case of non-collinear spin
             if isinstance(spin_list[0], (list, tuple)):
-                non_collinear = True
                 total_spin = np.linalg.norm(spin_list, axis=1).sum()
             else:
-                non_collinear = False
                 total_spin = sum(s for s in spin_list if s)
             param_spin = self.param_dict["PARAM"].get("spin", None)
             if param_spin is not None:
@@ -225,7 +220,7 @@ class CastepInputGenerator(object):
                 self.cell_file["KPOINTS_LIST"] = kpoints_line_list
 
         # --------- keywords in cell file---------
-        for key, value in six.iteritems(self.param_dict["CELL"]):
+        for key, value in self.param_dict["CELL"].items():
 
             if "species_pot" in key:
                 raise MultipleObjectsError(
@@ -284,21 +279,23 @@ class CastepInputGenerator(object):
                     "grid", "offset")] = "{} {} {}".format(*offset)
         else:
             extra_kpts_lines = []
-            for kpoint, weight in zip(bs_kpts_list, weights):
-                if kpn_settings['need_weights'] is True:
-                    extra_kpts_lines.append("{:18.10f} {:18.10f} "
-                                            "{:18.10f} {:18.14f}".format(
-                                                kpoint[0], kpoint[1],
-                                                kpoint[2], weight))
-                else:
-                    extra_kpts_lines.append("{:18.10f} {:18.10f} "
-                                            "{:18.10f}".format(
-                                                kpoint[0], kpoint[1],
-                                                kpoint[2]))
+            if kpn_settings['need_weights'] is True:
+                for kpoint, weight in zip(bs_kpts_list, weights):
+                    extra_kpts_lines.append(
+                        f"{kpoint[0]:18.10f} {kpoint[1]:18.10f} {kpoint[2]:18.10f} {weight:18.14f}"
+                    )
+            else:
+                for kpoint in bs_kpts_list:
+                    extra_kpts_lines.append(
+                        f"{kpoint[0]:18.10f} {kpoint[1]:18.10f} {kpoint[2]:18.10f}"
+                    )
             bname = "{}_kpoint_list".format(kpn_name).upper()
             self.cell_file[bname] = extra_kpts_lines
 
     def _prepare_pseudo_potentials(self):
+        """
+        Prepare the pseudopotential part of the cell file
+        """
 
         # --------- PSEUDOPOTENTIALS --------
         # Check if we are using UPF pseudos
@@ -310,10 +307,9 @@ class CastepInputGenerator(object):
         for kind in self.inputs[in_ln['structure']].kinds:
             symbols = kind.symbols
             # If the site has multiple symbols, add all of them to the list
+            mixture = False
             if len(symbols) > 1:
                 mixture = True
-            else:
-                mixture = False
             for symbol in symbols:
                 if symbol == kind.name:
                     pseudo_name = symbol
@@ -322,26 +318,28 @@ class CastepInputGenerator(object):
 
                 if not mixture:
                     # Get the pseudopotential is defined by the kind.name
-                    ps = pseudos[kind.name]
+                    ps_node = pseudos[kind.name]
                 else:
                     # If with mixture the pseudopotential is deined as '<kind_name>_<symbol>'
-                    ps = pseudos[kind.name + '_' + symbol]
+                    ps_node = pseudos[kind.name + '_' + symbol]
 
-                # If we are dealing with a UpfData object
-                if isinstance(ps, (UpfData, UspData)):
-                    # Add the specification to the file
-                    species_pot_map[pseudo_name] = "{:5} {}".format(
-                        pseudo_name, ps.filename)
-                    # Add to the copy list
-                    self.local_copy_list_to_append.add(
-                        (ps.uuid, ps.filename, ps.filename))
                 # If we are using OTFG, just add the string property of it
-                elif isinstance(ps, OTFGData):
+                if isinstance(ps_node, OTFGData):
                     species_pot_map[pseudo_name] = "{:5} {}".format(
-                        pseudo_name, ps.string)
+                        pseudo_name, ps_node.string)
                 else:
-                    raise InputValidationError(
-                        'Unkonwn node as pseudo: {}'.format(ps))
+                    # If we are dealing with file based pseudopotentials objects
+                    # Add the specification to the file
+                    try:
+                        species_pot_map[pseudo_name] = "{:5} {}".format(
+                            pseudo_name, ps_node.filename)
+                        # Add to the copy list
+                        self.local_copy_list_to_append.add(
+                            (ps_node.uuid, ps_node.filename, ps_node.filename))
+                    except Exception as error:
+                        raise InputValidationError(
+                            'Unkonwn node as pseudo: {}. Exception raised: {}'.
+                            format(ps_node, error))
 
         # Ensure it is a list
         self.cell_file["SPECIES_POT"] = list(species_pot_map.values())

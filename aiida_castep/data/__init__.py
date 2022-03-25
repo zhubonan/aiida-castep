@@ -3,6 +3,7 @@ Module for additional Data classes
 """
 
 from aiida.orm.nodes.data.upf import UpfData
+from aiida.orm import Group
 from aiida.common import NotExistent, MultipleObjectsError
 
 from .otfg import OTFGData
@@ -23,32 +24,34 @@ def get_pseudos_from_structure(structure, family_name):
     :returns: A dictionary maps kind to the psueodpotential node
     """
 
+    # Try to get the pseudopotentials that are managed by aiida-pseudo
+    result = _get_pseudos_from_aiida_pseudo(structure, family_name)
+    if result:
+        return result
+
     family_pseudos = {}
 
     try:
-        family_upf = UpfData.get_upf_group(family_name)
+        family_upf = [UpfData.get_upf_group(family_name)]
     except NotExistent:
         family_upf = []
     try:
-        family_otfg = OTFGData.get_otfg_group(family_name)
+        family_otfg = [OTFGData.get_otfg_group(family_name)]
     except NotExistent:
         family_otfg = []
 
-    valid_count = 0
-    for fam in [family_upf, family_otfg]:
-        if fam:
-            valid_count += 1
-            family = fam
-
-    if valid_count == 0:
+    all_families = family_otfg + family_upf
+    if len(all_families) == 0:
         raise NotExistent(
             "Cannot find matching group among UspData, UpfData and OTFGData")
 
-    # This is necessary?
-    if valid_count > 1:
-        raise MultipleObjectsError("Name duplication detected")
+    if len(all_families) > 1:
+        raise MultipleObjectsError(
+            f"Multiple groups with label {family_name} detected")
 
-    # Checking uniquess for each element
+    family = all_families[0]
+
+    # Checking uniqueness for each element
     for node in family.nodes:
         if isinstance(node, (UpfData, UspData, OTFGData)):
             if node.element in family_pseudos:
@@ -60,17 +63,43 @@ def get_pseudos_from_structure(structure, family_name):
     pseudo_list = {}
     for kind in structure.kinds:
         symbol = kind.symbol
-        try:
+        if symbol in family_pseudos:
             pseudo_list[kind.name] = family_pseudos[symbol]
-        except KeyError:
+        elif 'LIBRARY' in family_pseudos:
+            pseudo_list[kind.name] = family_pseudos['LIBRARY']
 
-            # May be we have a "LIBRARY" wild card here
-            try:
-                pseudo_list[kind.name] = family_pseudos["LIBRARY"]
-
-            except KeyError:
-                raise NotExistent(
-                    "No pseudo for element {} found in family {}".format(
-                        symbol, family_pseudos))
+        else:
+            raise NotExistent(
+                "No pseudo for element {} found in family {}".format(
+                    symbol, family_pseudos))
 
     return pseudo_list
+
+
+def _get_pseudos_from_aiida_pseudo(structure, label):
+    """
+    Attempt to get pseudopotentials that are managed by the `aiida-pseudo` package
+
+    :param structure: A ``StructureData`` for which the pseudopotentials needs to be selected.
+    :param label: The name of the pseudopotential family
+
+    :returns: A dictionary of each element and its pseudopotential.
+    """
+
+    try:
+        group = Group.objects.get(label=label,
+                                  type_string={'like': 'pseudo.family%'})
+    except NotExistent:
+        return []
+
+    # Make sure the group is a group from aiida-pseudo
+    if not group._type_string.startswith(  # pylint: disable=protected-access
+            'pseudo.family'):
+        return []
+
+    if group.pseudo_type != 'pseudo.upf':
+        raise ValueError(
+            f"Pseudopotential type {group.pseudo_type} is not supported - only UPF can be used."
+        )
+
+    return group.get_pseudos(structure=structure)

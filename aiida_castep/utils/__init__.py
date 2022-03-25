@@ -7,6 +7,18 @@ import numpy as np
 # pylint: disable=import-outside-toplevel, too-many-locals
 
 
+def band_array_ensure_ndim(array):
+    """
+    Ensure there are three dimensions for a band-like array.
+
+    Sometimes, we general band array with (nk, nb) without the first dimension.
+    This function ensures that there are three dimensions (ns, nk, nb).
+    """
+    if array.ndim == 2:
+        return array.reshape((1, ) + array.shape)
+    return array
+
+
 def atoms_to_castep(atoms, index):
     """Convert ase atoms' index to castep like
     return (Specie, Ion) Deprecated, use ase_to_castep_index"""
@@ -356,8 +368,8 @@ def compute_kpoints_spacing(cell, grid, unit="2pi"):
     Spacing = 1 / cell_length / mesh for each dimension.
     Assume orthogonal cell shape.
     """
-    cell = np.asarray(cell, dtype=np.float)
-    grid = np.asarray(grid, dtype=np.float)
+    cell = np.asarray(cell, dtype=float)
+    grid = np.asarray(grid, dtype=float)
 
     spacings = 1. / cell / grid
     if unit == "1/A":

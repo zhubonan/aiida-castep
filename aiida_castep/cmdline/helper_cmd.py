@@ -7,8 +7,6 @@ from __future__ import absolute_import
 import click
 import sys
 from aiida.cmdline.commands.cmd_data import verdi_data
-from six.moves import map
-from six.moves import zip
 
 
 def dot_proc(iterable):
@@ -96,7 +94,7 @@ def generate(castep_excutable, save_as):
     full_dict = {}
 
     for key in progress(all_keys):
-        lines, k_type, k_level, v_type = parse_help_string(key)
+        lines, k_type, k_level, v_type = parse_help_string(key, excutable=castep_excutable)
         full_dict[key.lower()] = dict(help_short=all_keys[key],
                                       help_full="\n".join(lines),
                                       key_type=k_type,

@@ -1,0 +1,1311 @@
+ +-------------------------------------------------+
+ |                                                 |
+ |      CCC   AA    SSS  TTTTT  EEEEE  PPPP        |
+ |     C     A  A  S       T    E      P   P       |
+ |     C     AAAA   SS     T    EEE    PPPP        |
+ |     C     A  A     S    T    E      P           |
+ |      CCC  A  A  SSS     T    EEEEE  P           |
+ |                                                 |
+ +-------------------------------------------------+
+ |                                                 |
+ | Welcome to Academic Release CASTEP version 20.11|
+ | Ab Initio Total Energy Program                  |
+ |                                                 |
+ | Authors:                                        |
+ | M. Segall, M. Probert, C. Pickard, P. Hasnip,   |
+ | S. Clark, K. Refson, J. R. Yates, M. Payne      |
+ |                                                 |
+ | Contributors:                                   |
+ | P. Lindan, P. Haynes, J. White, V. Milman,      |
+ | N. Govind, M. Gibson, P. Tulip, V. Cocula,      |
+ | B. Montanari, D. Quigley, M. Glover,            |
+ | L. Bernasconi, A. Perlov, M. Plummer,           |
+ | E. McNellis, J. Meyer, J. Gale, D. Jochym       |
+ | J. Aarons, B. Walker, R. Gillen, D. Jones       |
+ | T. Green, I. J. Bush, C. J. Armstrong,          |
+ | E. J. Higgins, E. L. Brown, M. S. McFly,        |
+ | J. Wilkins, B-C. Shih, P. J. P. Byrne,          |
+ | R. J. Maurer, J. C. Womack, J. Dziedzic,        |
+ | J. R. Kermode, A. Bartok-Partay                 |
+ |                                                 |
+ | Copyright (c) 2000 - 2020                       |
+ |                                                 |
+ |     Distributed under license from Cambridge    |
+ |     Enterprise for academic use only.           |
+ |                                                 |
+ | Please cite                                     |
+ |                                                 |
+ |     "First principles methods using CASTEP"     |
+ |                                                 |
+ |         Zeitschrift fuer Kristallographie       |
+ |           220(5-6) pp. 567-570 (2005)           |
+ |                                                 |
+ | S. J. Clark, M. D. Segall, C. J. Pickard,       |
+ | P. J. Hasnip, M. J. Probert, K. Refson,         |
+ | M. C. Payne                                     |
+ |                                                 |
+ |       in all publications arising from          |
+ |              your use of CASTEP                 |
+ |                                                 |
+ +-------------------------------------------------+
+ |                                                 |
+ |              http://www.castep.org              |
+ |                                                 |
+ +-------------------------------------------------+
+
+
+
+ Compiled for linux_x86_64_gfortran on Sat, 29 May 2021 13:01:11 +0100
+ from code version 26f4f9473+  Castep201_branch  Mon Apr 26 22:54:58 2021 +0100
+ Compiler: GNU Fortran 9.3.0; Optimisation: fast
+ MATHLIBS: Intel MKL(2021.1-Product) (LAPACK version 3.9.0)
+ FFT Lib : mkl
+ Fundamental constants values: CODATA 2014
+
+ Run started: Sun, 31 Oct 2021 17:15:32 +0000
+
+ ******************************* User Parameters *******************************
+iprint                : 2           # verbosity control (I)
+task                  : singlepoint # type of calculation (S)
+calculatedensdiff     : T           # calculate density difference based on atoms (L)
+writeformatteddensity : T           # formatted density on/off (L)
+optstrategy           : speed       # optimization strategy (S)
+xcfunctional          : LDA         # exchange-correlation functional (S)
+basisprecision        : MEDIUM      # accuracy of basis set (S)
+fixoccupancy          : F           # treat system as an insulator (L)
+numdumpcycles         : 0           # frequency of wavefunction dumps (I)
+
+ *******************************************************************************
+
+
+ Pseudo atomic calculation performed for Si 3s2 3p2
+
+ Converged in 16 iterations to a total energy of -102.0354 eV
+Initialising basis set.
+
+Standard grid dimensions:  12  12  12
+Fine grid dimensions:      12  12  12
+
+Plane wave load balancing: max    117 min    113 average    115
+True cut-off energy of basis :   4.396
+ Calculation not parallelised.
+
+ ************************************ Title ************************************
+
+
+ ***************************** General Parameters ******************************
+
+ output verbosity                               : verbose (2)
+ write checkpoint data to                       : Si2.check
+ type of calculation                            : single point energy
+ stress calculation                             : off
+ density difference calculation                 : on
+ electron localisation func (ELF) calculation   : off
+ Hirshfeld analysis                             : off
+ molecular orbital projected DOS                : off
+ deltaSCF calculation                           : off
+ unlimited duration calculation
+ timing information                             : on
+ memory usage estimate                          : on
+ write extra output files                       : on
+ write final potential to formatted file        : off
+ write final density to formatted file          : on
+ write BibTeX reference list                    : on
+ write OTFG pseudopotential files               : on
+ write electrostatic potential file             : on
+ write bands file                               : on
+ checkpoint writing                             : both castep_bin and check files
+
+ output         length unit                     : A
+ output           mass unit                     : amu
+ output           time unit                     : ps
+ output         charge unit                     : e
+ output           spin unit                     : hbar/2
+ output         energy unit                     : eV
+ output          force unit                     : eV/A
+ output       velocity unit                     : A/ps
+ output       pressure unit                     : GPa
+ output     inv_length unit                     : 1/A
+ output      frequency unit                     : cm-1
+ output force constant unit                     : eV/A**2
+ output         volume unit                     : A**3
+ output   IR intensity unit                     : (D/A)**2/amu
+ output         dipole unit                     : D
+ output         efield unit                     : eV/A/e
+ output        entropy unit                     : J/mol/K
+ output    efield chi2 unit                     : pm/V
+
+ wavefunctions paging                           : none
+ random number generator seed                   : randomised (171533055)
+ data distribution                              : optimal for this architecture
+ optimization strategy                          : maximize speed(+++)
+
+ *********************** Exchange-Correlation Parameters ***********************
+
+ using functional                               : Local Density Approximation
+ relativistic treatment                         : Koelling-Harmon
+ DFT+D: Semi-empirical dispersion correction    : off
+
+ ************************* Pseudopotential Parameters **************************
+
+ pseudopotential representation                 : reciprocal space
+ <beta|phi> representation                      : reciprocal space
+ spin-orbit coupling                            : off
+
+ **************************** Basis Set Parameters *****************************
+
+ basis set accuracy                             : MEDIUM
+ plane wave basis set cut-off                   :   120.0000   eV
+ size of standard grid                          :     1.7500
+ size of   fine   gmax                          :     9.8213   1/A
+ finite basis set correction                    : none
+
+ **************************** Electronic Parameters ****************************
+
+ number of  electrons                           :  8.000
+ net charge of system                           :  0.000
+ treating system as non-spin-polarized
+ number of bands                                :          8
+
+ ********************* Electronic Minimization Parameters **********************
+
+ Method: Treating system as metallic with density mixing treatment of electrons,
+         and number of  SD  steps               :          1
+         and number of  CG  steps               :          4
+
+ total energy / atom convergence tol.           : 0.1000E-04   eV
+ eigen-energy convergence tolerance             : 0.1000E-05   eV
+ max force / atom convergence tol.              : ignored
+ convergence tolerance window                   :          3   cycles
+ max. number of SCF cycles                      :         30
+ number of fixed-spin iterations                :         10
+ smearing scheme                                : Gaussian
+ smearing width                                 : 0.2000       eV
+ Fermi energy convergence tolerance             : 0.2721E-13   eV
+ periodic dipole correction                     : NONE
+
+ ************************** Density Mixing Parameters **************************
+
+ density-mixing scheme                          : Broyden
+ max. length of mixing history                  :         20
+ charge density mixing amplitude                : 0.8000
+
+ *********************** Population Analysis Parameters ************************
+
+ Population analysis with cutoff                :  3.000       A
+ Population analysis output                     : summary and pdos components
+
+ *******************************************************************************
+
+
+                           -------------------------------
+                                      Unit Cell
+                           -------------------------------
+        Real Lattice(A)                      Reciprocal Lattice(1/A)
+     2.6954645     2.6954645     0.0000000        1.165510677   1.165510677  -1.165510677
+     2.6954645     0.0000000     2.6954645        1.165510677  -1.165510677   1.165510677
+     0.0000000     2.6954645     2.6954645       -1.165510677   1.165510677   1.165510677
+
+                       Lattice parameters(A)       Cell Angles
+                    a =      3.811962          alpha =   60.000000
+                    b =      3.811962          beta  =   60.000000
+                    c =      3.811962          gamma =   60.000000
+
+                       Current cell volume =            39.167950       A**3
+                                   density =             1.434106   AMU/A**3
+                                           =             2.381389     g/cm^3
+
+                           -------------------------------
+                                     Cell Contents
+                           -------------------------------
+                         Total number of ions in cell =    2
+                      Total number of species in cell =    1
+                        Max number of any one species =    2
+
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x  Element    Atom        Fractional coordinates of atoms  x
+            x            Number           u          v          w      x
+            x----------------------------------------------------------x
+            x  Si           1         0.000000   0.000000   0.000000   x
+            x  Si           2         0.250000   0.250000   0.250000   x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+                         No user defined ionic velocities
+
+                           -------------------------------
+                                   Details of Species
+                           -------------------------------
+
+                               Mass of species in AMU
+                                    Si   28.0855000
+
+                          Electric Quadrupole Moment (Barn)
+                                    Si    1.0000000 No Isotope Defined
+
+                          Files used for pseudopotentials:
+                                    Si Si_00.usp
+
+                           -------------------------------
+                              k-Points For BZ Sampling
+                           -------------------------------
+                       MP grid size for SCF calculation is  3  3  3
+                            with an offset of   0.000  0.000  0.000
+                       Number of kpoints used =             4
+
+             +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+             +  Number       Fractional coordinates        Weight  +
+             +-----------------------------------------------------+
+             +     1  -0.333333  -0.333333   0.000000   0.2222222  +
+             +     2   0.000000  -0.333333   0.333333   0.4444444  +
+             +     3   0.000000   0.000000  -0.333333   0.2962963  +
+             +     4   0.000000   0.000000   0.000000   0.0370370  +
+             +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+                           -------------------------------
+                               Symmetry and Constraints
+                           -------------------------------
+
+                      Maximum deviation from symmetry = 0.362780E-32     ANG
+
+                      Number of symmetry operations   =          48
+                      Number of ionic constraints     =           3
+                      Point group of crystal =    32: Oh, m-3m, 4/m -3 2/m
+                      Space group of crystal =   227: Fd-3m, F 4d 2 3 -1d
+
+                    1 rotation
+                 (   1.00000000000   0.00000000000   0.00000000000 )
+                 (   0.00000000000   1.00000000000  -0.00000000000 )
+                 (  -0.00000000000  -0.00000000000   1.00000000000 )
+                    1 displacement
+                 (   0.00000000000   0.00000000000  -0.00000000000 )
+                      symmetry related atoms:
+             Si:    1    2
+
+                    2 rotation
+                 (   0.00000000000   1.00000000000  -0.00000000000 )
+                 (  -1.00000000000  -0.00000000000  -0.00000000000 )
+                 (  -0.00000000000  -0.00000000000   1.00000000000 )
+                    2 displacement
+                 (   0.25000000000   0.25000000000   0.25000000000 )
+                      symmetry related atoms:
+             Si:    2    1
+
+                    3 rotation
+                 (  -1.00000000000  -0.00000000000  -0.00000000000 )
+                 (  -0.00000000000  -1.00000000000   0.00000000000 )
+                 (  -0.00000000000  -0.00000000000   1.00000000000 )
+                    3 displacement
+                 (   0.00000000000   0.00000000000  -0.00000000000 )
+                      symmetry related atoms:
+             Si:    1    2
+
+                    4 rotation
+                 (  -0.00000000000  -1.00000000000   0.00000000000 )
+                 (   1.00000000000   0.00000000000   0.00000000000 )
+                 (  -0.00000000000  -0.00000000000   1.00000000000 )
+                    4 displacement
+                 (   0.25000000000   0.25000000000   0.25000000000 )
+                      symmetry related atoms:
+             Si:    2    1
+
+                    5 rotation
+                 (   1.00000000000   0.00000000000   0.00000000000 )
+                 (  -0.00000000000  -1.00000000000   0.00000000000 )
+                 (   0.00000000000   0.00000000000  -1.00000000000 )
+                    5 displacement
+                 (   0.00000000000   0.00000000000  -0.00000000000 )
+                      symmetry related atoms:
+             Si:    1    2
+
+                    6 rotation
+                 (  -0.00000000000  -1.00000000000   0.00000000000 )
+                 (  -1.00000000000  -0.00000000000  -0.00000000000 )
+                 (   0.00000000000   0.00000000000  -1.00000000000 )
+                    6 displacement
+                 (   0.25000000000   0.25000000000   0.25000000000 )
+                      symmetry related atoms:
+             Si:    2    1
+
+                    7 rotation
+                 (  -1.00000000000  -0.00000000000  -0.00000000000 )
+                 (   0.00000000000   1.00000000000  -0.00000000000 )
+                 (   0.00000000000   0.00000000000  -1.00000000000 )
+                    7 displacement
+                 (   0.00000000000   0.00000000000  -0.00000000000 )
+                      symmetry related atoms:
+             Si:    1    2
+
+                    8 rotation
+                 (   0.00000000000   1.00000000000  -0.00000000000 )
+                 (   1.00000000000   0.00000000000   0.00000000000 )
+                 (   0.00000000000   0.00000000000  -1.00000000000 )
+                    8 displacement
+                 (   0.25000000000   0.25000000000   0.25000000000 )
+                      symmetry related atoms:
+             Si:    2    1
+
+                    9 rotation
+                 (   0.00000000000   1.00000000000  -0.00000000000 )
+                 (  -0.00000000000  -0.00000000000   1.00000000000 )
+                 (   1.00000000000   0.00000000000   0.00000000000 )
+                    9 displacement
+                 (   0.00000000000   0.00000000000  -0.00000000000 )
+                      symmetry related atoms:
+             Si:    1    2
+
+                   10 rotation
+                 (  -0.00000000000  -0.00000000000   1.00000000000 )
+                 (  -0.00000000000  -1.00000000000   0.00000000000 )
+                 (   1.00000000000   0.00000000000   0.00000000000 )
+                   10 displacement
+                 (   0.25000000000   0.25000000000   0.25000000000 )
+                      symmetry related atoms:
+             Si:    2    1
+
+                   11 rotation
+                 (  -0.00000000000  -1.00000000000   0.00000000000 )
+                 (   0.00000000000   0.00000000000  -1.00000000000 )
+                 (   1.00000000000   0.00000000000   0.00000000000 )
+                   11 displacement
+                 (   0.00000000000   0.00000000000  -0.00000000000 )
+                      symmetry related atoms:
+             Si:    1    2
+
+                   12 rotation
+                 (   0.00000000000   0.00000000000  -1.00000000000 )
+                 (   0.00000000000   1.00000000000  -0.00000000000 )
+                 (   1.00000000000   0.00000000000   0.00000000000 )
+                   12 displacement
+                 (   0.25000000000   0.25000000000   0.25000000000 )
+                      symmetry related atoms:
+             Si:    2    1
+
+                   13 rotation
+                 (   0.00000000000   1.00000000000  -0.00000000000 )
+                 (   0.00000000000   0.00000000000  -1.00000000000 )
+                 (  -1.00000000000  -0.00000000000  -0.00000000000 )
+                   13 displacement
+                 (   0.00000000000   0.00000000000  -0.00000000000 )
+                      symmetry related atoms:
+             Si:    1    2
+
+                   14 rotation
+                 (   0.00000000000   0.00000000000  -1.00000000000 )
+                 (  -0.00000000000  -1.00000000000   0.00000000000 )
+                 (  -1.00000000000  -0.00000000000  -0.00000000000 )
+                   14 displacement
+                 (   0.25000000000   0.25000000000   0.25000000000 )
+                      symmetry related atoms:
+             Si:    2    1
+
+                   15 rotation
+                 (  -0.00000000000  -1.00000000000   0.00000000000 )
+                 (  -0.00000000000  -0.00000000000   1.00000000000 )
+                 (  -1.00000000000  -0.00000000000  -0.00000000000 )
+                   15 displacement
+                 (   0.00000000000   0.00000000000  -0.00000000000 )
+                      symmetry related atoms:
+             Si:    1    2
+
+                   16 rotation
+                 (  -0.00000000000  -0.00000000000   1.00000000000 )
+                 (   0.00000000000   1.00000000000  -0.00000000000 )
+                 (  -1.00000000000  -0.00000000000  -0.00000000000 )
+                   16 displacement
+                 (   0.25000000000   0.25000000000   0.25000000000 )
+                      symmetry related atoms:
+             Si:    2    1
+
+                   17 rotation
+                 (  -0.00000000000  -0.00000000000   1.00000000000 )
+                 (   1.00000000000   0.00000000000   0.00000000000 )
+                 (   0.00000000000   1.00000000000  -0.00000000000 )
+                   17 displacement
+                 (   0.00000000000   0.00000000000  -0.00000000000 )
+                      symmetry related atoms:
+             Si:    1    2
+
+                   18 rotation
+                 (   1.00000000000   0.00000000000   0.00000000000 )
+                 (   0.00000000000   0.00000000000  -1.00000000000 )
+                 (   0.00000000000   1.00000000000  -0.00000000000 )
+                   18 displacement
+                 (   0.25000000000   0.25000000000   0.25000000000 )
+                      symmetry related atoms:
+             Si:    2    1
+
+                   19 rotation
+                 (   0.00000000000   0.00000000000  -1.00000000000 )
+                 (  -1.00000000000  -0.00000000000  -0.00000000000 )
+                 (   0.00000000000   1.00000000000  -0.00000000000 )
+                   19 displacement
+                 (   0.00000000000   0.00000000000  -0.00000000000 )
+                      symmetry related atoms:
+             Si:    1    2
+
+                   20 rotation
+                 (  -1.00000000000  -0.00000000000  -0.00000000000 )
+                 (  -0.00000000000  -0.00000000000   1.00000000000 )
+                 (   0.00000000000   1.00000000000  -0.00000000000 )
+                   20 displacement
+                 (   0.25000000000   0.25000000000   0.25000000000 )
+                      symmetry related atoms:
+             Si:    2    1
+
+                   21 rotation
+                 (  -0.00000000000  -0.00000000000   1.00000000000 )
+                 (  -1.00000000000  -0.00000000000  -0.00000000000 )
+                 (  -0.00000000000  -1.00000000000   0.00000000000 )
+                   21 displacement
+                 (   0.00000000000   0.00000000000  -0.00000000000 )
+                      symmetry related atoms:
+             Si:    1    2
+
+                   22 rotation
+                 (  -1.00000000000  -0.00000000000  -0.00000000000 )
+                 (   0.00000000000   0.00000000000  -1.00000000000 )
+                 (  -0.00000000000  -1.00000000000   0.00000000000 )
+                   22 displacement
+                 (   0.25000000000   0.25000000000   0.25000000000 )
+                      symmetry related atoms:
+             Si:    2    1
+
+                   23 rotation
+                 (   0.00000000000   0.00000000000  -1.00000000000 )
+                 (   1.00000000000   0.00000000000   0.00000000000 )
+                 (  -0.00000000000  -1.00000000000   0.00000000000 )
+                   23 displacement
+                 (   0.00000000000   0.00000000000  -0.00000000000 )
+                      symmetry related atoms:
+             Si:    1    2
+
+                   24 rotation
+                 (   1.00000000000   0.00000000000   0.00000000000 )
+                 (  -0.00000000000  -0.00000000000   1.00000000000 )
+                 (  -0.00000000000  -1.00000000000   0.00000000000 )
+                   24 displacement
+                 (   0.25000000000   0.25000000000   0.25000000000 )
+                      symmetry related atoms:
+             Si:    2    1
+
+                   25 rotation
+                 (  -1.00000000000  -0.00000000000  -0.00000000000 )
+                 (  -0.00000000000  -1.00000000000   0.00000000000 )
+                 (   0.00000000000   0.00000000000  -1.00000000000 )
+                   25 displacement
+                 (   0.25000000000   0.25000000000   0.25000000000 )
+                      symmetry related atoms:
+             Si:    2    1
+
+                   26 rotation
+                 (  -0.00000000000  -1.00000000000   0.00000000000 )
+                 (   1.00000000000   0.00000000000   0.00000000000 )
+                 (   0.00000000000   0.00000000000  -1.00000000000 )
+                   26 displacement
+                 (   0.00000000000   0.00000000000  -0.00000000000 )
+                      symmetry related atoms:
+             Si:    1    2
+
+                   27 rotation
+                 (   1.00000000000   0.00000000000   0.00000000000 )
+                 (   0.00000000000   1.00000000000  -0.00000000000 )
+                 (   0.00000000000   0.00000000000  -1.00000000000 )
+                   27 displacement
+                 (   0.25000000000   0.25000000000   0.25000000000 )
+                      symmetry related atoms:
+             Si:    2    1
+
+                   28 rotation
+                 (   0.00000000000   1.00000000000  -0.00000000000 )
+                 (  -1.00000000000  -0.00000000000  -0.00000000000 )
+                 (   0.00000000000   0.00000000000  -1.00000000000 )
+                   28 displacement
+                 (   0.00000000000   0.00000000000  -0.00000000000 )
+                      symmetry related atoms:
+             Si:    1    2
+
+                   29 rotation
+                 (  -1.00000000000  -0.00000000000  -0.00000000000 )
+                 (   0.00000000000   1.00000000000  -0.00000000000 )
+                 (  -0.00000000000  -0.00000000000   1.00000000000 )
+                   29 displacement
+                 (   0.25000000000   0.25000000000   0.25000000000 )
+                      symmetry related atoms:
+             Si:    2    1
+
+                   30 rotation
+                 (   0.00000000000   1.00000000000  -0.00000000000 )
+                 (   1.00000000000   0.00000000000   0.00000000000 )
+                 (  -0.00000000000  -0.00000000000   1.00000000000 )
+                   30 displacement
+                 (   0.00000000000   0.00000000000  -0.00000000000 )
+                      symmetry related atoms:
+             Si:    1    2
+
+                   31 rotation
+                 (   1.00000000000   0.00000000000   0.00000000000 )
+                 (  -0.00000000000  -1.00000000000   0.00000000000 )
+                 (  -0.00000000000  -0.00000000000   1.00000000000 )
+                   31 displacement
+                 (   0.25000000000   0.25000000000   0.25000000000 )
+                      symmetry related atoms:
+             Si:    2    1
+
+                   32 rotation
+                 (  -0.00000000000  -1.00000000000   0.00000000000 )
+                 (  -1.00000000000  -0.00000000000  -0.00000000000 )
+                 (  -0.00000000000  -0.00000000000   1.00000000000 )
+                   32 displacement
+                 (   0.00000000000   0.00000000000  -0.00000000000 )
+                      symmetry related atoms:
+             Si:    1    2
+
+                   33 rotation
+                 (  -0.00000000000  -1.00000000000   0.00000000000 )
+                 (   0.00000000000   0.00000000000  -1.00000000000 )
+                 (  -1.00000000000  -0.00000000000  -0.00000000000 )
+                   33 displacement
+                 (   0.25000000000   0.25000000000   0.25000000000 )
+                      symmetry related atoms:
+             Si:    2    1
+
+                   34 rotation
+                 (   0.00000000000   0.00000000000  -1.00000000000 )
+                 (   0.00000000000   1.00000000000  -0.00000000000 )
+                 (  -1.00000000000  -0.00000000000  -0.00000000000 )
+                   34 displacement
+                 (   0.00000000000   0.00000000000  -0.00000000000 )
+                      symmetry related atoms:
+             Si:    1    2
+
+                   35 rotation
+                 (   0.00000000000   1.00000000000  -0.00000000000 )
+                 (  -0.00000000000  -0.00000000000   1.00000000000 )
+                 (  -1.00000000000  -0.00000000000  -0.00000000000 )
+                   35 displacement
+                 (   0.25000000000   0.25000000000   0.25000000000 )
+                      symmetry related atoms:
+             Si:    2    1
+
+                   36 rotation
+                 (  -0.00000000000  -0.00000000000   1.00000000000 )
+                 (  -0.00000000000  -1.00000000000   0.00000000000 )
+                 (  -1.00000000000  -0.00000000000  -0.00000000000 )
+                   36 displacement
+                 (   0.00000000000   0.00000000000  -0.00000000000 )
+                      symmetry related atoms:
+             Si:    1    2
+
+                   37 rotation
+                 (  -0.00000000000  -1.00000000000   0.00000000000 )
+                 (  -0.00000000000  -0.00000000000   1.00000000000 )
+                 (   1.00000000000   0.00000000000   0.00000000000 )
+                   37 displacement
+                 (   0.25000000000   0.25000000000   0.25000000000 )
+                      symmetry related atoms:
+             Si:    2    1
+
+                   38 rotation
+                 (  -0.00000000000  -0.00000000000   1.00000000000 )
+                 (   0.00000000000   1.00000000000  -0.00000000000 )
+                 (   1.00000000000   0.00000000000   0.00000000000 )
+                   38 displacement
+                 (   0.00000000000   0.00000000000  -0.00000000000 )
+                      symmetry related atoms:
+             Si:    1    2
+
+                   39 rotation
+                 (   0.00000000000   1.00000000000  -0.00000000000 )
+                 (   0.00000000000   0.00000000000  -1.00000000000 )
+                 (   1.00000000000   0.00000000000   0.00000000000 )
+                   39 displacement
+                 (   0.25000000000   0.25000000000   0.25000000000 )
+                      symmetry related atoms:
+             Si:    2    1
+
+                   40 rotation
+                 (   0.00000000000   0.00000000000  -1.00000000000 )
+                 (  -0.00000000000  -1.00000000000   0.00000000000 )
+                 (   1.00000000000   0.00000000000   0.00000000000 )
+                   40 displacement
+                 (   0.00000000000   0.00000000000  -0.00000000000 )
+                      symmetry related atoms:
+             Si:    1    2
+
+                   41 rotation
+                 (   0.00000000000   0.00000000000  -1.00000000000 )
+                 (  -1.00000000000  -0.00000000000  -0.00000000000 )
+                 (  -0.00000000000  -1.00000000000   0.00000000000 )
+                   41 displacement
+                 (   0.25000000000   0.25000000000   0.25000000000 )
+                      symmetry related atoms:
+             Si:    2    1
+
+                   42 rotation
+                 (  -1.00000000000  -0.00000000000  -0.00000000000 )
+                 (  -0.00000000000  -0.00000000000   1.00000000000 )
+                 (  -0.00000000000  -1.00000000000   0.00000000000 )
+                   42 displacement
+                 (   0.00000000000   0.00000000000  -0.00000000000 )
+                      symmetry related atoms:
+             Si:    1    2
+
+                   43 rotation
+                 (  -0.00000000000  -0.00000000000   1.00000000000 )
+                 (   1.00000000000   0.00000000000   0.00000000000 )
+                 (  -0.00000000000  -1.00000000000   0.00000000000 )
+                   43 displacement
+                 (   0.25000000000   0.25000000000   0.25000000000 )
+                      symmetry related atoms:
+             Si:    2    1
+
+                   44 rotation
+                 (   1.00000000000   0.00000000000   0.00000000000 )
+                 (   0.00000000000   0.00000000000  -1.00000000000 )
+                 (  -0.00000000000  -1.00000000000   0.00000000000 )
+                   44 displacement
+                 (   0.00000000000   0.00000000000  -0.00000000000 )
+                      symmetry related atoms:
+             Si:    1    2
+
+                   45 rotation
+                 (   0.00000000000   0.00000000000  -1.00000000000 )
+                 (   1.00000000000   0.00000000000   0.00000000000 )
+                 (   0.00000000000   1.00000000000  -0.00000000000 )
+                   45 displacement
+                 (   0.25000000000   0.25000000000   0.25000000000 )
+                      symmetry related atoms:
+             Si:    2    1
+
+                   46 rotation
+                 (   1.00000000000   0.00000000000   0.00000000000 )
+                 (  -0.00000000000  -0.00000000000   1.00000000000 )
+                 (   0.00000000000   1.00000000000  -0.00000000000 )
+                   46 displacement
+                 (   0.00000000000   0.00000000000  -0.00000000000 )
+                      symmetry related atoms:
+             Si:    1    2
+
+                   47 rotation
+                 (  -0.00000000000  -0.00000000000   1.00000000000 )
+                 (  -1.00000000000  -0.00000000000  -0.00000000000 )
+                 (   0.00000000000   1.00000000000  -0.00000000000 )
+                   47 displacement
+                 (   0.25000000000   0.25000000000   0.25000000000 )
+                      symmetry related atoms:
+             Si:    2    1
+
+                   48 rotation
+                 (  -1.00000000000  -0.00000000000  -0.00000000000 )
+                 (   0.00000000000   0.00000000000  -1.00000000000 )
+                 (   0.00000000000   1.00000000000  -0.00000000000 )
+                   48 displacement
+                 (   0.00000000000   0.00000000000  -0.00000000000 )
+                      symmetry related atoms:
+             Si:    1    2
+
+
+                         Centre of mass is constrained
+
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx....
+            x  Species       atom   co-ordinate  constraints.....
+            x-------------------------------------------------------------....
+            x Si                1       x        51196.7346      0.0000      0.0000
+            x Si                1       y            0.0000  51196.7346      0.0000
+            x Si                1       z            0.0000      0.0000  51196.7346
+            x Si                2       x        51196.7346      0.0000      0.0000
+            x Si                2       y            0.0000  51196.7346      0.0000
+            x Si                2       z            0.0000      0.0000  51196.7346
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx....
+
+                         Number of cell constraints= 5
+                         Cell constraints are:  1 1 1 0 0 0
+
+                         External pressure/stress (GPa)
+                          0.00000   0.00000   0.00000
+                                    0.00000   0.00000
+                                              0.00000
+
++---------------- MEMORY AND SCRATCH DISK ESTIMATES PER PROCESS --------------+
+|                                                     Memory          Disk    |
+| Baseline code, static data and system overhead      494.0 MB         0.0 MB |
+| BLAS internal memory storage                          0.0 MB         0.0 MB |
+| Model and support data                                6.0 MB         0.0 MB |
+| Electronic energy minimisation requirements           0.5 MB         0.0 MB |
+| Force calculation requirements                        0.2 MB         0.0 MB |
+|                                               ----------------------------- |
+| Approx. total storage required per process          500.5 MB         0.0 MB |
+|                                                                             |
+| Requirements will fluctuate during execution and may exceed these estimates |
++-----------------------------------------------------------------------------+
+Calculating total energy with cut-off of  120.000 eV.
+electronic_minimisation: Initialising density mixing
+
+Init
+Total free energy (E-TS)         =       100.69559740231946421 eV
+
+NB est. 0K energy (E-0.5TS)      =       100.69559740231946421 eV
+------------------------------------------------------------------------ <-- SCF
+SCF loop      Energy           Fermi           Energy gain       Timer   <-- SCF
+                               energy          per atom          (sec)   <-- SCF
+------------------------------------------------------------------------ <-- SCF
+Initial   1.00695597E+002  0.00000000E+000                         0.21  <-- SCF
+      1  -1.98324935E+002  7.97420775E+000   1.49510266E+002       0.23  <-- SCF
+ Density was not mixed in this cycle
+      2  -2.15233265E+002  6.87357085E+000   8.45416467E+000       0.24  <-- SCF
+ Density was not mixed in this cycle
+      3  -2.15714538E+002  6.32223396E+000   2.40636644E-001       0.25  <-- SCF
+ Norm of density residual is   0.21419188891559213
+      4  -2.15414915E+002  6.62551532E+000  -1.49811311E-001       0.27  <-- SCF
+ Norm of density residual is    6.0095360858288760E-002
+      5  -2.15394421E+002  6.76043760E+000  -1.02468927E-002       0.28  <-- SCF
+ Norm of density residual is    6.3489567393821339E-003
+      6  -2.15395248E+002  6.76535385E+000   4.13361400E-004       0.29  <-- SCF
+ Norm of density residual is    2.3304168018888796E-003
+      7  -2.15395347E+002  6.77034665E+000   4.93269104E-005       0.30  <-- SCF
+ Norm of density residual is    8.9627564873728143E-005
+      8  -2.15395348E+002  6.77042513E+000   4.21297401E-007       0.31  <-- SCF
+ Norm of density residual is    2.9258312396447469E-005
+      9  -2.15395346E+002  6.77044782E+000  -6.61918397E-007       0.32  <-- SCF
+ Norm of density residual is    4.9057173911895528E-006
+------------------------------------------------------------------------ <-- SCF
+Total energy has converged after 9 SCF iterations.
+
+Final energy, E             =  -215.3916827862     eV
+Final free energy (E-TS)    =  -215.3953462933     eV
+(energies not corrected for finite basis set)
+
+NB est. 0K energy (E-0.5TS)      =  -215.3935145398     eV
+
+There are 8 bands in total at each k-point and spin
+Bands above band 6 are completely empty                           <- occ
+Band energies and occupancies for bands close to Fermi energy     <- occ
+Smearing width is  0.200 eV                                       <- occ
+Spin 1, kpoint (-0.333333 -0.333333  0.000000 ) weight = 0.222222
++--------+-------------------+----------------+
+|  Band  |   Eigenvalue      |    Occupancy   |                   <- occ
++--------+-------------------+----------------+                   <- occ
+|     1  |   -.368570E+01    |   1.00000      |                   <- occ
+|     2  |   0.146100E+01    |   1.00000      |                   <- occ
+|     3  |   0.394789E+01    |   1.00000      |                   <- occ
+|     4  |   0.395198E+01    |   1.00000      |                   <- occ
+|     5  |   0.709092E+01    |  0.117227E-01  |                   <- occ
+|     6  |   0.837337E+01    |   0.00000      |                   <- occ
++--------+-------------------+----------------+                   <- occ
+Spin 1, kpoint ( 0.000000 -0.333333  0.333333 ) weight = 0.444444
++--------+-------------------+----------------+
+|  Band  |   Eigenvalue      |    Occupancy   |                   <- occ
++--------+-------------------+----------------+                   <- occ
+|     1  |   -.228280E+01    |   1.00000      |                   <- occ
+|     2  |   -.334956E+00    |   1.00000      |                   <- occ
+|     3  |   0.185964E+01    |   1.00000      |                   <- occ
+|     4  |   0.426559E+01    |   1.00000      |                   <- occ
+|     5  |   0.796485E+01    |   0.00000      |                   <- occ
+|     6  |   0.123514E+02    |   0.00000      |                   <- occ
++--------+-------------------+----------------+                   <- occ
+Spin 1, kpoint ( 0.000000  0.000000 -0.333333 ) weight = 0.296296
++--------+-------------------+----------------+
+|  Band  |   Eigenvalue      |    Occupancy   |                   <- occ
++--------+-------------------+----------------+                   <- occ
+|     1  |   -.421497E+01    |   1.00000      |                   <- occ
+|     2  |   0.104023E+01    |   1.00000      |                   <- occ
+|     3  |   0.542076E+01    |   1.00000      |                   <- occ
+|     4  |   0.542717E+01    |   1.00000      |                   <- occ
+|     5  |   0.832168E+01    |   0.00000      |                   <- occ
+|     6  |   0.996168E+01    |   0.00000      |                   <- occ
++--------+-------------------+----------------+                   <- occ
+Spin 1, kpoint ( 0.000000  0.000000  0.000000 ) weight = 0.037037
++--------+-------------------+----------------+
+|  Band  |   Eigenvalue      |    Occupancy   |                   <- occ
++--------+-------------------+----------------+                   <- occ
+|     1  |   -.560848E+01    |   1.00000      |                   <- occ
+|     2  |   0.648411E+01    |  0.978550      |                   <- occ
+|     3  |   0.649191E+01    |  0.975557      |                   <- occ
+|     4  |   0.649191E+01    |  0.975557      |                   <- occ
+|     5  |   0.898050E+01    |   0.00000      |                   <- occ
+|     6  |   0.898629E+01    |   0.00000      |                   <- occ
++--------+-------------------+----------------+                   <- occ
+Have a nice day.
+
+Writing analysis data to Si2.castep_bin
+
+Writing model to Si2.check
+
+ *********************** Ewald forces ***********************
+ *                                                          *
+ *               Cartesian components (eV/A)                *
+ * -------------------------------------------------------- *
+ *                         x            y            z      *
+ *                                                          *
+ * Si              1     -0.00000     -0.00000     -0.00000 *
+ * Si              2      0.00000      0.00000      0.00000 *
+ *                                                          *
+ ************************************************************
+
+ ****************** Local potential forces ******************
+ *                                                          *
+ *               Cartesian components (eV/A)                *
+ * -------------------------------------------------------- *
+ *                         x            y            z      *
+ *                                                          *
+ * Si              1     -0.00000      0.00000     -0.00000 *
+ * Si              2      0.00000     -0.00000     -0.00000 *
+ *                                                          *
+ ************************************************************
+
+ **************** Non-local potential forces ****************
+ *                                                          *
+ *               Cartesian components (eV/A)                *
+ * -------------------------------------------------------- *
+ *                         x            y            z      *
+ *                                                          *
+ * Si              1     -1.27413      1.29022      2.90543 *
+ * Si              2      1.27414     -1.29022     -2.90542 *
+ *                                                          *
+ ************************************************************
+
+ ************** External Efield and/or dipole ***************
+ *                                                          *
+ *               Cartesian components (eV/A)                *
+ * -------------------------------------------------------- *
+ *                         x            y            z      *
+ *                                                          *
+ * Si              1      0.00000      0.00000      0.00000 *
+ * Si              2      0.00000      0.00000      0.00000 *
+ *                                                          *
+ ************************************************************
+
+ ***************** DM correction to forces ******************
+ *                                                          *
+ *               Cartesian components (eV/A)                *
+ * -------------------------------------------------------- *
+ *                         x            y            z      *
+ *                                                          *
+ * Si              1      0.00000      0.00000      0.00000 *
+ * Si              2      0.00000      0.00000      0.00000 *
+ *                                                          *
+ ************************************************************
+
+ ******************** Symmetrised Forces ********************
+ *                                                          *
+ *               Cartesian components (eV/A)                *
+ * -------------------------------------------------------- *
+ *                         x            y            z      *
+ *                                                          *
+ * Si              1      0.00000      0.00000      0.00000 *
+ * Si              2     -0.00000     -0.00000      0.00000 *
+ *                                                          *
+ ************************************************************
+
+ Pseudo atomic calculation performed for Si 3s2 3p2
+
+ Converged in 16 iterations to a total energy of -102.0354 eV
+Charge spilling parameter for spin component 1 = 1.03%
+
+            Orbital Populations
+     Ion    Atom   Orbital             Charge
+  -------------------------------------------
+     Si     1      S                    1.302
+     Si     1      Px                   0.870
+     Si     1      Py                   0.949
+     Si     1      Pz                   0.880
+     Si     2      S                    1.301
+     Si     2      Px                   0.870
+     Si     2      Py                   0.949
+     Si     2      Pz                   0.880
+  -------------------------------------------
+                           Total:       8.000
+  -------------------------------------------
+The total projected population is    8.000   0.000
+
+     Atomic Populations (Mulliken)
+     -----------------------------
+Species          Ion     s      p      d      f     Total  Charge (e)
+=====================================================================
+  Si              1     1.30   2.70   0.00   0.00   4.00     0.00
+  Si              2     1.30   2.70   0.00   0.00   4.00     0.00
+=====================================================================
+
+                 Bond                   Population      Length (A)
+======================================================================
+              Si 1 -- Si 2                   3.05        2.33434
+======================================================================
+
+
+Writing analysis data to Si2.castep_bin
+
+Writing model to Si2.check
+
+ A BibTeX formatted list of references used in this run has been written to
+ Si2.bib
+
+Initialisation time =      0.18 s
+Calculation time    =      0.19 s
+Finalisation time   =      0.01 s
+Total time          =      0.38 s
+Peak Memory Use     = 544224 kB
+ +-------------------------------------------------+
+ |                                                 |
+ |      CCC   AA    SSS  TTTTT  EEEEE  PPPP        |
+ |     C     A  A  S       T    E      P   P       |
+ |     C     AAAA   SS     T    EEE    PPPP        |
+ |     C     A  A     S    T    E      P           |
+ |      CCC  A  A  SSS     T    EEEEE  P           |
+ |                                                 |
+ +-------------------------------------------------+
+ |                                                 |
+ | Welcome to Academic Release CASTEP version 20.11|
+ | Ab Initio Total Energy Program                  |
+ |                                                 |
+ | Authors:                                        |
+ | M. Segall, M. Probert, C. Pickard, P. Hasnip,   |
+ | S. Clark, K. Refson, J. R. Yates, M. Payne      |
+ |                                                 |
+ | Contributors:                                   |
+ | P. Lindan, P. Haynes, J. White, V. Milman,      |
+ | N. Govind, M. Gibson, P. Tulip, V. Cocula,      |
+ | B. Montanari, D. Quigley, M. Glover,            |
+ | L. Bernasconi, A. Perlov, M. Plummer,           |
+ | E. McNellis, J. Meyer, J. Gale, D. Jochym       |
+ | J. Aarons, B. Walker, R. Gillen, D. Jones       |
+ | T. Green, I. J. Bush, C. J. Armstrong,          |
+ | E. J. Higgins, E. L. Brown, M. S. McFly,        |
+ | J. Wilkins, B-C. Shih, P. J. P. Byrne,          |
+ | R. J. Maurer, J. C. Womack, J. Dziedzic,        |
+ | J. R. Kermode, A. Bartok-Partay                 |
+ |                                                 |
+ | Copyright (c) 2000 - 2020                       |
+ |                                                 |
+ |     Distributed under license from Cambridge    |
+ |     Enterprise for academic use only.           |
+ |                                                 |
+ | Please cite                                     |
+ |                                                 |
+ |     "First principles methods using CASTEP"     |
+ |                                                 |
+ |         Zeitschrift fuer Kristallographie       |
+ |           220(5-6) pp. 567-570 (2005)           |
+ |                                                 |
+ | S. J. Clark, M. D. Segall, C. J. Pickard,       |
+ | P. J. Hasnip, M. J. Probert, K. Refson,         |
+ | M. C. Payne                                     |
+ |                                                 |
+ |       in all publications arising from          |
+ |              your use of CASTEP                 |
+ |                                                 |
+ +-------------------------------------------------+
+ |                                                 |
+ |              http://www.castep.org              |
+ |                                                 |
+ +-------------------------------------------------+
+
+
+
+ Compiled for linux_x86_64_gfortran on Sat, 29 May 2021 13:01:11 +0100
+ from code version 26f4f9473+  Castep201_branch  Mon Apr 26 22:54:58 2021 +0100
+ Compiler: GNU Fortran 9.3.0; Optimisation: fast
+ MATHLIBS: Intel MKL(2021.1-Product) (LAPACK version 3.9.0)
+ FFT Lib : mkl
+ Fundamental constants values: CODATA 2014
+
+ Run started: Tue, 02 Nov 2021 11:48:35 +0000
+
+ Pseudo atomic calculation performed for Si 3s2 3p2
+
+ Converged in 16 iterations to a total energy of -102.0354 eV
+ Calculation parallelised over 2 processes.
+ Data is distributed by k-point(2-way)
+
+ ************************************ Title ************************************
+
+
+ ***************************** General Parameters ******************************
+
+ output verbosity                               : normal  (1)
+ write checkpoint data to                       : Si2.check
+ type of calculation                            : single point energy
+ stress calculation                             : off
+ density difference calculation                 : off
+ electron localisation func (ELF) calculation   : off
+ Hirshfeld analysis                             : off
+ molecular orbital projected DOS                : off
+ deltaSCF calculation                           : off
+ unlimited duration calculation
+ timing information                             : on
+ memory usage estimate                          : on
+ write extra output files                       : on
+ write final potential to formatted file        : off
+ write final density to formatted file          : off
+ write BibTeX reference list                    : on
+ write OTFG pseudopotential files               : on
+ write electrostatic potential file             : on
+ write bands file                               : on
+ checkpoint writing                             : both castep_bin and check files
+
+ output         length unit                     : A
+ output           mass unit                     : amu
+ output           time unit                     : ps
+ output         charge unit                     : e
+ output           spin unit                     : hbar/2
+ output         energy unit                     : eV
+ output          force unit                     : eV/A
+ output       velocity unit                     : A/ps
+ output       pressure unit                     : GPa
+ output     inv_length unit                     : 1/A
+ output      frequency unit                     : cm-1
+ output force constant unit                     : eV/A**2
+ output         volume unit                     : A**3
+ output   IR intensity unit                     : (D/A)**2/amu
+ output         dipole unit                     : D
+ output         efield unit                     : eV/A/e
+ output        entropy unit                     : J/mol/K
+ output    efield chi2 unit                     : pm/V
+
+ wavefunctions paging                           : none
+ random number generator seed                   : randomised (114835214)
+ data distribution                              : optimal for this architecture
+ optimization strategy                          : maximize speed(+++)
+
+ *********************** Exchange-Correlation Parameters ***********************
+
+ using functional                               : Local Density Approximation
+ relativistic treatment                         : Koelling-Harmon
+ DFT+D: Semi-empirical dispersion correction    : off
+
+ ************************* Pseudopotential Parameters **************************
+
+ pseudopotential representation                 : reciprocal space
+ <beta|phi> representation                      : reciprocal space
+ spin-orbit coupling                            : off
+
+ **************************** Basis Set Parameters *****************************
+
+ basis set accuracy                             : MEDIUM
+ plane wave basis set cut-off                   :   120.0000   eV
+ size of standard grid                          :     1.7500
+ size of   fine   gmax                          :     9.8213   1/A
+ finite basis set correction                    : none
+
+ **************************** Electronic Parameters ****************************
+
+ number of  electrons                           :  8.000
+ net charge of system                           :  0.000
+ treating system as non-spin-polarized
+ number of bands                                :          8
+
+ ********************* Electronic Minimization Parameters **********************
+
+ Method: Treating system as metallic with density mixing treatment of electrons,
+         and number of  SD  steps               :          1
+         and number of  CG  steps               :          4
+
+ total energy / atom convergence tol.           : 0.1000E-04   eV
+ eigen-energy convergence tolerance             : 0.1000E-05   eV
+ max force / atom convergence tol.              : ignored
+ convergence tolerance window                   :          3   cycles
+ max. number of SCF cycles                      :         30
+ number of fixed-spin iterations                :         10
+ smearing scheme                                : Gaussian
+ smearing width                                 : 0.2000       eV
+ Fermi energy convergence tolerance             : 0.2721E-13   eV
+ periodic dipole correction                     : NONE
+
+ ************************** Density Mixing Parameters **************************
+
+ density-mixing scheme                          : Broyden
+ max. length of mixing history                  :         20
+ charge density mixing amplitude                : 0.8000
+
+ *********************** Population Analysis Parameters ************************
+
+ Population analysis with cutoff                :  3.000       A
+ Population analysis output                     : summary and pdos components
+
+ *******************************************************************************
+
+
+                           -------------------------------
+                                      Unit Cell
+                           -------------------------------
+        Real Lattice(A)                      Reciprocal Lattice(1/A)
+     2.6954645     2.6954645     0.0000000        1.165510677   1.165510677  -1.165510677
+     2.6954645     0.0000000     2.6954645        1.165510677  -1.165510677   1.165510677
+     0.0000000     2.6954645     2.6954645       -1.165510677   1.165510677   1.165510677
+
+                       Lattice parameters(A)       Cell Angles
+                    a =      3.811962          alpha =   60.000000
+                    b =      3.811962          beta  =   60.000000
+                    c =      3.811962          gamma =   60.000000
+
+                       Current cell volume =            39.167950       A**3
+                                   density =             1.434106   AMU/A**3
+                                           =             2.381389     g/cm^3
+
+                           -------------------------------
+                                     Cell Contents
+                           -------------------------------
+                         Total number of ions in cell =    2
+                      Total number of species in cell =    1
+                        Max number of any one species =    2
+
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x  Element    Atom        Fractional coordinates of atoms  x
+            x            Number           u          v          w      x
+            x----------------------------------------------------------x
+            x  Si           1         0.000000   0.000000   0.000000   x
+            x  Si           2         0.250000   0.250000   0.250000   x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+                         No user defined ionic velocities
+
+                           -------------------------------
+                                   Details of Species
+                           -------------------------------
+
+                               Mass of species in AMU
+                                    Si   28.0855000
+
+                          Electric Quadrupole Moment (Barn)
+                                    Si    1.0000000 No Isotope Defined
+
+                          Files used for pseudopotentials:
+                                    Si Si_00.usp
+
+                           -------------------------------
+                              k-Points For BZ Sampling
+                           -------------------------------
+                       MP grid size for SCF calculation is  3  3  3
+                            with an offset of   0.000  0.000  0.000
+                       Number of kpoints used =             4
+
+                           -------------------------------
+                               Symmetry and Constraints
+                           -------------------------------
+
+                      Maximum deviation from symmetry = 0.362780E-32     ANG
+
+                      Number of symmetry operations   =          48
+                      Number of ionic constraints     =           3
+                      Point group of crystal =    32: Oh, m-3m, 4/m -3 2/m
+                      Space group of crystal =   227: Fd-3m, F 4d 2 3 -1d
+
+             Set iprint > 1 for details on symmetry rotations/translations
+
+                         Centre of mass is constrained
+             Set iprint > 1 for details of linear ionic constraints
+
+                         Number of cell constraints= 5
+                         Cell constraints are:  1 1 1 0 0 0
+
+                         External pressure/stress (GPa)
+                          0.00000   0.00000   0.00000
+                                    0.00000   0.00000
+                                              0.00000
+
++---------------- MEMORY AND SCRATCH DISK ESTIMATES PER PROCESS --------------+
+|                                                     Memory          Disk    |
+| Baseline code, static data and system overhead      427.0 MB         0.0 MB |
+| BLAS internal memory storage                          0.0 MB         0.0 MB |
+| Model and support data                                5.9 MB         0.0 MB |
+| Electronic energy minimisation requirements           0.5 MB         0.0 MB |
+| Force calculation requirements                        0.2 MB         0.0 MB |
+|                                               ----------------------------- |
+| Approx. total storage required per process          433.4 MB         0.0 MB |
+|                                                                             |
+| Requirements will fluctuate during execution and may exceed these estimates |
++-----------------------------------------------------------------------------+
+Calculating total energy with cut-off of  120.000 eV.
+------------------------------------------------------------------------ <-- SCF
+SCF loop      Energy           Fermi           Energy gain       Timer   <-- SCF
+                               energy          per atom          (sec)   <-- SCF
+------------------------------------------------------------------------ <-- SCF
+Initial   9.91961467E+001  0.00000000E+000                         0.25  <-- SCF
+      1  -1.99086548E+002  8.99349446E+000   1.49141347E+002       0.26  <-- SCF
+      2  -2.14948372E+002  7.10509600E+000   7.93091188E+000       0.27  <-- SCF
+      3  -2.15714479E+002  6.32138100E+000   3.83053609E-001       0.27  <-- SCF
+      4  -2.15415147E+002  6.62500933E+000  -1.49666214E-001       0.28  <-- SCF
+      5  -2.15394422E+002  6.76071190E+000  -1.03625979E-002       0.29  <-- SCF
+      6  -2.15395248E+002  6.76533338E+000   4.13192654E-004       0.30  <-- SCF
+      7  -2.15395347E+002  6.77032432E+000   4.93076184E-005       0.31  <-- SCF
+      8  -2.15395348E+002  6.77042557E+000   4.97028913E-007       0.32  <-- SCF
+      9  -2.15395346E+002  6.77044753E+000  -6.41102749E-007       0.32  <-- SCF
+------------------------------------------------------------------------ <-- SCF
+
+Final energy, E             =  -215.3916828247     eV
+Final free energy (E-TS)    =  -215.3953463320     eV
+(energies not corrected for finite basis set)
+
+NB est. 0K energy (E-0.5TS)      =  -215.3935145784     eV
+
+
+Writing analysis data to Si2.castep_bin
+
+Writing model to Si2.check
+
+ ******************** Symmetrised Forces ********************
+ *                                                          *
+ *               Cartesian components (eV/A)                *
+ * -------------------------------------------------------- *
+ *                         x            y            z      *
+ *                                                          *
+ * Si              1     -0.00000     -0.00000      0.00000 *
+ * Si              2      0.00000      0.00000      0.00000 *
+ *                                                          *
+ ************************************************************
+
+ Pseudo atomic calculation performed for Si 3s2 3p2
+
+ Converged in 16 iterations to a total energy of -102.0354 eV
+Charge spilling parameter for spin component 1 = 1.03%
+
+            Orbital Populations
+     Ion    Atom   Orbital             Charge
+  -------------------------------------------
+     Si     1      S                    1.301
+     Si     1      Px                   0.870
+     Si     1      Py                   0.949
+     Si     1      Pz                   0.880
+     Si     2      S                    1.301
+     Si     2      Px                   0.870
+     Si     2      Py                   0.949
+     Si     2      Pz                   0.880
+  -------------------------------------------
+                           Total:       8.000
+  -------------------------------------------
+
+     Atomic Populations (Mulliken)
+     -----------------------------
+Species          Ion     s      p      d      f     Total  Charge (e)
+=====================================================================
+  Si              1     1.30   2.70   0.00   0.00   4.00     0.00
+  Si              2     1.30   2.70   0.00   0.00   4.00     0.00
+=====================================================================
+
+                 Bond                   Population      Length (A)
+======================================================================
+              Si 1 -- Si 2                   3.05        2.33434
+======================================================================
+
+
+Writing analysis data to Si2.castep_bin
+
+Writing model to Si2.check
+
+ A BibTeX formatted list of references used in this run has been written to
+ Si2.bib
+
+Initialisation time =      0.22 s
+Calculation time    =      0.15 s
+Finalisation time   =      0.00 s
+Total time          =      0.37 s
+Peak Memory Use     = 475352 kB
+
+Overall parallel efficiency rating: Mediocre (57%)
+
+Data was distributed by:-
+k-point (2-way); efficiency rating: Satisfactory (69%)
+
+Parallel notes:
+1) Calculation only took 0.4 s, so efficiency estimates may be inaccurate.
