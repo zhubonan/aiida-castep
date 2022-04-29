@@ -7,9 +7,9 @@ import aiida.orm as orm
 from aiida.common.extendeddicts import AttributeDict
 from aiida.engine import WorkChain, calcfunction, if_
 from aiida.plugins import WorkflowFactory
+from aiida.tools import get_explicit_kpoints_path
 
 from ..common import OUTPUT_LINKNAMES as out_ln
-from ..common import INPUT_LINKNAMES as inp_ln
 from ..utils.dos import DOSProcessor
 
 
@@ -108,6 +108,12 @@ class CastepBandsWorkChain(WorkChain):
             required=False,
             help='Flag for running a separate SCF calculation, default to False'
         )
+        spec.input(
+            'options',
+            required=False,
+            help=
+            'Options for this workchain. Supported keywords: dos_smearing, dos_npoints.'
+        )
         spec.outline(
             cls.setup,
             if_(cls.should_do_relax)(
@@ -125,7 +131,9 @@ class CastepBandsWorkChain(WorkChain):
 
         spec.output(
             'primitive_structure',
-            help='Primitive structure used for band structure calculations')
+            help='Primitive structure used for band structure calculations',
+            required=False,
+        )
         spec.output('band_structure',
                     help='Computed band structure with labels')
         spec.output('seekpath_parameters',
@@ -152,6 +160,7 @@ class CastepBandsWorkChain(WorkChain):
         """Setup the calculation"""
         self.ctx.current_structure = self.inputs.structure
         self.ctx.bands_kpoints = self.inputs.get('bands_kpoints')
+        self.ctx.options = self.inputs.get('options', {})
 
     def should_do_relax(self):
         """Wether we should do relax or not"""
@@ -178,6 +187,7 @@ class CastepBandsWorkChain(WorkChain):
         # Use the relaxed structure as the current structure
         self.ctx.current_structure = relax_workchain.outputs[
             out_ln['structure']]
+        return None
 
     def should_run_scf(self):
         """Wether we should run SCF calculation?"""
@@ -248,6 +258,7 @@ class CastepBandsWorkChain(WorkChain):
         # This should be added later - restart from a `retrieved` local folder
         self.ctx.restart_folder = scf_workchain.outputs.remote_folder
         self.report("SCF calculation {} completed".format(scf_workchain))
+        return None
 
     def run_bands_dos(self):
         """Run the bands and the DOS calculations"""
@@ -255,14 +266,12 @@ class CastepBandsWorkChain(WorkChain):
         # Use the SCF inputs as the base
         inputs = AttributeDict(self.exposed_inputs(base_work, namespace='scf'))
         inputs.calc.structure = self.ctx.current_structure
-        if self.ctx.get('restart_folder'):
-            inputs.continuation_folder = self.ctx.restart_folder
-            has_scf = True
-        else:
-            has_scf = False
-
-        running = {}
         only_dos = self.inputs.get('only_dos')
+
+        # Setup the restart folders and relavant tags
+        if 'continuation_folder' in self.inputs.scf and not self.should_run_scf(
+        ):
+            self.ctx.restart_folder = self.inputs.scf.continuation_folder
 
         def generate_sub_input(inputs, namespace, task):
             """
@@ -296,6 +305,7 @@ class CastepBandsWorkChain(WorkChain):
 
             return inputs
 
+        running = {}
         if (only_dos is None) or (only_dos.value is False):
 
             # Fall back to use SCF inputs if not supplied
@@ -305,6 +315,10 @@ class CastepBandsWorkChain(WorkChain):
                 inputs = generate_sub_input(inputs, 'scf', 'spectral')
             # Set the kpoints
             inputs.calc[self._task_name + '_kpoints'] = self.ctx.bands_kpoints
+
+            if 'restart_folder' in self.ctx:
+                self.setup_restart_folder(inputs)
+
             bands_calc = self.submit(base_work, **inputs)
             running['bands_workchain'] = bands_calc
             self.report(
@@ -318,14 +332,53 @@ class CastepBandsWorkChain(WorkChain):
             else:
                 inputs = generate_sub_input(inputs, 'scf', 'spectral')
 
-            inputs = generate_sub_input(inputs, 'dos', 'spectral')
             # Set the kpoints
             inputs.calc[self._task_name + '_kpoints'] = self.inputs.dos_kpoints
+            if 'restart_folder' in self.ctx:
+                self.setup_restart_folder(inputs)
+
             dos_calc = self.submit(base_work, **inputs)
             running['dos_workchain'] = dos_calc
             self.report(
                 'Submitted workchain {} for dos calculation'.format(dos_calc))
         return self.to_context(**running)
+
+    def setup_restart_folder(self, inputs):
+        """Setup restart folder related tags for the inputs"""
+
+        # If a SCF calculation has been run then we use the output folder to perform restart
+        # This logic should be moved to CastepBaseWorkChain?
+        write_checkpoint = self.ctx.restart_folder.creator.inputs.parameters[
+            'PARAM'].get('write_checkpoint', 'all')
+        allow_restart = False
+        use_bin = False
+        if write_checkpoint.lower() != 'none':
+            allow_restart = True
+            # Ensure we use the CASTEP bin file
+            if write_checkpoint == 'minimal':
+                # Update to use the castep_bin file
+                use_bin = True
+
+            elif '=' in write_checkpoint:
+                # Cannot decide - visit the remote folder and check
+                contents = self.ctx.restart_folder.listdir()
+                seed = self.ctx.restart_folder.creator.get_options(
+                )['seedname']
+                if f'{seed}.check' not in contents:
+                    if f'{seed}.castep_bin' in contents:
+                        use_bin = True
+                    else:
+                        allow_restart = False
+        else:
+            allow_restart = False
+
+        if allow_restart:
+            inputs.continuation_folder = self.ctx.restart_folder
+            if use_bin is True:
+                options = inputs.options.get_dict(
+                ) if 'options' in inputs else {}
+                options['use_castep_bin'] = True
+                inputs.options = orm.Dict(dict=options)
 
     def inspect_bands_dos(self):
         """Inspect the bands and dos calculations"""
@@ -336,8 +389,8 @@ class CastepBandsWorkChain(WorkChain):
             bands = self.ctx.bands_workchain
             if not bands.is_finished_ok:
                 self.report(
-                    'Bands calculation finished with error, exit_status: {}'.
-                    format(bands, bands.exit_status))
+                    'Bands calculation {} finished with error, exit_status: {}'
+                    .format(bands, bands.exit_status))
                 exit_code = self.exit_codes.ERROR_SUB_PROC_BANDS_FAILED
             self.out(
                 'band_structure',
@@ -355,7 +408,13 @@ class CastepBandsWorkChain(WorkChain):
                 exit_code = self.exit_codes.ERROR_SUB_PROC_DOS_FAILED
             self.out('dos_bands', dos.outputs[out_ln['bands']])
             # Compute DOS from bands
-            self.out('dos', dos_from_bands(dos.outputs[out_ln['bands']]))
+            self.out(
+                'dos',
+                dos_from_bands(dos.outputs[out_ln['bands']],
+                               smearing=orm.Float(
+                                   self.ctx.options.get('dos_smearing', 0.05)),
+                               npoints=orm.Int(
+                                   self.ctx.options.get('dos_npoints', 2000))))
         else:
             dos = None
 
@@ -400,8 +459,7 @@ def nested_update_dict_node(dict_node, update_dict):
     nested_update(pydict, update_dict)
     if pydict == dict_node.get_dict():
         return dict_node
-    else:
-        return orm.Dict(dict=pydict)
+    return orm.Dict(dict=pydict)
 
 
 @calcfunction
@@ -419,7 +477,6 @@ def seekpath_structure_analysis(structure, **kwargs):
         angle_tolerance: -1.0
     Note that exact parameters that are available and their defaults will depend on your Seekpath version.
     """
-    from aiida.tools import get_explicit_kpoints_path
 
     unwrapped_kwargs = {
         key: node.value
@@ -446,7 +503,7 @@ def ensure_checkpoint(pdict):
     value = pdict.get('write_checkpoint')
     if value is None:
         return pdict
-    elif value.lower() == 'none':
+    if value.lower() == 'none':
         pdict['write_checkpoint'] = 'minimal'
     return pdict
 
@@ -472,8 +529,8 @@ def dos_from_bands(bands, smearing, npoints):
     out = orm.XyData()
     out.set_x(eng, "Energy", "eV")
     nspin = dos.shape[0]
-    out.set_y(y_arrays=[arr for arr in dos],
-              y_names=[f"DOS_SPIN_{i}" for i in range(nspin)],
+    out.set_y(y_arrays=list(dos),
+              y_names=["DOS_SPIN_{}".format(i) for i in range(nspin)],
               y_units=["eV^-1"] * nspin)
 
     out.set_attribute("fermi_energy", bands.get_attribute('efermi'))

@@ -96,7 +96,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
     # Extra kpoints - CASTEP has many calculation mode that take extra kpoints
     _extra_kpoints = {
         'spectral': {  # name XX_kpoints_list
-            'task': ('spectra', ),
+            'task': ('spectral', ),
             'need_weights':
             True  # Whether the explicit kpoints need weights or not
         },

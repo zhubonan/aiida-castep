@@ -27,8 +27,11 @@ to be differentiated with the calculation being killed (by scheduler).
 1.1.0 -> Enabled parsing of castep_bin files and return error codes when there is no empty
 band in at least one kpoint.
 
+1.1.1 -> Fixed a bug where the kpoints fro castep_bin can be incompatible with the band structure
+calculation
+
 """
 
-CALC_PARSER_VERSION = "1.1.0"
-PLUGIN_VERSION = "1.2.0"
+CALC_PARSER_VERSION = "1.1.1"
+PLUGIN_VERSION = "1.3.0"
 __version__ = PLUGIN_VERSION

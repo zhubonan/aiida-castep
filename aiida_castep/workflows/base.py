@@ -94,6 +94,12 @@ class CastepBaseWorkChain(WorkChain):
             help=('Options specific to the workchain.'
                   'Avaliable options: queue_wallclock_limit, use_castep_bin'))
         spec.input(
+            'calc_options',
+            valid_type=orm.Dict,
+            serializer=to_aiida_type,
+            required=False,
+            help="Options to be passed to calculations's metadata.options")
+        spec.input(
             'clean_workdir',
             valid_type=orm.Bool,
             serializer=to_aiida_type,
@@ -102,6 +108,15 @@ class CastepBaseWorkChain(WorkChain):
             'Wether to clean the workdir of the calculations or not, the default is not clean.'
         )
         spec.expose_inputs(cls._calculation_class, namespace='calc')
+        # Ensure this port is not required
+        spec.input(
+            'calc.metadata.options.resources',
+            valid_type=dict,
+            required=False,
+            help=
+            'Set the dictionary of resources to be used by the scheduler plugin, like the number of nodes, '
+            'cpus etc. This dictionary is scheduler-plugin dependent. Look at the documentation of the '
+            'scheduler for more details.')
         spec.input('calc.parameters',
                    valid_type=orm.Dict,
                    serializer=to_aiida_type,
@@ -181,10 +196,23 @@ class CastepBaseWorkChain(WorkChain):
 
         # Ensure that the label is carried over to the calculation
         if not self.ctx.inputs['metadata'].get('label'):
-            self.ctx.inputs['metadata']['label'] = self.inputs.metadata.label
+            self.ctx.inputs['metadata']['label'] = self.inputs.metadata.get(
+                'label', '')
 
+        # Set the metadata.options for the underlying CastepCalculation
+        # There are two ways to do this, one can either set it directly under the calc
+        # namespace, or supply a dedicated Dict under 'calc_options'
+        # The latter allows the get_builder_restart to work at the workchain level
         self.ctx.inputs['metadata']['options'] = AttributeDict(
             self.inputs.calc.metadata.options)
+        # Check if there is any content
+        if 'resources' in self.inputs.calc.metadata.options:
+            self.report(
+                'Direct input of calculations metadata is deprecated - please pass them with `calc_options` input port.'
+            )
+        if self.inputs.get('calc_options'):
+            self.ctx.inputs['metadata']['options'].update(
+                self.inputs['calc_options'])
 
         # propagate the settings to the inputs of the CalcJob
         if 'settings' in self.inputs.calc:
@@ -644,11 +672,11 @@ def _handle_no_empty_bands(self, calculation):
     nextra_bands = None
     # Scan for the warning line and record the suggested nextra bands
     for line in dot_castep:
-        match = re.match(r"Recommend using nextra_bands of (\d+) to (\d+).",
-                         line)
+        match = re.search(r"Recommend using nextra_bands of (\d+) to (\d+)",
+                          line)
         if match:
             nextra_bands = int(match.group(2))
-    param = self.node.inputs.parameters.get_dict()
+    param = self.ctx.inputs.parameters
 
     # No warning found? Increase the extra bands by 50%
     if nextra_bands is None:
@@ -657,11 +685,13 @@ def _handle_no_empty_bands(self, calculation):
             param['PARAM']['perc_extra_bands'] = 30
         else:
             perc *= 1.5
-            param['PARAM']['perc_extra_bands'] *= perc
+            param['PARAM']['perc_extra_bands'] = perc
+        param['PARAM'].pop('nextra_bands', None)
         self.report(f'Increased <perc_extra_bands> to {perc}.')
     else:
         # Apply the suggested bands
         param['PARAM']['nextra_bands'] = nextra_bands
+        param['PARAM'].pop('perc_extra_bands', None)
         self.report(f'Increased <nextra_bands> to {nextra_bands}.')
 
     return ErrorHandlerReport(True, False)
