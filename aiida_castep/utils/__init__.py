@@ -2,9 +2,12 @@
 Utility module with useful functions
 """
 import io
+from pathlib import Path
 import numpy as np
 
 # pylint: disable=import-outside-toplevel, too-many-locals
+
+from aiida.repository.common import FileType
 
 
 def band_array_ensure_ndim(array):
@@ -323,8 +326,6 @@ def export_calculation(node, output_dir, prefix=None):
     """
     Export one calculation a a directory
     """
-    from aiida.orm.utils.repository import FileType
-    from pathlib import Path
 
     output_dir = Path(output_dir)
     output_dir.mkdir(exist_ok=True)

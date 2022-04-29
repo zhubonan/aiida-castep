@@ -45,6 +45,8 @@ jobs:
     needs: [pre-commit]
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      AIIDA_WARN_v3: 1
     services:
       rabbitmq:
         image: rabbitmq:latest
