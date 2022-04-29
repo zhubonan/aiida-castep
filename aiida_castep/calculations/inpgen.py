@@ -2,14 +2,15 @@
 Module for generating text based CASTEP inputs
 """
 import numpy as np
+from castepinput.inputs import CellInput, ParamInput
+
 from aiida.common import InputValidationError, MultipleObjectsError
 from aiida_castep.common import INPUT_LINKNAMES as in_ln
 
-from .datastructure import ParamFile, CellFile
 from .utils import get_castep_ion_line, _lowercase_dict, _uppercase_dict
 from ..data.otfg import OTFGData
 
-# pylint: disable=no-member
+# pylint: disable=no-member, too-many-locals, too-many-statements, too-many-branches
 
 
 class CastepInputGenerator:
@@ -22,8 +23,8 @@ class CastepInputGenerator:
         """
         # Initialize the underlying cell file and param file
         # objects
-        self.param_file = ParamFile()
-        self.cell_file = CellFile()
+        self.param_file = ParamInput()
+        self.cell_file = CellInput()
         self.local_copy_list_to_append = set()
         self.param_dict = {}
         self.settings_dict = {}
@@ -31,11 +32,11 @@ class CastepInputGenerator:
     def prepare_inputs(self, reset=True):
         """
         Prepare the inputs
-        :param reset: Rest exisitng self.param_file and self.cell file
+        :param reset: Rest existing self.param_file and self.cell file
         """
         if reset:
-            self.param_file = ParamFile()
-            self.cell_file = CellFile()
+            self.param_file = ParamInput()
+            self.cell_file = CellInput()
 
         self.local_copy_list_to_append = set()
         param_dict = self.inputs[in_ln['parameters']].get_dict()
@@ -53,7 +54,7 @@ class CastepInputGenerator:
         # Set iprint to 1
         param_dict["PARAM"]["iprint"] = param_dict["PARAM"].get("iprint", 1)
 
-        # Set run_time using define value for this calcualtion
+        # Set run_time using define value for this calculation
         run_time = self.inputs.metadata.options.get('max_wallclock_seconds')
         if run_time:
             n_seconds = run_time * 0.95
@@ -226,8 +227,7 @@ class CastepInputGenerator:
                 raise MultipleObjectsError(
                     "Pseudopotentials should not be specified directly")
 
-            # TODO use the castepinput package
-            # Constructing block keywrods
+            # Constructing block keywords
             # We identify the key should be treated as a block it
             # is not a string and has len() > 0
             self.cell_file[key] = value
@@ -338,7 +338,7 @@ class CastepInputGenerator:
                             (ps_node.uuid, ps_node.filename, ps_node.filename))
                     except Exception as error:
                         raise InputValidationError(
-                            'Unkonwn node as pseudo: {}. Exception raised: {}'.
+                            'Unknown node as pseudo: {}. Exception raised: {}'.
                             format(ps_node, error))
 
         # Ensure it is a list
