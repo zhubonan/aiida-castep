@@ -105,7 +105,7 @@ jobs:
           fail_ci_if_error: false
 
 # For testing with AiiDA 1.6.5
-tests-aiida-1:
+  tests-aiida-1:
     needs: [pre-commit]
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -156,6 +156,7 @@ tests-aiida-1:
           replace-with: ''
       - name: Run pytest
         run: pytest
+
 
   build-n-publish:
 
