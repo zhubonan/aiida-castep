@@ -12,6 +12,7 @@ from aiida.orm import Computer, Dict, Code, KpointsData, Node, StructureData
 from aiida.plugins import DataFactory, ParserFactory
 from aiida.common.exceptions import NotExistent
 from aiida.common import AttributeDict
+from aiida import __version__ as AIIDA_VERSION
 
 from aiida.common.links import LinkType
 from aiida.orm import CalcJobNode, FolderData
@@ -25,6 +26,8 @@ from aiida_castep.calculations.castep import CastepCalculation
 from ..utils import get_sto_structure
 
 this_folder = Path(__file__).parent
+
+AIIDA_MAJOR_VERSION = int(AIIDA_VERSION[0])
 
 
 class CastepTestApp(object):
@@ -42,8 +45,10 @@ class CastepTestApp(object):
         """
         defaults = dict(label='localhost',
                         hostname='localhost',
-                        transport_type='core.local',
-                        scheduler_type='core.direct',
+                        transport_type='core.local'
+                        if AIIDA_MAJOR_VERSION > 1 else 'local',
+                        scheduler_type='core.direct'
+                        if AIIDA_MAJOR_VERSION > 1 else 'direct',
                         workdir=str(self._workdir))
 
         kwargs.update(defaults)
