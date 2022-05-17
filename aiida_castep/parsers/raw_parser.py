@@ -297,7 +297,23 @@ def parse_castep_text_output(out_lines, input_dict):
         if "MEMORY AND SCRATCH DISK ESTIMATES" in line:
             body_start = i
             break
+            
+        if "Atomic populations (Mulliken)" in line:
+            read = True
+            spins = []
+            continue
+        elif line.strip() == "":
+            read = False
+        
+        if read:
+            line = line.strip().split()
+            if len(line) == 10:
+                spins.append(float(line[-1]))
 
+                
+    if spins != []:
+        parsed_data["spins"] = spins
+                
     parsed_data.update(pseudo_pots=pseudo_files)
 
     # Parse repeating information
