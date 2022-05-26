@@ -106,7 +106,6 @@ show_authors = True
 pygments_style = "sphinx"
 
 # -- Options for HTML output ----------------------------------------------
-html_style = ''
 html_theme = "furo"
 html_logo = "images/AiiDA_transparent_logo.png"
 html_title = f"aiida-castep v{release}"
