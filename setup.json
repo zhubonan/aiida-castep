@@ -13,18 +13,31 @@
         "Framework :: AiiDA"
     ],
     "version": "2.0.0",
-    "setup_requires": ["reentry"],
+    "setup_requires": [
+        "reentry"
+    ],
     "reentry_register": true,
-    "extras_require":{
-              "pre-commit": [
-                  "pre-commit==1.18.3",
-                  "yapf==0.28.0",
-                  "prospector==1.2.0",
-                  "pylint==2.4.4; python_version>='3.0'",
-                  "pylint-pytest"
-              ],
-              "testing": ["pytest", "pgtest~=1.3,>=1.3.1", "pytest-cov", "aiida-pseudo"],
-              "docs": ["sphinx", "sphinx_rtd_theme", "furo"]
+    "extras_require": {
+        "pre-commit": [
+            "pre-commit==1.18.3",
+            "yapf==0.28.0",
+            "prospector==1.2.0",
+            "pylint==2.4.4; python_version>='3.0'",
+            "pylint-pytest"
+        ],
+        "testing": [
+            "pytest",
+            "pgtest~=1.3,>=1.3.1",
+            "pytest-cov",
+            "aiida-pseudo"
+        ],
+        "docs": [
+            "sphinx",
+            "sphinxcontrib-contentui",
+            "sphinxcontrib-details-directive",
+            "furo",
+            "markupsafe<2.1"
+        ]
     },
     "install_requires": [
         "aiida-core>1,<3",
@@ -55,7 +68,7 @@
         "aiida.tests": [
             "castep.calculation = aiida_castep.tests.dbtests.dbtestcalculation"
         ],
-        "aiida.cmdline.data" : [
+        "aiida.cmdline.data": [
             "castep-pseudos = aiida_castep.cmdline.otfg_cmd:pseudos_cmd",
             "castep-helper = aiida_castep.cmdline.helper_cmd:helper_cmd"
         ],
@@ -68,7 +81,7 @@
             "castep.altrelax = aiida_castep.workflows.relax:CastepAlterRelaxWorkChain",
             "castep.bands = aiida_castep.workflows.bands:CastepBandsWorkChain"
         ],
-        "aiida.groups":[
+        "aiida.groups": [
             "castep.otfg = aiida_castep.data.otfg:OTFGGroup"
         ]
     }
