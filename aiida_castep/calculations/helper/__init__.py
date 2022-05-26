@@ -1,9 +1,6 @@
 """
 CASTEP HELPER
 Check for errors in input dictionary
-{"CELL": {...},
- "PARAM": {...}
-
 """
 
 import os
@@ -119,6 +116,7 @@ class CastepHelper(object):
         :param dict input_dict: A dictonary with "PARAM" and "CELL" keys.
 
         :return: A list of [invalid_keys, wrong_keys].
+
         wrong_keys is a tuple of where the key should have being.
         (key, "PARAM") or (key, "CELL")
         """
@@ -282,6 +280,7 @@ def _get_suggestion(provided_string, allowed_strings):
     :param allowed_strings: a list of valid strings
 
     :return: A string to print on output, to suggest to the user
+
     a possible valid value.
     """
     import difflib

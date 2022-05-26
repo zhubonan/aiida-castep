@@ -2,15 +2,16 @@
 Test input generation
 """
 import pytest
-import numpy as np
-from aiida_castep.calculations.inpgen import CastepInputGenerator
 from aiida.engine.processes.ports import PortNamespace
+from aiida_castep.calculations.inpgen import CastepInputGenerator
+
+# pylint: disable=import-outside-toplevel, protected-access, no-member
 
 
 @pytest.fixture
 def gen_instance():
     """
-    Create a mock generator intstance
+    Create a mock generator instance
     """
     gen = CastepInputGenerator()
     gen.inputs = PortNamespace
@@ -40,7 +41,7 @@ def param_dict():
 def test_get_builder(db_test_app, entry_point):
     from aiida.plugins import CalculationFactory
     cls = CalculationFactory(entry_point)
-    builder = cls.get_builder()
+    cls.get_builder()
 
 
 def test_inp_gen_param(gen_instance, param_dict):
@@ -167,15 +168,15 @@ def test_cell_with_spin(gen_instance, sto_calc_inputs):
         assert positions[i].endswith(" SPIN=( 1.000000 1.000000 1.000000 ) ")
 
     # Test spin consistency checks
-    d = sto_calc_inputs.parameters.get_dict()
-    d['PARAM']['spin'] = 1.0  # This is wrong
-    sto_calc_inputs.parameters = orm.Dict(dict=d)
+    param = sto_calc_inputs.parameters.get_dict()
+    param['PARAM']['spin'] = 1.0  # This is wrong
+    sto_calc_inputs.parameters = orm.Dict(dict=param)
     with pytest.raises(InputValidationError):
         gen_instance.prepare_inputs()
 
     # Summation of spins for non-collinear spins
-    d['PARAM']['spin'] = 3**(1 / 2) * 5
-    sto_calc_inputs.parameters = orm.Dict(dict=d)
+    param['PARAM']['spin'] = 3**(1 / 2) * 5
+    sto_calc_inputs.parameters = orm.Dict(dict=param)
     gen_instance.prepare_inputs()
 
 
@@ -267,3 +268,34 @@ def test_dict2builder(aiida_profile, sto_calc_inputs):
     builder = CastepCalculation.get_builder()
     builder._update(sto_calc_inputs)
     run_get_node(builder)
+
+
+@pytest.fixture
+def dojo_pseudo(aiida_profile):
+    """Install upf potentials from pseudo dojo"""
+    from click.testing import CliRunner
+    from aiida_pseudo.cli.root import cmd_root
+
+    runner = CliRunner()
+    output = runner.invoke(cmd_root, [
+        'install', 'pseudo-dojo', '-f', 'upf', '-x', 'PBE', '-p', 'standard',
+        '-f', 'upf', '-s', 'normal', '-r', 'SR', '-v', '0.4'
+    ])
+    assert output.exit_code == 0, f"Error downloading pseudos: {output.output}"
+    return 'PseudoDojo/0.4/PBE/SR/standard/upf'
+
+
+def test_using_aiida_pseudo(gen_instance, sto_calc_inputs, dojo_pseudo):
+    """
+    Test that the inputs generator correctly handles the case with
+    kind.name != symbol
+    """
+    from aiida_castep.data import get_pseudos_from_structure
+    pps = get_pseudos_from_structure(sto_calc_inputs.structure, dojo_pseudo)
+    assert 'Sr' in pps
+    assert 'Ti' in pps
+    assert 'O' in pps
+
+    sto_calc_inputs.pseudos = pps
+    gen_instance.inputs = sto_calc_inputs
+    gen_instance.prepare_inputs()

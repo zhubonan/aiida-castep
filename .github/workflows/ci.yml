@@ -8,7 +8,7 @@ jobs:
     timeout-minutes: 45
     strategy:
       matrix:
-        python: ['3.8']
+        python: ['3.9']
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python
@@ -28,16 +28,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-    - uses: actions/checkout@v1
-    - name: Set up Python 3.7
-      uses: actions/setup-python@v1
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v2
       with:
-        python-version: 3.7
+        python-version: "3.8"
     - name: Install python dependencies
       run: |
         pip install --upgrade pip
         pip install -e .[docs]
-        reentry scan -r aiida
     - name: Build docs
       run: cd docs && make
 
@@ -45,6 +44,8 @@ jobs:
     needs: [pre-commit]
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      AIIDA_WARN_v3: 1
     services:
       rabbitmq:
         image: rabbitmq:latest
@@ -52,7 +53,7 @@ jobs:
           - 5672:5672
     strategy:
       matrix:
-        python: ['3.7', '3.8', '3.9']
+        python: ['3.8', '3.9', '3.10']
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python
@@ -75,12 +76,10 @@ jobs:
       - name: Install Coveralls
         if: ${{ matrix.python }} == '3.8'
         run: pip install coveralls
-      - name: Install AiiDA
-        run: pip install 'aiida-core==1.6.5'
+      - name: Install AiiDA 2.x version
+        run: pip install aiida-core~=2.0
       - name: Install aiida-castep
         run: pip install -e ".[testing]" && pip freeze
-      - name: Refresh the entrypoints
-        run: reentry scan -r aiida
       - name: Remove dot in Python version for passing version to tox
         uses: frabert/replace-string-action@master
         id: tox
