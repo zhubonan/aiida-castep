@@ -18,7 +18,7 @@ import numpy as np
 
 from castepinput import ParamInput, CellInput
 
-from aiida.repository import FileType
+from aiida.repository.common import FileType
 
 # pylint: disable=logging-format-interpolation, import-outside-toplevel
 

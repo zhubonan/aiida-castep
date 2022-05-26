@@ -9,6 +9,7 @@ import os
 from aiida.common.folders import SandboxFolder
 from aiida.common import ValidationError
 from unittest import TestCase
+from aiida.orm import StructureData
 import pytest
 
 Ti_otfg = "Ti 3|1.8|9|10|11|30U:40:31:32(qc=5.5)"
@@ -80,7 +81,6 @@ class BaseDataCase(TestCase):
     def get_STO_structure():
         """Return a STO structure"""
         from aiida.plugins import DataFactory
-        StructureData = DataFactory("structure")
         a = 3.905
 
         cell = ((a, 0., 0.), (0., a, 0.), (0., 0., a))

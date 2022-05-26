@@ -2,7 +2,8 @@
 Storing OTFG configuration as Data nodes
 """
 
-from aiida.orm import Data, Group, QueryBuilder
+from aiida.orm import Data, Group, QueryBuilder, User
+
 from aiida.common.utils import classproperty
 from aiida.common import ValidationError
 from .utils import split_otfg_entry
@@ -167,16 +168,13 @@ def upload_otfg_family(entries,
 class OTFGData(Data):
     """
     Class representing an OTFG configuration
-
-    attributes:
-    string: string to be put into the cell file
-    element: element that this setting is for - may not exist if we are dealing with a library.
     """
     def __init__(self, **kwargs):
         """
-        Store a string for on-the-fly generation of pseudopoentials
+        Store a string for on-the-fly generation of pseudopotentials
 
         :param otfg_entry str: a string specifying the generation.
+
         The element this  potential is for can also be included.
         For example: 'O 2|1.1|15|18|20|20:21(qc=7)'
         """
@@ -313,8 +311,6 @@ class OTFGData(Data):
                If defined, it should be either a DbUser instance, or a string
                for the user name (that is, the user email).
         """
-        from aiida.orm import QueryBuilder
-        from aiida.orm import User
 
         query = QueryBuilder()
         filters = {'type_string': {'==': cls.otfg_family_type_string}}

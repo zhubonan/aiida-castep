@@ -1,7 +1,6 @@
 """
-Mock castep command.
+Mock castep command
 
-------------------
 Separate cli interface for commands useful in development and testing.
 """
 import os

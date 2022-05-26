@@ -2,7 +2,7 @@
 Test the parsers that interacte with the AiiDA database.
 Check if various AiiDA types are created correctly.
 """
-from io import StringIO
+from io import StringIO, BytesIO
 import pytest
 from ase.build import bulk
 from aiida.orm import StructureData
@@ -62,29 +62,41 @@ def test_parse_warnings(
     )
     parser = generate_parser('castep.castep')
 
-    folder = node.outputs.retrieved
+    folder = node.outputs.retrieved.clone()
     content_orig = folder.get_object_content('aiida.castep').split('\n')
     content = content_orig[:-20]
     content.append('Insufficient time for another iteration')
-    buf = StringIO('\n'.join(content))
-    node.outputs.retrieved._repository.put_object_from_filelike(buf,
-                                                                'aiida.castep',
-                                                                force=True)
+
+    node = generate_calc_job_node(
+        'castep.castep',
+        'H2-geom',
+        inputs=h2_calc_inputs,
+        outfile_override={'aiida.castep': '\n'.join(content)},
+    )
 
     results, return_node = parser.parse_from_node(node, store_provenance=False)
     assert return_node.exit_status == CODES['ERROR_TIMELIMIT_REACHED'][0]
 
     content.append(
         'SCF cycles performed but system has not reached the groundstate')
-    buf = StringIO('\n'.join(content))
-    node.outputs.retrieved._repository.put_object_from_filelike(buf,
-                                                                'aiida.castep',
-                                                                force=True)
+    node = generate_calc_job_node(
+        'castep.castep',
+        'H2-geom',
+        inputs=h2_calc_inputs,
+        outfile_override={'aiida.castep': '\n'.join(content)},
+    )
+
     results, return_node = parser.parse_from_node(node, store_provenance=False)
     assert return_node.exit_status == CODES['ERROR_SCF_NOT_CONVERGED'][0]
 
-    node.outputs.retrieved._repository.delete_object('aiida.castep',
-                                                     force=True)
+    node = generate_calc_job_node(
+        'castep.castep',
+        'H2-geom',
+        inputs=h2_calc_inputs,
+        outfile_override={'aiida.castep':
+                          None},  # Remove the 'aiida.castep' output file
+    )
+
     results, return_node = parser.parse_from_node(node, store_provenance=False)
     assert return_node.exit_status == CODES['ERROR_NO_OUTPUT_FILE'][0]
 
@@ -104,16 +116,8 @@ def test_parse_errs(
         'castep.castep',
         'H2-geom',
         inputs=h2_calc_inputs,
-    )
+        outfile_override={'aiida.0001.err': 'Error Message\nError'})
     parser = generate_parser('castep.castep')
-
-    folder = node.outputs.retrieved
-
-    error_string = u'Error Message\nError'
-    err_handle = StringIO(error_string)
-    folder._repository.put_object_from_filelike(err_handle,
-                                                'aiida.0001.err',
-                                                force=True)
     results, return_node = parser.parse_from_node(node, store_provenance=False)
     assert return_node.exit_status == CODES['ERROR_CASTEP_ERROR'][0]
 
