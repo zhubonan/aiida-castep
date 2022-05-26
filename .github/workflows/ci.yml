@@ -101,60 +101,6 @@ jobs:
           name: aiida-castep
           fail_ci_if_error: false
 
-# For testing with AiiDA 1.6.5
-  tests-aiida-1:
-    needs: [pre-commit]
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    env:
-      AIIDA_WARN_v3: 1
-    services:
-      rabbitmq:
-        image: rabbitmq:latest
-        ports:
-          - 5672:5672
-    strategy:
-      matrix:
-        python: ['3.8', '3.9']
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python }}
-      - name: Install system dependencies
-        run: |
-          curl https://bazel.build/bazel-release.pub.gpg | sudo apt-key add -
-          sudo apt update
-          sudo apt install locate
-          sudo updatedb
-          sudo apt install postgresql
-      - name: Upgrade pip
-        run: |
-          pip install --upgrade pip
-          pip --version
-      - name: Install Tox
-        run: pip install tox
-      - name: Install Coveralls
-        if: ${{ matrix.python }} == '3.8'
-        run: pip install coveralls
-      - name: Install AiiDA 1.6.5 version
-        run: pip install aiida-core==1.6.5
-      - name: Install aiida-castep
-        run: pip install -e ".[testing]" && pip freeze
-      - name: Refresh the entrypoints
-        run: reentry scan -r aiida
-      - name: Remove dot in Python version for passing version to tox
-        uses: frabert/replace-string-action@master
-        id: tox
-        with:
-          pattern: '\.'
-          string: ${{ matrix.python }}
-          replace-with: ''
-      - name: Run pytest
-        run: pytest
-
-
   build-n-publish:
 
     needs: [pre-commit, docs, tests]

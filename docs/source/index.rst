@@ -89,18 +89,11 @@ User's guide
 ------------
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 2
 
    user_guide/index
    API documentation <apidoc/aiida_castep>
-
-Modules provided with aiida-castep (API reference)
---------------------------------------------------
-
-.. toctree::
-   :maxdepth: 4
-
-   module_guide/index
+   AiiDA Documentation <https://aiida.readthedocs.io>
 
 Indices and tables
 ==================
