@@ -6,5 +6,3 @@ dependencies:
   - aiida-core~=2.0.1
   - python~=3.8
   - pip
-  - pip:
-    - ./
