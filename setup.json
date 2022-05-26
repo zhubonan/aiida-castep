@@ -1,17 +1,18 @@
 {
     "name": "aiida-castep",
     "author": "Bonan Zhu",
-    "author_email": "bz240@cam.ac.uk",
+    "author_email": "zhubonan@outlook.com",
     "description": "AiiDA plugin for CASTEP",
     "url": "https://github.com/zhubonan/aiida-castep",
     "license": "MIT License",
-    "python_requries": "~=3.7",
+    "python_requries": "~=3.8",
     "classifiers": [
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Framework :: AiiDA"
     ],
-    "version": "1.3.0",
+    "version": "2.0.0",
     "setup_requires": ["reentry"],
     "reentry_register": true,
     "extras_require":{
@@ -26,14 +27,14 @@
               "docs": ["sphinx", "sphinx_rtd_theme"]
     },
     "install_requires": [
-        "aiida-core",
+        "aiida-core>1,<3",
         "deepdiff<=3.3.0",
         "ase>=3.0,<4.0",
         "matplotlib",
         "six>=1.0,<2.0",
         "click",
         "castepinput==0.1.4",
-        "seekpath~=1.9,>=1.9.3",
+        "seekpath~=1.9.3",
         "castepxbin~=0.2.0"
     ],
     "entry_points": {
