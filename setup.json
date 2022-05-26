@@ -41,7 +41,7 @@
     },
     "install_requires": [
         "aiida-core~=2.0",
-        "deepdiff<=3.3.0",
+        "deepdiff",
         "ase>=3.0,<4.0",
         "matplotlib",
         "six>=1.0,<2.0",
