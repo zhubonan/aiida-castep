@@ -41,7 +41,7 @@ Hence, perhaps it is best to highlight some of and advantages of doing calculati
 
 * Preserving provenance - All input and outputs are stored in a database, together
   with relationships, e.g links between them. This form a graph and we can trace extract
-  how the results is reached and make them reproducible. 
+  how the results is reached and make them reproducible.
 
 * Automated submission/retrieve/monitoring/parsing - more time can be spend to focus on preparing
   the right input for calculations and analysing the results.
@@ -67,7 +67,7 @@ The CASTEP code requires several text files as the input and gives to the output
 These files, while simple and human readable, contains rich set of settings and information of the calculation.
 With AiiDA, the input and output of every calculations are stored in the database as *Node*, connected by *Link* and
 available for querying.
-The provenance graph below represents a single calculation: 
+The provenance graph below represents a single calculation:
 
 .. figure:: images/Si_bs_example.png
     :width: 600px
@@ -92,6 +92,7 @@ User's guide
    :maxdepth: 4
 
    user_guide/index
+   API documentation <apidoc/aiida_castep>
 
 Modules provided with aiida-castep (API reference)
 --------------------------------------------------

@@ -2,7 +2,8 @@
 Storing OTFG configuration as Data nodes
 """
 
-from aiida.orm import Data, Group, QueryBuilder
+from aiida.orm import Data, Group, QueryBuilder, User
+
 from aiida.common.utils import classproperty
 from aiida.common import ValidationError
 from .utils import split_otfg_entry
@@ -313,8 +314,6 @@ class OTFGData(Data):
                If defined, it should be either a DbUser instance, or a string
                for the user name (that is, the user email).
         """
-        from aiida.orm import QueryBuilder
-        from aiida.orm import User
 
         query = QueryBuilder()
         filters = {'type_string': {'==': cls.otfg_family_type_string}}
