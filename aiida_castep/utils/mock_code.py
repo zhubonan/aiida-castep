@@ -120,13 +120,13 @@ class MockRegistry:
         return Path(self.reg_hash[self.reg_name[name]])
 
     @staticmethod
-    def compute_hash(input_folder: Path):
+    def compute_hash(input_folder: Path, seed=SEED_NAME):
         """
         Compute the hash of a input folder
         """
-        param_file = ParamInput.from_file(input_folder / f'{SEED_NAME}.param',
+        param_file = ParamInput.from_file(input_folder / f'{seed}.param',
                                           plain=True)
-        cell_file = CellInput.from_file(input_folder / f'{SEED_NAME}.cell',
+        cell_file = CellInput.from_file(input_folder / f'{seed}.cell',
                                         plain=True)
         return get_hash({
             'CELL': dict(cell_file),
@@ -283,19 +283,23 @@ class MockCastep:
     """
     Mock CastepExecutable
     """
-    def __init__(self, workdir: Union[str, Path], registry: MockRegistry):
+    def __init__(self,
+                 workdir: Union[str, Path],
+                 registry: MockRegistry,
+                 seed='aiida'):
         """
         Mock CASTEP executable that copies over outputs from existing calculations.
         Inputs are hash and looked for.
         """
         self.workdir = workdir
         self.registry = registry
+        self.seed = seed
 
     def run(self, debug=True):
         """
-        Run the mock vasp
+        Run the mock CASTEP
         """
-        hash_val = self.registry.compute_hash(self.workdir)
+        hash_val = self.registry.compute_hash(self.workdir, seed=self.seed)
         if debug:
             print(f'Target hash value: {hash_val}')
         if hash_val in self.registry.reg_hash:

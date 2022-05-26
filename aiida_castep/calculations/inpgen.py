@@ -6,6 +6,7 @@ from castepinput.inputs import CellInput, ParamInput
 
 from aiida.common import InputValidationError, MultipleObjectsError
 from aiida_castep.common import INPUT_LINKNAMES as in_ln
+from castepinput import Block
 
 from .utils import get_castep_ion_line, _lowercase_dict, _uppercase_dict
 from ..data.otfg import OTFGData
@@ -89,7 +90,7 @@ class CastepInputGenerator:
             cell_vector_list.append(("{0:18.10f} {1:18.10f} "
                                      "{2:18.10f}".format(*vector)))
 
-        self.cell_file["LATTICE_CART"] = cell_vector_list
+        self.cell_file["LATTICE_CART"] = Block(cell_vector_list)
 
         # --------- ATOMIC POSITIONS---------
         # for kind in self.inputs[in_ln['structure']].kinds:
@@ -149,7 +150,7 @@ class CastepInputGenerator:
             atomic_position_list.append(line)
 
         # End of the atomic position block
-        self.cell_file["POSITIONS_ABS"] = atomic_position_list
+        self.cell_file["POSITIONS_ABS"] = Block(atomic_position_list)
 
         # Check the consistency of spin in parameters
         if spin_list:
@@ -218,7 +219,7 @@ class CastepInputGenerator:
                                              "{:18.10f} {:18.10f}".format(
                                                  kpoint[0], kpoint[1],
                                                  kpoint[2], weight))
-                self.cell_file["KPOINTS_LIST"] = kpoints_line_list
+                self.cell_file["KPOINTS_LIST"] = Block(kpoints_line_list)
 
         # --------- keywords in cell file---------
         for key, value in self.param_dict["CELL"].items():
@@ -228,8 +229,10 @@ class CastepInputGenerator:
                     "Pseudopotentials should not be specified directly")
 
             # Constructing block keywords
-            # We identify the key should be treated as a block it
-            # is not a string and has len() > 0
+            # List of strings are passed as blocks
+            if isinstance(value, (list, tuple)):
+                if isinstance(value[0], str):
+                    value = Block(value)
             self.cell_file[key] = value
 
         self._prepare_pseudo_potentials()
@@ -290,7 +293,7 @@ class CastepInputGenerator:
                         f"{kpoint[0]:18.10f} {kpoint[1]:18.10f} {kpoint[2]:18.10f}"
                     )
             bname = "{}_kpoint_list".format(kpn_name).upper()
-            self.cell_file[bname] = extra_kpts_lines
+            self.cell_file[bname] = Block(extra_kpts_lines)
 
     def _prepare_pseudo_potentials(self):
         """
@@ -342,10 +345,14 @@ class CastepInputGenerator:
                             format(ps_node, error))
 
         # Ensure it is a list
-        self.cell_file["SPECIES_POT"] = list(species_pot_map.values())
+        self.cell_file["SPECIES_POT"] = Block(list(species_pot_map.values()))
 
     def _prepare_param_file(self):
         """
         Prepare the content of PARAM file
         """
-        self.param_file.update(self.param_dict["PARAM"])
+        for key, value in self.param_dict["PARAM"].items():
+            if isinstance(value, (list, tuple)):
+                if isinstance(value[0], str):
+                    value = Block(value)
+            self.param_file[key] = value
