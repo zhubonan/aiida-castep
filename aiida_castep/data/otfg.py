@@ -168,16 +168,13 @@ def upload_otfg_family(entries,
 class OTFGData(Data):
     """
     Class representing an OTFG configuration
-
-    attributes:
-    string: string to be put into the cell file
-    element: element that this setting is for - may not exist if we are dealing with a library.
     """
     def __init__(self, **kwargs):
         """
-        Store a string for on-the-fly generation of pseudopoentials
+        Store a string for on-the-fly generation of pseudopotentials
 
         :param otfg_entry str: a string specifying the generation.
+
         The element this  potential is for can also be included.
         For example: 'O 2|1.1|15|18|20|20:21(qc=7)'
         """
