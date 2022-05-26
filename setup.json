@@ -46,7 +46,7 @@
         "matplotlib",
         "six>=1.0,<2.0",
         "click",
-        "castepinput==0.1.4",
+        "castepinput==0.1.6",
         "seekpath~=1.9.3",
         "castepxbin~=0.2.0"
     ],
