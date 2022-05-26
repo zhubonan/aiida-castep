@@ -8,7 +8,7 @@ jobs:
     timeout-minutes: 45
     strategy:
       matrix:
-        python: ['3.8']
+        python: ['3.9']
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python
@@ -29,10 +29,10 @@ jobs:
     timeout-minutes: 15
     steps:
     - uses: actions/checkout@v1
-    - name: Set up Python 3.7
+    - name: Set up Python 3.9
       uses: actions/setup-python@v1
       with:
-        python-version: 3.7
+        python-version: 3.9
     - name: Install python dependencies
       run: |
         pip install --upgrade pip
@@ -54,7 +54,7 @@ jobs:
           - 5672:5672
     strategy:
       matrix:
-        python: ['3.7', '3.8', '3.9']
+        python: ['3.8', '3.9', '3.10']
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python
@@ -116,7 +116,7 @@ jobs:
           - 5672:5672
     strategy:
       matrix:
-        python: ['3.7', '3.8', '3.9']
+        python: ['3.8', '3.9']
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python
