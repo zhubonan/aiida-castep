@@ -17,6 +17,10 @@ a series of calculation with slightly different parameters, which can be
 achieved using the ``param_update`` and ``param_delete`` keywords.
 For more detail, please see the docstring of :py:func:`aiida_castep.calculations.tools.create_restart`.
 
+For workchains, use the ``get_builder_restart`` method to get an ``ProcessBuilder`` object containing
+the original input.
+Note that one still has to set ``metadata`` fields (for example ``builder.calc.metadata``) manually,
+as the aiida engine does not support inferring their values yet.
 
 Creating pseudopotential families
 ---------------------------------
@@ -65,7 +69,7 @@ For example, to use a Gamma-centered ``8x8x8`` grid, the follwing lines are requ
  kpoint_mp_grid: 8 8 8
  kpoint_mp_offset: -0.0625 -0.0625 -0.0625
 
-The pulgin follows the same convention as used by the code, with the grid and the offsets passed to the code as they are.
+The plugin follows the same convention as used by the code, with the grid and the offsets passed to the code as they are.
 This does mean that the same ``KpointsData`` used for other DFT code can mean differently.
 For example, a ``KpointsData`` with ``(8, 8, 8)`` mesh given to ``aiida-vasp`` is Gamma-centered, but is it not
 when passed to ``aiida-castep``.

@@ -41,13 +41,13 @@ CastepRelaxWorkChain
 
 This workflow is for geometry optimization and will run the base work chain until the structure is fully relaxed,
 or limit of iterations is reached.
-The mode of operation can be chosen via the ``relax_mode`` key that goes undet ``relax_options`` input node.
+The mode of operation can be chosen via the ``relax_mode`` key that goes under ``relax_options`` input node.
 The default operating mode, ``reuse``, is to use the output structure of the finished ``CastepBaseWorkChain`` as the input structure and
 reuse the previous check file.
 When set to ``continuation``, the next CASTEP will be launch as a continuation of the
-previous one with same internel parameters.
+previous one with same internal parameters.
 Reusing can be turned off completely by setting the value to ``structure``. 1/
- 
+
 CastepAlterRelaxWorkChain
 -------------------------
 

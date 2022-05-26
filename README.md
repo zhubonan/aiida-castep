@@ -3,6 +3,7 @@ AiiDA plugin for working with CASTEP
 [![Docs status](https://readthedocs.org/projects/aiida-castep/badge)](http://aiida-castep.readthedocs.io/)
 
 [![pipeline status](https://github.com/zhubonan/aiida-castep/workflows/aiida-castep/badge.svg)](https://github.com/zhubonan/aiida-castep/actions)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/zhubonan/aiida-castep/dev)
 
 A plugin for [AiiDA](www.aiida.net) to work with plane-wave pseudopotential DFT code [CASTEP](www.castep.org).
 CASTEP has a single binary executable and calculation is primarily controlled by the *task* keyword.
