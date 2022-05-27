@@ -2,13 +2,11 @@
 Utility functions
 """
 import os
+from aiida.orm import StructureData
 
 
 def get_sto_structure():
     """Return a STO structure"""
-    from aiida.plugins import DataFactory
-    StructureData = DataFactory('structure')
-
     a = 3.905
 
     cell = ((a, 0., 0.), (0., a, 0.), (0., 0., a))
@@ -24,9 +22,6 @@ def get_sto_structure():
 
 def get_sto_structure_with_tags():
     """Return a STO structure"""
-    from aiida.plugins import DataFactory
-    StructureData = DataFactory('structure')
-
     a = 3.905
 
     cell = ((a, 0., 0.), (0., a, 0.), (0., 0., a))
@@ -42,9 +37,6 @@ def get_sto_structure_with_tags():
 
 def get_mixture_cell():
     """Return a STO structure"""
-    from aiida.plugins import DataFactory
-    StructureData = DataFactory('structure')
-
     a = 3.905
 
     cell = ((a, 0., 0.), (0., a, 0.), (0., 0., a))
@@ -63,8 +55,6 @@ def get_mixture_cell():
 
 def get_x2_structure(x):
     """Return a O2 molecule in a box"""
-    from aiida.plugins import DataFactory
-    StructureData = DataFactory('structure')
     a = 10
 
     cell = ((a, 0., 0.), (0., a, 0.), (0., 0., a))

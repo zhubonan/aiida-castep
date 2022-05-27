@@ -124,42 +124,6 @@ def test_registry_folder_upload(mock_registry, custom_registry, temp_path):
     assert 'aiida.param' in objects
 
 
-# @pytest.mark.parametrize([
-#     'vasp_structure',
-#     'vasp_kpoints',
-# ], [('str', 'mesh')], indirect=True)
-# def test_registry_upload_aiida(run_vasp_process, custom_registry, temp_path):
-#     """Test upload from an aiida calculation"""
-
-#     _, node = run_vasp_process()
-#     custom_registry.upload_aiida_calc(node, 'upload-example')
-
-#     # Exact the calculation
-#     custom_registry.extract_calc_by_path('upload-example', temp_path)
-
-#     objects = [path.name for path in temp_path.glob('*')]
-#     assert 'OUTCAR' in objects
-#     assert 'vasprun.xml' in objects
-#     assert 'INCAR' in objects
-
-# @pytest.mark.parametrize(['vasp_structure', 'vasp_kpoints'], [('str', 'mesh')], indirect=True)
-# def test_registry_upload_wc(fresh_aiida_env, run_vasp_process, custom_registry, temp_path):
-#     """Return an VaspWorkChain node that has been executed."""
-#     _, node = run_vasp_process(process_type='workchain')
-#     custom_registry.upload_aiida_work(node, 'upload-example')
-#     # Extract the calculation
-#     repo_path = custom_registry.get_path_by_name('upload-example/calc-000')
-#     objects = [path.name for path in repo_path.glob('out/*')]
-#     assert 'OUTCAR' in objects
-#     assert 'vasprun.xml' in objects
-
-#     custom_registry.extract_calc_by_path('upload-example/calc-000', temp_path)
-#     objects = [path.name for path in temp_path.glob('*')]
-#     assert 'OUTCAR' in objects
-#     assert 'vasprun.xml' in objects
-#     assert 'INCAR' in objects
-
-
 def test_mock_castep(mock_registry, temp_path, data_path):
     """Test the MockCastep class"""
 

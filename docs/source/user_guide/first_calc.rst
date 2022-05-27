@@ -219,7 +219,7 @@ Alternatively, and in fact used more commonly, is to create a family of the pote
   upload_usp_family("./", "LDA_test", "A family of LDA potentials for testing")
 
 This will upload all valid pseudopotentials inside the current working directory into a family named "LDA_test".
-More commonly, CASTEP calculations are done with on-the-fly generated pseudopoentials (OTFG), for which built-in libraries are available to use.
+More commonly, CASTEP calculations are done with on-the-fly generated pseudopotentials (OTFG), for which built-in libraries are available to use.
 However, these built-in libraries still have to be registered with AiiDA. To do so, one can upload a single family with the library string::
 
   from aiida_castep.data.otfg import upload_otfg_family
@@ -233,7 +233,7 @@ For example, the following ::
 
 uploads a family "MyFamily", which uses "C19" for any elements except for "O", for which generation setting "2|1.5|12|13|15|20:21(qc=5)" will be used instead.
 
-A family is just a collection of pseudopoentials and/or a library name.
+A family is just a collection of pseudopotentials and/or a library name.
 To apply it to a calculation, one can use an utility function::
 
   CastepCalculation.use_pseudos_from_family(builder, "C19")
@@ -244,6 +244,9 @@ This sets the `pseudos` port of the builder to::
 
 For this shortcut to work, the ``structure`` file of the builder must be define beforehand.
 Otherwise, one can also pass a dictionary manually to the `pseudos` port with keys and values being the specie names and the pseudopotential node to be used for each.
+
+.. note::
+   Families of norm-conserving potentials from `PseudoDojo <http://www.pseudo-dojo.org/>`__ can be installed with the `aiida-pseudos <https://github.com/aiidateam/aiida-pseudo>`__ package.
 
 Setting the resources
 ---------------------
@@ -271,7 +274,7 @@ But before actual submission we can have a glance of the inputs to see if there 
 
 A dictionary is returned as a summary of the inputs of the calculation::
 
-  {'CELL': {'syemmetry_generate': True},
+  {'CELL': {'symmetry_generate': True},
    'PARAM': {'basis_precision': 'medium',
     'fix_occupancy': True,
     'num_dump_cycles': 0,
@@ -370,4 +373,5 @@ As mentioned above, most calculation will be done using ``CastepBaseWorkChain`` 
 problems, such as SCF convergence problems and running out of walltimes.
 
 .. seealso::
-  Example notebook can be found `here <https://nbviewer.org/github/zhubonan/aiida-castep/blob/dev/examples/aiida-castep-quick-workchain.ipynb>`__.
+  Example notebook can be found `here <https://nbviewer.org/github/zhubonan/aiida-castep/blob/dev/examples/aiida-castep-quick-workchain.ipynb>`__,
+  or run interactively with `Binder <https://mybinder.org/v2/gh/zhubonan/aiida-castep/dev>`__.

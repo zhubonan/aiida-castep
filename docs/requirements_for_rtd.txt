@@ -1,2 +1,0 @@
-setuptools>34
-aiida-core==1.0.0b3

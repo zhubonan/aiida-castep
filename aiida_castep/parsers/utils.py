@@ -4,6 +4,7 @@ Utility functions
 import copy
 
 import numpy as np
+from aiida.orm import StructureData
 from aiida.common import OutputParsingError
 from aiida.plugins import DataFactory
 
@@ -18,9 +19,7 @@ def structure_from_input(cell, positions, symbols):
     Convert it into an AiiDA structure object
     """
 
-    SructureData = DataFactory("structure")  # pylint: disable=invalid-name
-
-    out_structure = SructureData(cell=cell)
+    out_structure = StructureData(cell=cell)
 
     for symbol, position in zip(symbols, positions):
 

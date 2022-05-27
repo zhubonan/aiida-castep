@@ -3,6 +3,7 @@ AiiDA plugin for working with CASTEP
 [![Docs status](https://readthedocs.org/projects/aiida-castep/badge)](http://aiida-castep.readthedocs.io/)
 
 [![pipeline status](https://github.com/zhubonan/aiida-castep/workflows/aiida-castep/badge.svg)](https://github.com/zhubonan/aiida-castep/actions)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/zhubonan/aiida-castep/dev)
 
 A plugin for [AiiDA](www.aiida.net) to work with plane-wave pseudopotential DFT code [CASTEP](www.castep.org).
 CASTEP has a single binary executable and calculation is primarily controlled by the *task* keyword.
@@ -52,11 +53,11 @@ Dependencies
 
 The primary dependency is the `aiida_core` package. The dependencies are:
 
-* The plugin version 1.0 and above support only `aiida_core>=1.0.0b6`.
+* The plugin version 2.0 and above support only `aiida_core>=2.0`.
+* The plugin version 1.0 and above support only `aiida_core>=1.0.0b6, <2`.
 * The plugin version 0.3 support only `aiida_core` 0.12.x versions.
 
-Due to major design and API changes in the `aiida_core`, scripts written are incompatible between and new versions.
-
+There is only minor API changes in the `aiida_core` between v1 and v2, scripts written should be compatible between the two.
 
 Todos and nice-to-haves
 -----------------------

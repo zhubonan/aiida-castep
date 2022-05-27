@@ -20,7 +20,7 @@ Please refer to their documentation to install ``aiida_core`` and all the depend
 The easiest way to try out this plugin is perhaps to use `Quantum Mobile`_ - a virtual machines based on Ubuntu Linux and shipped with AiiDA installed and ready to use.
 
 .. note::
-   The latest version (1.0.x) of ``aiida-castep`` only works with ``aiida_core`` version 1.0.x.
+   The latest version (2.x.x) of ``aiida-castep`` only works with ``aiida_core`` version 2.x.x.
    Please make sure the right version is installed. Also, you are most likely to need to work
    within a virtual environment (including conda environments).
 
@@ -41,10 +41,6 @@ Then pip can be used to install the plugin::
 This way the entrypoints can be properly registered to allow ``aiida_core`` discover the plugin.
 The optional ``-e`` flag makes the installation editable.
 If ``aiida_core`` is not installed, it will be installed as a dependency.
-
-Finally, to allow AiiDA to discover the plugin, run::
-
- reentry scan -r aiida
 
 You should be able to see several calculations registered as ``castep.<name>`` using AiiDA's command-line interface::
 
@@ -118,7 +114,7 @@ For a typical CASTEP calculation, like most density functional theory calculatio
 
 * Nodes that defines the pseudo potential. An shortcut ``use_pseudos_from_family`` function
   may be called to simplify the process once the structure is known.
-  The pseudopotentials can be any combination of ``OtfgData``, ``UspData``, ``UpfData`` nodes.
+  The pseudopotentials can be any combination of ``OTFGData``, ``UspData``, ``UpfData`` nodes.
 
 * An optional ``Dict`` node with link name ``settings`` can be supplied to defines extra properties such as initial spins and use of symbolic link in restart calculations.
 
@@ -140,8 +136,8 @@ In addition, the following keys are set automatically:
 
 * *run_time* will be set to 95% of the requested wall-time by default unless it will be less than 180 seconds.
   This is to avoid running out of time while writing the checkpoint file.
-  CASTEP does try to be intelligent and stop if it thinkgs the next iteration (geometry optimisation, phonons e.t.c)
-  will exceed the time limit. 
+  CASTEP does try to be intelligent and stop if it thinks the next iteration (geometry optimisation, phonons e.t.c)
+  will exceed the time limit.
   To completely disable time limit control, set it to *0* explicitly in ``Dict`` node.
 
 * Consistency of spins are checked.  Keyword *spin* in ``<seed>.param`` will be set automatically, if not already defined, using the initial spins set for ``<seed>.cell`` file.

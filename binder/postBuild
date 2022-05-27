@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -e
+
+# Install the plugin explicity
+pip install -e ./
