@@ -298,13 +298,6 @@ def parse_castep_text_output(out_lines, input_dict):
             body_start = i
             break
             
-        if "Atomic populations (Mulliken)" in line:
-            read = True
-            spins = []
-            continue
-        elif line.strip() == "":
-            read = False
-        
         if read:
             line = line.strip().split()
             if len(line) == 10:
@@ -370,6 +363,15 @@ def parse_castep_text_output(out_lines, input_dict):
             if not forces:
                 LOGGER.error("Cannot parse force lines {}".format(box))
             trajectory_data[force_name].append(forces)
+            skip = i
+            continue
+
+        if "Atomic Populations (Mulliken)" in line:
+            num_lines = num_lines = (2 * parsed_data["num_ions"]) + 5
+            box = body_lines[count:(count + num_lines)]
+            i, charges, spins = parse_popn_box(box)
+            parsed_data["charges"] = charges
+            parsed_data["spins"] = spins
             skip = i
             continue
 
@@ -705,6 +707,33 @@ def parse_stress_box(lines):
             pressure = float(lsplit[-2])
 
     return i, stress, pressure
+
+
+def parse_popn_box(lines):
+    """
+    Parse the Mulliken population box
+    :param lines: a list of upcoming lines
+
+    :return a list of [number of lines read, charges, spins]
+    """
+
+    charges = []
+    spins = []
+    i = 0
+    spin_polarised = False
+    for i, line in enumerate(lines):
+        if "Spin" in line:
+            spin_polarised = True
+            continue
+        line = line.strip().split()
+        if line[0].isalpha():
+            if spin_polarised:
+                charges.append(float(line[-2]))
+                spins.append(float(line[-1]))
+            else:
+                charges.append(float(line[-1]))
+    
+    return i, charges, spins
 
 
 def parse_dot_bands(bands_lines):
