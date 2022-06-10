@@ -219,6 +219,16 @@ class CastepParser(Parser):
                 bands_node = bands_to_bandsdata(**bands_data)
             self.out(out_ln['bands'], bands_node)
 
+        ######## --- PROCESSING MULLIKEN DATA --- ########
+        input_structure = self.node.inputs.structure
+        idesort = get_desort_args(input_structure)
+        if len(out_dict["charges"]) > 1:
+            new_charges = np.array(out_dict["charges"])[idesort]
+            out_dict["charges"] = new_charges
+        if len(out_dict["spins"]) > 1:
+            new_spins = np.array(out_dict["spins"])[idesort]
+            out_dict["spins"] = new_spins
+
         ######## --- PROCESSING STRUCTURE DATA --- ########
         no_optimise = False
         try:
