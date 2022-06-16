@@ -119,6 +119,18 @@ class TestParsers(unittest.TestCase):
         self.assertIn('symm_pressure', trajectory_data)
         self.assertTrue(trajectory_data['symm_pressure'])
         self.assertTrue(len(trajectory_data['symm_pressure']) > 10)
+    
+    def test_parser_popn(self):
+        """Test parsing the population box from the output"""
+        with open(self.data_abs_str +
+                  "/O2-geom-spin/aiida.castep") as clines:
+            lines = clines.readlines()
+            parsed_data, _, _ = parse_castep_text_output(lines, None)
+
+        self.assertIn('charges', parsed_data)
+        self.assertIn('spins', parsed_data)
+        self.assertTrue(parsed_data['charges'] == [-0.0, 0.0])
+        self.assertTrue(parsed_data['spins'] == [1.0, 1.0])
 
     def test_parser_class(self):
         """Test the classfor RawParser"""
