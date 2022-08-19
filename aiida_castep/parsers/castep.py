@@ -223,7 +223,7 @@ class CastepParser(Parser):
         if not err_filenames:
           input_structure = self.node.inputs.structure
           idesort = get_desort_args(input_structure)
-          if len(out_dict["charges"]) > 1:
+          if len(out_dict.get("charges", [])) > 1:
               new_charges = np.array(out_dict["charges"])[idesort]
               out_dict["charges"] = new_charges
           if len(out_dict["spins"]) > 1:
