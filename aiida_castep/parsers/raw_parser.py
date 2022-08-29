@@ -600,6 +600,16 @@ def parse_geom_text_output(out_lines, input_dict) -> dict:
                 velocity_list.append(current_velocity)
                 current_velocity = []
 
+    # Append the last image if applicable (when reached the end of the file)
+    if current_cell:
+        cell_list.append(current_cell)
+        species_list.append(current_species)
+        geom_list.append(current_pos)
+        forces_list.append(current_forces)
+        if current_velocity:
+            velocity_list.append(current_velocity)
+            current_velocity = []
+
     if len(species_list) == 0:
         raise CASTEPOutputParsingError("No data found in geom file")
 

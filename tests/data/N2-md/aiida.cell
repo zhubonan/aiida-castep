@@ -19,3 +19,4 @@ fix_all_cell = true
 %BLOCK SPECIES_POT
 N QC5
 %ENDBLOCK SPECIES_POT
+

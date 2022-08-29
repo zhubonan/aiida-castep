@@ -5,9 +5,14 @@ repos:
   rev: v4.1.0
   hooks:
     - id: end-of-file-fixer
+      exclude: ^tests/data
     - id: mixed-line-ending
+      exclude: ^tests/data
     - id: trailing-whitespace
+      exclude: ^tests/data
     - id: check-json
+      exclude: ^tests/data
+
 
 - repo: https://github.com/asottile/pyupgrade
   rev: v2.31.0
@@ -25,6 +30,7 @@ repos:
   rev: 22.3.0
   hooks:
     - id: black
+      exclude: ^tests/data
 
 - repo: local
   hooks:
