@@ -40,7 +40,7 @@ before_script:
   # Install aiida-core
   - source "venv-py$PY_VERSION/bin/activate"
   - pip install pip==18.1
-  - if [ "$AIIDA_VERSION" == "develop" ]; then .ci-data/install_aiida_github.sh ; fi 
+  - if [ "$AIIDA_VERSION" == "develop" ]; then .ci-data/install_aiida_github.sh ; fi
   - pip install -e .[testing,docs,pre-commit]
   - reentry scan -r aiida
 

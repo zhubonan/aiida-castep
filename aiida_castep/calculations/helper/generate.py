@@ -2,10 +2,8 @@
 Module for generation HELP information using CASTEP
 excutable.
 """
-from __future__ import print_function
-from __future__ import absolute_import
-import subprocess as sbp
 import re
+import subprocess as sbp
 import sys
 
 
@@ -34,8 +32,7 @@ def progress(func, *args, **kwargs):
 
 def get_castep_commands(castep_command="castep.serial", key="all"):
 
-    outlines = sbp.check_output([castep_command, "-h", key],
-                                universal_newlines=True)
+    outlines = sbp.check_output([castep_command, "-h", key], universal_newlines=True)
     lines = outlines.split("\n")
 
     cell = {}
@@ -66,8 +63,8 @@ def get_castep_commands(castep_command="castep.serial", key="all"):
 
 allowed_value_re = re.compile("Allow values: ([^.\n]+)[.\n]")
 default_value_re = re.compile("Default value: ([^.\n]+)[.\n]")
-type_re = re.compile("Type: (\w+)")
-level_re = re.compile("Level: (\w+)")
+type_re = re.compile(r"Type: (\w+)")
+level_re = re.compile(r"Level: (\w+)")
 
 
 def parse_help_string(key, excutable="castep.serial"):
@@ -91,7 +88,7 @@ def parse_help_string(key, excutable="castep.serial"):
             key_level = match.group(1).lower()
 
     cell_lines = lines[2:param_start]
-    param_lines = lines[param_start + 2:]
+    param_lines = lines[param_start + 2 :]
 
     if len(cell_lines) > len(param_lines):
         help_lines = cell_lines

@@ -22,7 +22,7 @@
 
 * No longer using `Node` instant as default for workchains.
 
-* Fix a bug where the forces are not resorted. CASTEP will internally sort the atoms, the plugin reorders the atoms such that the output structure have the same atoms order as the input structure. However, the same is not applied to the forces and velocities previously. Calculations where the input structure not having species grouped and sorted in the ascending atomic number had forces in the wrong order.  
+* Fix a bug where the forces are not resorted. CASTEP will internally sort the atoms, the plugin reorders the atoms such that the output structure have the same atoms order as the input structure. However, the same is not applied to the forces and velocities previously. Calculations where the input structure not having species grouped and sorted in the ascending atomic number had forces in the wrong order.
 
 ## 1.1.0
 
@@ -52,7 +52,7 @@
 * Added code to mock CASTEP executable for testing
 * Added the AiiDA classifier for the package
 * Fixed a bug when generating help information
-* Fixed listfile command for the helper 
+* Fixed listfile command for the helper
 * Enhanced the uspdata module to allow manualy set the element of the potential
 * Added the ELF and formatted ELF files to the default retrieve list
 
@@ -61,7 +61,7 @@
 
 * Fixed a bug where offset of kpoints grid is ignored
 * Fixed a bug where OTFG family upload is not handled correctly.
-* Added routine to check the existence of remote check file in `submit_test` 
+* Added routine to check the existence of remote check file in `submit_test`
 * Updated the default file retrieve list and task specific retrieve list.
 * Documentation improvements
 * rename `get_castep_inputs` to `get_castep_input_summary`. This method returns a dictionary of a summary of the run.
@@ -91,5 +91,5 @@ Policy of setting calculation state has now changed.
 A `FINISHED` state will be set given the excution was terminated safetly and without error,
 even if the underlying *task* is not finished.
 For example, a geometry optimisation will be set to `FINISHED` even if it did not reached
-convergence, given that it was exited cleanly by reaching `geom_max_iter` or time limit (but not the `stop` key in param file).  
+convergence, given that it was exited cleanly by reaching `geom_max_iter` or time limit (but not the `stop` key in param file).
 The primiary drive of this is to allow unconverged but cleanly finished calculations to be used as cached calculation.

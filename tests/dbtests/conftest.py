@@ -1,28 +1,36 @@
 """
 conftest that prepares fixtures with tests involving orm of aiida
 """
-from io import BytesIO
-import tempfile
 import shutil
+import tempfile
+from io import BytesIO
 from pathlib import Path
 
 import pytest
-
-from aiida.orm import Computer, Dict, Code, KpointsData, Node, StructureData
-from aiida.plugins import DataFactory, ParserFactory
-from aiida.common.exceptions import NotExistent
-from aiida.common import AttributeDict
 from aiida import __version__ as AIIDA_VERSION
-
+from aiida.common import AttributeDict
+from aiida.common.exceptions import NotExistent
 from aiida.common.links import LinkType
-from aiida.orm import CalcJobNode, FolderData
-from aiida.plugins import CalculationFactory
+from aiida.manage.tests.pytest_fixtures import (
+    aiida_profile,
+    clear_database_before_test,
+)
+from aiida.orm import (
+    CalcJobNode,
+    Code,
+    Computer,
+    Dict,
+    FolderData,
+    KpointsData,
+    Node,
+    StructureData,
+)
+from aiida.plugins import CalculationFactory, DataFactory, ParserFactory
 from aiida.plugins.entry_point import format_entry_point_string
 
-from aiida.manage.tests.pytest_fixtures import aiida_profile, clear_database_before_test
-
-from aiida_castep.data.otfg import OTFGData
 from aiida_castep.calculations.castep import CastepCalculation
+from aiida_castep.data.otfg import OTFGData
+
 from ..utils import get_sto_structure
 
 this_folder = Path(__file__).parent
@@ -30,11 +38,12 @@ this_folder = Path(__file__).parent
 AIIDA_MAJOR_VERSION = int(AIIDA_VERSION[0])
 
 
-class CastepTestApp(object):
+class CastepTestApp:
     """
     A collection of methods to
     control the test
     """
+
     def __init__(self, profile, workdir):
         self._profile = profile
         self._workdir = Path(workdir)
@@ -43,13 +52,13 @@ class CastepTestApp(object):
         """
         Return a generator for the Computers
         """
-        defaults = dict(label='localhost',
-                        hostname='localhost',
-                        transport_type='core.local'
-                        if AIIDA_MAJOR_VERSION > 1 else 'local',
-                        scheduler_type='core.direct'
-                        if AIIDA_MAJOR_VERSION > 1 else 'direct',
-                        workdir=str(self._workdir))
+        defaults = dict(
+            label="localhost",
+            hostname="localhost",
+            transport_type="core.local" if AIIDA_MAJOR_VERSION > 1 else "local",
+            scheduler_type="core.direct" if AIIDA_MAJOR_VERSION > 1 else "direct",
+            workdir=str(self._workdir),
+        )
 
         kwargs.update(defaults)
         computer = Computer(**kwargs).store()
@@ -71,22 +80,22 @@ class CastepTestApp(object):
     @property
     def localhost(self):
         """Return an localhost computer"""
-        return self.get_or_create_computer(label='localhost')
+        return self.get_or_create_computer(label="localhost")
 
     def code_mock_factory(self, overide=None):
         """Mock calculation, can overide by prepend path"""
         code = Code()
-        exec_path = this_folder.parent.parent / 'utils/mock.py'
+        exec_path = this_folder.parent.parent / "utils/mock.py"
         code.set_remote_computer_exec((self.localhost, str(exec_path)))
-        code.set_input_plugin_name('castep.castep')
+        code.set_input_plugin_name("castep.castep")
         if overide:
-            code.set_prepend_text('export MOCK_CALC={}'.format(overide))
+            code.set_prepend_text(f"export MOCK_CALC={overide}")
         return code
 
     @property
     def code_h2_geom(self):
         """A Code that always return H2-geom"""
-        code = self.code_mock_factory('H2-geom')
+        code = self.code_mock_factory("H2-geom")
         code.store()
         return code
 
@@ -103,6 +112,7 @@ class CastepTestApp(object):
     def remotedata(self):
         """Create an remote data"""
         from aiida.orm import RemoteData
+
         rmd = RemoteData()
         rmd.computer = self.localhost
         rmd.set_remote_path(str(self._workdir))
@@ -114,22 +124,25 @@ class CastepTestApp(object):
         kpoints_data.set_kpoints_mesh(mesh)
         return kpoints_data
 
-    def upload_otfg_family(self, entries, name, desc='test', **kwargs):
+    def upload_otfg_family(self, entries, name, desc="test", **kwargs):
         """Return a factory for upload OTFGS"""
         from aiida_castep.data.otfg import upload_otfg_family
+
         upload_otfg_family(entries, name, desc, **kwargs)
 
     @property
     def c9_otfg(self):
-        return OTFGData.get_or_create('C9')[0]
+        return OTFGData.get_or_create("C9")[0]
 
     @property
     def create_group(self):
         from aiida_castep.data.otfg import upload_otfg_family
+
         upload_otfg_family
 
     def get_builder(self):
         from aiida_castep.calculations.castep import CastepCalculation
+
         return CastepCalculation.get_builder()
 
 
@@ -137,7 +150,8 @@ class CastepTestApp(object):
 def create_otfg_group(db_test_app):
     def _create(otfgs, group_name):
         from aiida_castep.data.otfg import upload_otfg_family
-        upload_otfg_family(otfgs, group_name, 'TEST', stop_if_existing=False)
+
+        upload_otfg_family(otfgs, group_name, "TEST", stop_if_existing=False)
 
     return _create
 
@@ -158,47 +172,39 @@ def db_test_app(aiida_profile):
 @pytest.fixture
 def inputs_default():
     options = {
-        'seedname': 'aiida',
-        'input_filename': 'aiida.cell',
-        'output_filename': 'aiida.castep',
-        'symlink_usage': True,
-        'parent_folder_name': 'parent',
-        'retrieve_list': [],
-        'use_kpoints': True,
-        'resources': {
-            'num_machines': 1,
-            'tot_num_mpiprocs': 1
-        }
+        "seedname": "aiida",
+        "input_filename": "aiida.cell",
+        "output_filename": "aiida.castep",
+        "symlink_usage": True,
+        "parent_folder_name": "parent",
+        "retrieve_list": [],
+        "use_kpoints": True,
+        "resources": {"num_machines": 1, "tot_num_mpiprocs": 1},
     }
     inputs = AttributeDict()
-    inputs['metadata'] = AttributeDict()
-    inputs.metadata['options'] = AttributeDict(options)
+    inputs["metadata"] = AttributeDict()
+    inputs.metadata["options"] = AttributeDict(options)
     return inputs
 
 
 @pytest.fixture
 def sto_calc_inputs(
-        db_test_app,
-        inputs_default,
+    db_test_app,
+    inputs_default,
 ):
 
     sto_structure = get_sto_structure()
     inputs = inputs_default
 
     pdict = {
-        "PARAM": {
-            "task": "singlepoint"
-        },
-        "CELL": {
-            "symmetry_generate": True,
-            "cell_constraints": ['0 0 0', '0 0 0']
-        }
+        "PARAM": {"task": "singlepoint"},
+        "CELL": {"symmetry_generate": True, "cell_constraints": ["0 0 0", "0 0 0"]},
     }
     # pdict["CELL"].pop("block species_pot")
     inputs.parameters = Dict(dict=pdict)
     inputs.structure = sto_structure
     c9 = db_test_app.c9_otfg
-    inputs.pseudos = AttributeDict({"Sr": c9, 'Ti': c9, 'O': c9})
+    inputs.pseudos = AttributeDict({"Sr": c9, "Ti": c9, "O": c9})
     inputs.kpoints = db_test_app.get_kpoints_mesh((3, 3, 3))
     inputs.code = db_test_app.code_echo
     return inputs
@@ -232,26 +238,21 @@ def inps_or_builder(inps, num):
         builder._update(inps)
         return builder
     else:
-        raise RuntimeError('Not implemented')
+        raise RuntimeError("Not implemented")
 
 
 @pytest.fixture
 def h2_calc_inputs(
-        inputs_default,
-        db_test_app,
-        sto_calc_inputs,
-        h2_structure,
+    inputs_default,
+    db_test_app,
+    sto_calc_inputs,
+    h2_structure,
 ):
 
     inputs = inputs_default
     pdict = {
-        "PARAM": {
-            "task": "geometryoptimisation"
-        },
-        "CELL": {
-            "symmetry_generate": True,
-            "cell_constraints": ['0 0 0', '0 0 0']
-        }
+        "PARAM": {"task": "geometryoptimisation"},
+        "CELL": {"symmetry_generate": True, "cell_constraints": ["0 0 0", "0 0 0"]},
     }
     # pdict["CELL"].pop("block species_pot")
     inputs.parameters = Dict(dict=pdict)
@@ -267,9 +268,9 @@ def h2_calc_inputs(
 def h2_structure(aiida_profile, db_test_app):
     a = 10
 
-    cell = ((a, 0., 0.), (0., a, 0.), (0., 0., a))
+    cell = ((a, 0.0, 0.0), (0.0, a, 0.0), (0.0, 0.0, a))
     s = StructureData(cell=cell)
-    s.append_atom(position=(0., 0., 0.), symbols=["H"])
+    s.append_atom(position=(0.0, 0.0, 0.0), symbols=["H"])
     s.append_atom(position=(a / 2, a / 2, a / 2), symbols=["H"])
     s.label = "h2"
     return s
@@ -295,8 +296,7 @@ def test_code_fixture(db_test_app):
 
 def test_remotedata_fixture(db_test_app):
     assert db_test_app.remotedata
-    assert db_test_app.remotedata.get_remote_path() == str(
-        db_test_app._workdir)
+    assert db_test_app.remotedata.get_remote_path() == str(db_test_app._workdir)
 
 
 @pytest.fixture
@@ -304,13 +304,14 @@ def generate_calc_job_node(db_test_app):
     """
     Generate CalcJobNode
     """
+
     def _generate_calc_job_node(
-            entry_point_name,
-            results_folder,
-            inputs=None,
-            computer=None,
-            outputs=None,
-            outfile_override=None,
+        entry_point_name,
+        results_folder,
+        inputs=None,
+        computer=None,
+        outputs=None,
+        outfile_override=None,
     ):
         """
         Generate a CalcJob node with fake retrieved node in the
@@ -318,8 +319,7 @@ def generate_calc_job_node(db_test_app):
         """
 
         calc_class = CalculationFactory(entry_point_name)
-        entry_point = format_entry_point_string('aiida.calculations',
-                                                entry_point_name)
+        entry_point = format_entry_point_string("aiida.calculations", entry_point_name)
         builder = calc_class.get_builder()
 
         if not computer:
@@ -329,30 +329,25 @@ def generate_calc_job_node(db_test_app):
         # Monkypatch the inputs
         if inputs is not None:
             inputs = AttributeDict(inputs)
-            node.__dict__['inputs'] = inputs
+            node.__dict__["inputs"] = inputs
             # Add direct inputs, pseudos are omitted
             for k, v in inputs.items():
                 if isinstance(v, Node):
                     if not v.is_stored:
                         v.store()
-                    node.add_incoming(v,
-                                      link_type=LinkType.INPUT_CALC,
-                                      link_label=k)
+                    node.add_incoming(v, link_type=LinkType.INPUT_CALC, link_label=k)
 
         options = builder.metadata.options
         options.update(inputs.metadata.options)
-        node.set_attribute('input_filename', options.input_filename)
-        node.set_attribute('seedname', options.seedname)
-        node.set_attribute('output_filename', options.output_filename)
-        node.set_attribute('error_filename', 'aiida.err')
-        node.set_option('resources', {
-            'num_machines': 1,
-            'num_mpiprocs_per_machine': 1
-        })
-        node.set_option('max_wallclock_seconds', 1800)
+        node.set_attribute("input_filename", options.input_filename)
+        node.set_attribute("seedname", options.seedname)
+        node.set_attribute("output_filename", options.output_filename)
+        node.set_attribute("error_filename", "aiida.err")
+        node.set_option("resources", {"num_machines": 1, "num_mpiprocs_per_machine": 1})
+        node.set_option("max_wallclock_seconds", 1800)
         node.store()
 
-        filepath = this_folder.parent / 'data' / results_folder
+        filepath = this_folder.parent / "data" / results_folder
         retrieved = FolderData()
         retrieved.put_object_from_tree(str(filepath.resolve()))
 
@@ -365,16 +360,12 @@ def generate_calc_job_node(db_test_app):
                 buf = BytesIO(content.encode())
                 retrieved.put_object_from_filelike(buf, key)
 
-        retrieved.add_incoming(node,
-                               link_type=LinkType.CREATE,
-                               link_label='retrieved')
+        retrieved.add_incoming(node, link_type=LinkType.CREATE, link_label="retrieved")
         retrieved.store()
 
         if outputs is not None:
             for label, out_node in outputs.items():
-                out_node.add_incoming(node,
-                                      link_type=LinkType.CREATE,
-                                      link_label=label)
+                out_node.add_incoming(node, link_type=LinkType.CREATE, link_label=label)
                 if not out_node.is_stored:
                     out_node.store()
 

@@ -8,22 +8,20 @@ This way we can perform tests for workchain without the need for
 injecting test code into the workchain logic itself.
 """
 import hashlib
-import shutil
-import os
-from typing import Union
-from pathlib import Path
 import logging
+import os
+import shutil
+from pathlib import Path
+from typing import Union
 
 import numpy as np
-
-from castepinput import ParamInput, CellInput
-
 from aiida.repository.common import FileType
+from castepinput import CellInput, ParamInput
 
 # pylint: disable=logging-format-interpolation, import-outside-toplevel
 
-INPUT_OBJECTS = ('aiida.param', 'aiida.cell')
-SEED_NAME = 'aiida'
+INPUT_OBJECTS = ("aiida.param", "aiida.cell")
+SEED_NAME = "aiida"
 EXCLUDED = tuple()
 
 
@@ -53,13 +51,13 @@ def get_hash(dict_obj):
 
         # Handle if value itself is float zero
         if isinstance(value, float) and value == 0:
-            value = 0.
+            value = 0.0
 
         if isinstance(value, (dict, list)):
-            rec.append(key + ':' + get_hash(value)[0])
+            rec.append(key + ":" + get_hash(value)[0])
         else:
             # Use the string representation
-            rec.append(key + ':' + repr(value) + ':' + repr(type(value)))
+            rec.append(key + ":" + repr(value) + ":" + repr(type(value)))
 
     # Update, use sorted so the original order does not matter, in force case so
     # sting keys with upper/lower cases are treated as the same
@@ -78,6 +76,7 @@ class MockRegistry:
 
     Calculations are identified using the hash of the parsed inputs.
     """
+
     def __init__(self, base_path):
         """
         Instantiate and Registry
@@ -85,15 +84,15 @@ class MockRegistry:
         self.base_path = Path(base_path)
         self.reg_hash = {}
         self.reg_name = {}
-        self.logger = logging.getLogger(
-            'aiida_castep.utils.mock_code.MockRegistry')
+        self.logger = logging.getLogger("aiida_castep.utils.mock_code.MockRegistry")
         self._setup_logger()
         self.scan()
 
     def _setup_logger(self, level=logging.INFO):
         """Setup the logger"""
         formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
         handler = logging.StreamHandler()
         handler.setLevel(level)
         handler.setFormatter(formatter)
@@ -103,7 +102,7 @@ class MockRegistry:
         """
         Scan the base folder and locate input/output folders
         """
-        for output_folder in Path(self.base_path).glob('**/out'):
+        for output_folder in Path(self.base_path).glob("**/out"):
             calc_base_folder = output_folder.parent.absolute()
             self._register_folder(calc_base_folder)
 
@@ -124,19 +123,13 @@ class MockRegistry:
         """
         Compute the hash of a input folder
         """
-        param_file = ParamInput.from_file(input_folder / f'{seed}.param',
-                                          plain=True)
-        cell_file = CellInput.from_file(input_folder / f'{seed}.cell',
-                                        plain=True)
-        return get_hash({
-            'CELL': dict(cell_file),
-            'PARAM': dict(param_file)
-        })[0]
+        param_file = ParamInput.from_file(input_folder / f"{seed}.param", plain=True)
+        cell_file = CellInput.from_file(input_folder / f"{seed}.cell", plain=True)
+        return get_hash({"CELL": dict(cell_file), "PARAM": dict(param_file)})[0]
 
-    def extract_calc_by_path(self,
-                             rel_path: Path,
-                             dst_path: Path,
-                             include_inputs: bool = True):
+    def extract_calc_by_path(
+        self, rel_path: Path, dst_path: Path, include_inputs: bool = True
+    ):
         """
         Copy the content of a give hash to a destination.
 
@@ -147,16 +140,16 @@ class MockRegistry:
         rel_path = Path(rel_path)
         dst_path = Path(dst_path)
 
-        base_out = self.base_path / rel_path / 'out'
-        base_in = self.base_path / rel_path / 'inp'
+        base_out = self.base_path / rel_path / "out"
+        base_in = self.base_path / rel_path / "inp"
 
         if not base_out.exists() or not base_in.exists():
-            raise ValueError(f'Relative path: {rel_path} is invalid')
+            raise ValueError(f"Relative path: {rel_path} is invalid")
 
         # Copy the content of input and then the output folder
         paths = [base_in, base_out] if include_inputs else [base_out]
         for folder in paths:
-            for fpath in folder.glob('*'):
+            for fpath in folder.glob("*"):
                 if fpath.is_file():
                     shutil.copy2(fpath, dst_path)
                 elif fpath.is_dir():
@@ -166,13 +159,11 @@ class MockRegistry:
         """
         Extract an registerred calculation using hash.
         """
-        self.extract_calc_by_path(self.get_path_by_hash(hash_val), dst,
-                                  include_inputs)
+        self.extract_calc_by_path(self.get_path_by_hash(hash_val), dst, include_inputs)
 
-    def upload_calc(self,
-                    folder: Path,
-                    rel_path: Union[Path, str],
-                    excluded_object=None):
+    def upload_calc(
+        self, folder: Path, rel_path: Union[Path, str], excluded_object=None
+    ):
         """
         Register a calculation folder to the repository
         """
@@ -185,16 +176,17 @@ class MockRegistry:
         repo_calc_base = self.base_path / rel_path
         if repo_calc_base.exists():
             raise FileExistsError(
-                f'There is already a directory at {repo_calc_base.resolve()}.')
+                f"There is already a directory at {repo_calc_base.resolve()}."
+            )
 
         # Deposit the objects
         repo_calc_base.mkdir(parents=True)
-        repo_in = repo_calc_base / 'inp'
-        repo_out = repo_calc_base / 'out'
+        repo_in = repo_calc_base / "inp"
+        repo_out = repo_calc_base / "out"
         repo_in.mkdir(parents=True)
         repo_out.mkdir(parents=True)
 
-        for obj in folder.glob('*'):
+        for obj in folder.glob("*"):
             if obj.name in inp:
                 shutil.copy2(obj, repo_in)
             elif obj.name not in excluded:
@@ -213,15 +205,14 @@ class MockRegistry:
         # Get the relative path to the base
         rel = calc_base.relative_to(self.base_path)
         # Compute the hash
-        hash_val = self.compute_hash(calc_base / 'inp')
+        hash_val = self.compute_hash(calc_base / "inp")
         # Link absolute path to hash, and hash to relative path (used as name)
         self.reg_hash[hash_val] = calc_base.absolute()
         self.reg_name[str(rel)] = hash_val
 
-    def upload_aiida_calc(self,
-                          calc_node,
-                          rel_path: Union[str, Path],
-                          excluded_names=None):
+    def upload_aiida_calc(
+        self, calc_node, rel_path: Union[str, Path], excluded_names=None
+    ):
         """
         Register an aiida calc_class
         """
@@ -229,12 +220,13 @@ class MockRegistry:
         repo_calc_base = self.base_path / rel_path
         if repo_calc_base.exists():
             raise FileExistsError(
-                f'There is already a directory at {repo_calc_base.resolve()}.')
+                f"There is already a directory at {repo_calc_base.resolve()}."
+            )
 
         # Deposit the objects
         repo_calc_base.mkdir(parents=True)
-        repo_in = repo_calc_base / 'inp'
-        repo_out = repo_calc_base / 'out'
+        repo_in = repo_calc_base / "inp"
+        repo_out = repo_calc_base / "out"
         repo_in.mkdir(parents=True)
         repo_out.mkdir(parents=True)
 
@@ -254,7 +246,7 @@ class MockRegistry:
                 continue
             copy_from_aiida(obj.name, calc_node.outputs.retrieved, repo_out)
 
-        self.logger.info('Calculation %s has been registered', calc_node)
+        self.logger.info("Calculation %s has been registered", calc_node)
         self._register_folder(repo_calc_base)
 
     def upload_aiida_work(self, worknode, rel_path: Union[str, Path]):
@@ -263,30 +255,29 @@ class MockRegistry:
         """
         from aiida.orm import CalcJobNode
         from aiida.plugins import CalculationFactory
-        calc_class = CalculationFactory('castep.castep')
+
+        calc_class = CalculationFactory("castep.castep")
         to_upload = []
         for node in worknode.called_descendants:
-            if isinstance(node,
-                          CalcJobNode) and node.process_class is calc_class:
+            if isinstance(node, CalcJobNode) and node.process_class is calc_class:
                 to_upload.append(node)
         to_upload.sort(key=lambda x: x.ctime)
-        self.logger.info('Collected %s nodes to upload under name %s.',
-                         to_upload, rel_path)
+        self.logger.info(
+            "Collected %s nodes to upload under name %s.", to_upload, rel_path
+        )
 
         for idx, node in enumerate(to_upload):
-            rel = Path(rel_path) / f'calc-{idx:03d}'
+            rel = Path(rel_path) / f"calc-{idx:03d}"
             self.upload_aiida_calc(node, rel)
-        self.logger.info('WorkChain %s has been uploaded.', worknode)
+        self.logger.info("WorkChain %s has been uploaded.", worknode)
 
 
 class MockCastep:
     """
     Mock CastepExecutable
     """
-    def __init__(self,
-                 workdir: Union[str, Path],
-                 registry: MockRegistry,
-                 seed='aiida'):
+
+    def __init__(self, workdir: Union[str, Path], registry: MockRegistry, seed="aiida"):
         """
         Mock CASTEP executable that copies over outputs from existing calculations.
         Inputs are hash and looked for.
@@ -301,13 +292,13 @@ class MockCastep:
         """
         hash_val = self.registry.compute_hash(self.workdir, seed=self.seed)
         if debug:
-            print(f'Target hash value: {hash_val}')
+            print(f"Target hash value: {hash_val}")
         if hash_val in self.registry.reg_hash:
             self.registry.extract_calc_by_hash(hash_val, self.workdir)
         else:
             if debug:
-                print(f'Registered hashes: {self.registry.reg_hash}')
-            raise ValueError('The calculation is not registered!!')
+                print(f"Registered hashes: {self.registry.reg_hash}")
+            raise ValueError("The calculation is not registered!!")
 
     @property
     def is_runnable(self) -> bool:
@@ -339,5 +330,5 @@ def copy_from_aiida(name: str, node, dst: Path):
             frepo_path = dst / name
             Path(frepo_path.parent).mkdir(exist_ok=True, parents=True)
             # Write the object
-            with open(frepo_path, 'w') as fdst:
+            with open(frepo_path, "w") as fdst:
                 shutil.copyfileobj(fsource, fdst)

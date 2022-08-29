@@ -5,12 +5,12 @@ existing AiiDATestCase tests with minimum effort
 
 import io
 import os
-
-from aiida.common.folders import SandboxFolder
-from aiida.common import ValidationError
 from unittest import TestCase
-from aiida.orm import StructureData
+
 import pytest
+from aiida.common import ValidationError
+from aiida.common.folders import SandboxFolder
+from aiida.orm import StructureData
 
 Ti_otfg = "Ti 3|1.8|9|10|11|30U:40:31:32(qc=5.5)"
 Sr_otfg = "Sr 3|2.0|5|6|7|40U:50:41:42"
@@ -22,9 +22,11 @@ O_otfg = "O 2|1.1|15|18|20|20:21(qc=7)"
 
 @pytest.fixture(scope="class")
 def import_things(aiida_profile, request):
+    from aiida.plugins import DataFactory
+
     import aiida_castep.data.otfg as otf
     import aiida_castep.data.usp as usp
-    from aiida.plugins import DataFactory
+
     request.cls.otfg = otf.OTFGData
     request.cls.otf = otf
     request.cls.usp = usp
@@ -58,14 +60,17 @@ class BaseDataCase(TestCase):
     def create_family(self):
         """Creat families for testsing"""
         Ti, Sr, O, C9 = self.get_otfgs()
-        self.otf.upload_otfg_family([Ti.entry, Sr.entry, O.entry], "STO_FULL",
-                                    "TEST", False)
-        self.otf.upload_otfg_family([Ti.entry, Sr.entry], "STO_O_missing",
-                                    "TEST", False)
+        self.otf.upload_otfg_family(
+            [Ti.entry, Sr.entry, O.entry], "STO_FULL", "TEST", False
+        )
+        self.otf.upload_otfg_family(
+            [Ti.entry, Sr.entry], "STO_O_missing", "TEST", False
+        )
 
         # Missing O but that's OK we have a C9 wild card here
-        self.otf.upload_otfg_family([Ti.entry, Sr.entry, "C9"], "STO_O_C9",
-                                    "TEST", False)
+        self.otf.upload_otfg_family(
+            [Ti.entry, Sr.entry, "C9"], "STO_O_C9", "TEST", False
+        )
 
         return "STO_FULL", "STO_O_missing", "STO_O_C9"
 
@@ -81,15 +86,16 @@ class BaseDataCase(TestCase):
     def get_STO_structure():
         """Return a STO structure"""
         from aiida.plugins import DataFactory
+
         a = 3.905
 
-        cell = ((a, 0., 0.), (0., a, 0.), (0., 0., a))
+        cell = ((a, 0.0, 0.0), (0.0, a, 0.0), (0.0, 0.0, a))
         s = StructureData(cell=cell)
-        s.append_atom(position=(0., 0., 0.), symbols=["Sr"])
+        s.append_atom(position=(0.0, 0.0, 0.0), symbols=["Sr"])
         s.append_atom(position=(a / 2, a / 2, a / 2), symbols=["Ti"])
-        s.append_atom(position=(a / 2, a / 2, 0.), symbols=["O"])
-        s.append_atom(position=(a / 2, 0., a / 2), symbols=["O"])
-        s.append_atom(position=(0., a / 2, a / 2), symbols=["O"])
+        s.append_atom(position=(a / 2, a / 2, 0.0), symbols=["O"])
+        s.append_atom(position=(a / 2, 0.0, a / 2), symbols=["O"])
+        s.append_atom(position=(0.0, a / 2, a / 2), symbols=["O"])
         s.label = "STO"
         return s
 
@@ -169,13 +175,11 @@ class TestOTFGData(BaseDataCase):
 
         # This should fail
         with self.assertRaises(ValidationError):
-            entry, uploaded = self.otf.upload_otfg_family(
-                otfgs, "Test", "Test")
+            entry, uploaded = self.otf.upload_otfg_family(otfgs, "Test", "Test")
 
-        entry, uploaded = self.otf.upload_otfg_family([O.entry] + otfgs,
-                                                      "Test",
-                                                      "Test",
-                                                      stop_if_existing=False)
+        entry, uploaded = self.otf.upload_otfg_family(
+            [O.entry] + otfgs, "Test", "Test", stop_if_existing=False
+        )
 
         groups = self.otfg.get_otfg_groups()
         self.assertEqual(len(groups), 1)
@@ -189,8 +193,9 @@ class TestOTFGData(BaseDataCase):
         Test using get_pseudos_from_structure
         """
 
-        from aiida_castep.data import get_pseudos_from_structure
         from aiida.common import NotExistent
+
+        from aiida_castep.data import get_pseudos_from_structure
 
         self.create_family()
         STO = self.get_STO_structure()
@@ -211,14 +216,17 @@ class TestOTFGData(BaseDataCase):
     def create_family(self):
         """Creat families for testsing"""
         Ti, Sr, O, C9 = self.get_otfgs()
-        self.otf.upload_otfg_family([Ti.entry, Sr.entry, O.entry], "STO_FULL",
-                                    "TEST", False)
-        self.otf.upload_otfg_family([Ti.entry, Sr.entry], "STO_O_missing",
-                                    "TEST", False)
+        self.otf.upload_otfg_family(
+            [Ti.entry, Sr.entry, O.entry], "STO_FULL", "TEST", False
+        )
+        self.otf.upload_otfg_family(
+            [Ti.entry, Sr.entry], "STO_O_missing", "TEST", False
+        )
 
         # Missing O but that's OK we have a C9 wild card here
-        self.otf.upload_otfg_family([Ti.entry, Sr.entry, "C9"], "STO_O_C9",
-                                    "TEST", False)
+        self.otf.upload_otfg_family(
+            [Ti.entry, Sr.entry, "C9"], "STO_O_C9", "TEST", False
+        )
 
     def get_otfgs(self):
 
@@ -236,26 +244,22 @@ class TestUspData(BaseDataCase):
         with SandboxFolder() as f:
             sub = f.get_subfolder("pseudo", create=True)
             for element in ["Sr", "Ti", "O"]:
-                fp = io.StringIO(u"foo bla 42")
-                sub.create_file_from_filelike(fp,
-                                              "{}_00.usp".format(element),
-                                              mode='w')
+                fp = io.StringIO("foo bla 42")
+                sub.create_file_from_filelike(fp, f"{element}_00.usp", mode="w")
 
-            self.usp.upload_usp_family(os.path.join(f.abspath, "pseudo"),
-                                       "STO", "")
+            self.usp.upload_usp_family(os.path.join(f.abspath, "pseudo"), "STO", "")
 
             with self.assertRaises(ValueError):
-                self.usp.upload_usp_family(os.path.join(f.abspath, "pseudo"),
-                                           "STO", "")
+                self.usp.upload_usp_family(os.path.join(f.abspath, "pseudo"), "STO", "")
 
     def get_usp_node(self, element):
         """
         Return a node of usp file
         """
-        name = "{}_00.usp".format(element)
+        name = f"{element}_00.usp"
         with SandboxFolder() as f:
-            fp = io.StringIO(u"foo bla 42")
-            f.create_file_from_filelike(fp, name, mode='w')
+            fp = io.StringIO("foo bla 42")
+            f.create_file_from_filelike(fp, name, mode="w")
             fpath = os.path.join(f.abspath, name)
             node = self.usp.UspData.get_or_create(fpath)[0]
 
@@ -265,8 +269,8 @@ class TestUspData(BaseDataCase):
         """Testing the logic or get_or_create"""
         name = "Sr_00.usp"
         with SandboxFolder() as f:
-            fp = io.StringIO(u"foo bla 42")
-            f.create_file_from_filelike(fp, name, mode='w')
+            fp = io.StringIO("foo bla 42")
+            f.create_file_from_filelike(fp, name, mode="w")
             fpath = os.path.join(f.abspath, name)
             node1, create = self.usp.UspData.get_or_create(fpath)
 
@@ -278,12 +282,10 @@ class TestUspData(BaseDataCase):
 
             # Now having two files - should raise an exception
             with self.assertRaises(ValueError):
-                node3, create = self.usp.UspData.get_or_create(fpath,
-                                                               use_first=False)
+                node3, create = self.usp.UspData.get_or_create(fpath, use_first=False)
 
             # This should work now
-            node4, create = self.usp.UspData.get_or_create(fpath,
-                                                           use_first=True)
+            node4, create = self.usp.UspData.get_or_create(fpath, use_first=True)
             self.assertFalse(create)
             self.assertIn(node4.pk, (node1.pk, node2.pk))
 
@@ -295,8 +297,9 @@ class TestUspData(BaseDataCase):
         Test using get_pseudos_from_structure
         """
 
-        from aiida_castep.data import get_pseudos_from_structure
         from aiida.common import NotExistent
+
+        from aiida_castep.data import get_pseudos_from_structure
 
         self.upload_usp_family()
         STO = self.get_STO_structure()

@@ -43,8 +43,7 @@ extensions = [
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
-    "aiida":
-    ("https://aiida.readthedocs.io/projects/aiida-core/en/latest", None),
+    "aiida": ("https://aiida.readthedocs.io/projects/aiida-core/en/latest", None),
 }
 
 # Add any paths that contain templates here, relative to this directory.
@@ -66,8 +65,11 @@ copyright_first_year = "2018"
 copyright_owners = "Bonan Zhu"
 
 current_year = str(time.localtime().tm_year)
-copyright_year_string = (current_year if current_year == copyright_first_year
-                         else f"{copyright_first_year}-{current_year}")
+copyright_year_string = (
+    current_year
+    if current_year == copyright_first_year
+    else f"{copyright_first_year}-{current_year}"
+)
 # pylint: disable=redefined-builtin
 copyright = f"{copyright_year_string}, {copyright_owners}. All rights reserved"
 
@@ -191,8 +193,7 @@ def run_apidoc(_):
     """
     source_dir = os.path.abspath(os.path.dirname(__file__))
     apidoc_dir = os.path.join(source_dir, "apidoc")
-    package_dir = os.path.join(source_dir, os.pardir, os.pardir,
-                               "aiida_castep")
+    package_dir = os.path.join(source_dir, os.pardir, os.pardir, "aiida_castep")
 
     # In #1139, they suggest the route below, but this ended up
     # calling sphinx-build, not sphinx-apidoc
@@ -204,8 +205,7 @@ def run_apidoc(_):
     cmd_path = "sphinx-apidoc"
     if hasattr(sys, "real_prefix"):  # Check to see if we are in a virtualenv
         # If we are, assemble the path manually
-        cmd_path = os.path.abspath(
-            os.path.join(sys.prefix, "bin", "sphinx-apidoc"))
+        cmd_path = os.path.abspath(os.path.join(sys.prefix, "bin", "sphinx-apidoc"))
 
     options = [
         "-o",
@@ -218,7 +218,9 @@ def run_apidoc(_):
 
     # See https://stackoverflow.com/a/30144019
     env = os.environ.copy()
-    env["SPHINX_APIDOC_OPTIONS"] = "members,special-members,private-members,undoc-members,show-inheritance"
+    env[
+        "SPHINX_APIDOC_OPTIONS"
+    ] = "members,special-members,private-members,undoc-members,show-inheritance"
     subprocess.check_call([cmd_path] + options, env=env)
 
 

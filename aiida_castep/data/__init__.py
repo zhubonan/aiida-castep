@@ -2,9 +2,9 @@
 Module for additional Data classes
 """
 
-from aiida.orm.nodes.data.upf import UpfData
+from aiida.common import MultipleObjectsError, NotExistent
 from aiida.orm import Group
-from aiida.common import NotExistent, MultipleObjectsError
+from aiida.orm.nodes.data.upf import UpfData
 
 from .otfg import OTFGData
 from .usp import UspData
@@ -43,11 +43,11 @@ def get_pseudos_from_structure(structure, family_name):
     all_families = family_otfg + family_upf
     if len(all_families) == 0:
         raise NotExistent(
-            "Cannot find matching group among UspData, UpfData and OTFGData")
+            "Cannot find matching group among UspData, UpfData and OTFGData"
+        )
 
     if len(all_families) > 1:
-        raise MultipleObjectsError(
-            f"Multiple groups with label {family_name} detected")
+        raise MultipleObjectsError(f"Multiple groups with label {family_name} detected")
 
     family = all_families[0]
 
@@ -57,7 +57,8 @@ def get_pseudos_from_structure(structure, family_name):
             if node.element in family_pseudos:
                 raise MultipleObjectsError(
                     "More than one pseudo for element {} found in "
-                    "family {}".format(node.element, family_name))
+                    "family {}".format(node.element, family_name)
+                )
             family_pseudos[node.element] = node
 
     pseudo_list = {}
@@ -65,13 +66,15 @@ def get_pseudos_from_structure(structure, family_name):
         symbol = kind.symbol
         if symbol in family_pseudos:
             pseudo_list[kind.name] = family_pseudos[symbol]
-        elif 'LIBRARY' in family_pseudos:
-            pseudo_list[kind.name] = family_pseudos['LIBRARY']
+        elif "LIBRARY" in family_pseudos:
+            pseudo_list[kind.name] = family_pseudos["LIBRARY"]
 
         else:
             raise NotExistent(
                 "No pseudo for element {} found in family {}".format(
-                    symbol, family_pseudos))
+                    symbol, family_pseudos
+                )
+            )
 
     return pseudo_list
 
@@ -87,17 +90,17 @@ def _get_pseudos_from_aiida_pseudo(structure, label):
     """
 
     try:
-        group = Group.objects.get(label=label,
-                                  type_string={'like': 'pseudo.family%'})
+        group = Group.objects.get(label=label, type_string={"like": "pseudo.family%"})
     except NotExistent:
         return []
 
     # Make sure the group is a group from aiida-pseudo
     if not group._type_string.startswith(  # pylint: disable=protected-access
-            'pseudo.family'):
+        "pseudo.family"
+    ):
         return []
 
-    if group.pseudo_type != 'pseudo.upf':
+    if group.pseudo_type != "pseudo.upf":
         raise ValueError(
             f"Pseudopotential type {group.pseudo_type} is not supported - only UPF can be used."
         )

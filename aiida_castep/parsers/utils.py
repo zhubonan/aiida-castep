@@ -4,8 +4,8 @@ Utility functions
 import copy
 
 import numpy as np
-from aiida.orm import StructureData
 from aiida.common import OutputParsingError
+from aiida.orm import StructureData
 from aiida.plugins import DataFactory
 
 
@@ -59,8 +59,9 @@ def desort_structure(structure, original_structure):
         new_structure.append_site(site)
 
     # Check for sure
-    assert [site.kind_name for site in original_structure.sites
-            ] == [site.kind_name for site in new_structure.sites]
+    assert [site.kind_name for site in original_structure.sites] == [
+        site.kind_name for site in new_structure.sites
+    ]
 
     return new_structure
 
@@ -72,7 +73,7 @@ def get_desort_args(original_structure):
     :return: An array used to recovery the original order
     """
     numbers = original_structure.get_ase().numbers
-    isort = np.argsort(numbers, kind='mergesort')
+    isort = np.argsort(numbers, kind="mergesort")
     rsort = [-1] * len(numbers)
     for idx, value in enumerate(isort):
         rsort[value] = idx

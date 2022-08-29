@@ -1,26 +1,27 @@
 """
 Parsers for CASTEP
 """
-from typing import Union, List
-from pathlib import Path
 from contextlib import contextmanager
 from copy import deepcopy
+from pathlib import Path
+from typing import List, Union
 
 import numpy as np
-
-from aiida.orm import TrajectoryData, ArrayData, Dict, BandsData
-
-from aiida.parsers.parser import Parser
 from aiida.common import exceptions
-from aiida_castep.parsers.castep_bin import CastepbinFile
+from aiida.orm import ArrayData, BandsData, Dict, TrajectoryData
+from aiida.parsers.parser import Parser
 
-from aiida_castep.parsers.raw_parser import units, RawParser
-from aiida_castep.parsers.utils import (structure_from_input,
-                                        add_last_if_exists, desort_structure,
-                                        get_desort_args)
-from aiida_castep.common import OUTPUT_LINKNAMES as out_ln
-from aiida_castep.common import EXIT_CODES_SPEC as calc_exit_code
 from aiida_castep._version import CALC_PARSER_VERSION
+from aiida_castep.common import EXIT_CODES_SPEC as calc_exit_code
+from aiida_castep.common import OUTPUT_LINKNAMES as out_ln
+from aiida_castep.parsers.castep_bin import CastepbinFile
+from aiida_castep.parsers.raw_parser import RawParser, units
+from aiida_castep.parsers.utils import (
+    add_last_if_exists,
+    desort_structure,
+    get_desort_args,
+    structure_from_input,
+)
 
 # pylint: disable=invalid-name,too-many-locals,too-many-statements,too-many-branches
 __version__ = CALC_PARSER_VERSION
@@ -31,13 +32,14 @@ ERR_FILE_WARNING_MSG = ".err files found in workdir"
 # from the SCF calculation. In these cases, we have to get the bands from the .bands
 # file instead of the castep_bin/check outputs, since the latter only stored those
 # of the electronic ground state calculation (SCF
-NON_SCF_BAND_TASKS = ('spectral', 'bandstructure', 'optics')
+NON_SCF_BAND_TASKS = ("spectral", "bandstructure", "optics")
 
 
 class RetrievedFileManager:
     """
     Wrapper for supplying an unified file-handler interface for the retrieved content
     """
+
     def __init__(self, retrieved_node, retrieved_temporary_folder=None):
         """
         Instantiate the manager object
@@ -47,8 +49,11 @@ class RetrievedFileManager:
             self.tmp_folder = Path(retrieved_temporary_folder)
             # Store the relative paths as strings
             self.tmp_content_names = list(
-                map(lambda x: str(x.relative_to(self.tmp_folder)),
-                    self.tmp_folder.iterdir()))
+                map(
+                    lambda x: str(x.relative_to(self.tmp_folder)),
+                    self.tmp_folder.iterdir(),
+                )
+            )
         else:
             self.tmp_folder = None
             self.tmp_content_names = []
@@ -57,7 +62,7 @@ class RetrievedFileManager:
         self.all_content_names = self.perm_content_names + self.tmp_content_names
 
     @contextmanager
-    def open(self, name, mode='r'):
+    def open(self, name, mode="r"):
         """Open a file from either the retrieved node or the temporary folder"""
         if name in self.perm_content_names:
             with self.node.open(name, mode=mode) as handle:
@@ -76,7 +81,7 @@ class RetrievedFileManager:
         """Return all object names avalaible"""
         return self.all_content_names
 
-    def get_object_content(self, name, mode='r') -> Union[str, bytes]:
+    def get_object_content(self, name, mode="r") -> Union[str, bytes]:
         with self.open(name, mode=mode) as handle:
             return handle.read()
 
@@ -89,17 +94,17 @@ class CastepParser(Parser):
     geom
     """
 
-    _setting_key = 'parser_options'
+    _setting_key = "parser_options"
 
     @property
     def castep_input_parameters(self):
-        """Access the original castep input parameters """
+        """Access the original castep input parameters"""
         return self.node.inputs.parameters.get_dict()
 
     @property
     def castep_task(self):
         """Task of the calculation"""
-        return self.castep_input_parameters['PARAM'].get('task', 'singlepoint')
+        return self.castep_input_parameters["PARAM"].get("task", "singlepoint")
 
     def parse(self, **kwargs):
         """
@@ -113,7 +118,8 @@ class CastepParser(Parser):
             return self.exit_codes.ERROR_NO_RETRIEVED_FOLDER
 
         output_folder = RetrievedFileManager(
-            retrieved, kwargs.get('retrieved_temporary_folder'))
+            retrieved, kwargs.get("retrieved_temporary_folder")
+        )
 
         warnings = []
         exit_code_1 = None
@@ -129,17 +135,17 @@ class CastepParser(Parser):
 
         # Get calculation options
         options = self.node.get_options()
-        seedname = options['seedname']
+        seedname = options["seedname"]
 
         # at least the stdout should exist
-        if options['output_filename'] not in filenames:
+        if options["output_filename"] not in filenames:
             self.logger.error("Standard output not found")
             return self.exit_codes.ERROR_NO_OUTPUT_FILE
 
         # The calculation is failed if there is any err file.
-        err_filenames = [fname for fname in filenames if '.err' in fname]
+        err_filenames = [fname for fname in filenames if ".err" in fname]
         if err_filenames:
-            exit_code_1 = 'ERROR_CASTEP_ERROR'
+            exit_code_1 = "ERROR_CASTEP_ERROR"
 
         # Add the content of err files
         err_contents = set()
@@ -149,36 +155,43 @@ class CastepParser(Parser):
         # Trajectory files
         has_md_geom = False
         out_md_geom_name_content = None
-        for suffix in ('.geom', '.md'):
+        for suffix in (".geom", ".md"):
             fname = seedname + suffix
             if fname in filenames:
                 out_md_geom_name_content = (
-                    fname, output_folder.get_object_content(fname).split('\n'))
+                    fname,
+                    output_folder.get_object_content(fname).split("\n"),
+                )
                 has_md_geom = True
                 break
 
         # Handling bands
-        fname = seedname + '.bands'
+        fname = seedname + ".bands"
         has_bands = fname in filenames
         if has_bands:
-            out_bands_content = output_folder.get_object_content(fname).split(
-                '\n')
+            out_bands_content = output_folder.get_object_content(fname).split("\n")
         else:
             out_bands_content = None
 
-        out_file = options['output_filename']
-        out_file_content = output_folder.get_object_content(out_file).split(
-            '\n')
+        out_file = options["output_filename"]
+        out_file_content = output_folder.get_object_content(out_file).split("\n")
 
         ###### CALL THE RAW PASSING FUNCTION TO PARSE DATA #######
 
-        raw_parser = RawParser(out_lines=out_file_content,
-                               input_dict=input_dict,
-                               md_geom_info=out_md_geom_name_content,
-                               bands_lines=out_bands_content,
-                               **parser_opts)
-        out_dict, trajectory_data, structure_data, bands_data, exit_code_2\
-            = raw_parser.parse()
+        raw_parser = RawParser(
+            out_lines=out_file_content,
+            input_dict=input_dict,
+            md_geom_info=out_md_geom_name_content,
+            bands_lines=out_bands_content,
+            **parser_opts,
+        )
+        (
+            out_dict,
+            trajectory_data,
+            structure_data,
+            bands_data,
+            exit_code_2,
+        ) = raw_parser.parse()
 
         # Combine the exit codes use the more specific error
         exit_code = None
@@ -189,8 +202,12 @@ class CastepParser(Parser):
 
         # Append the final value of trajectory_data into out_dict
         last_value_keys = [
-            "free_energy", "total_energy", "zero_K_energy", "spin_density",
-            "abs_spin_density", "enthalpy"
+            "free_energy",
+            "total_energy",
+            "zero_K_energy",
+            "spin_density",
+            "abs_spin_density",
+            "enthalpy",
         ]
         for key in last_value_keys:
             add_last_if_exists(trajectory_data, key, out_dict)
@@ -202,10 +219,11 @@ class CastepParser(Parser):
         out_dict["error_messages"] = list(err_contents)
 
         ######## --- PROCESSING BANDS DATA -- ########
-        if has_bands or output_folder.has_file(seedname + '.castep_bin'):
+        if has_bands or output_folder.has_file(seedname + ".castep_bin"):
             # Only use castep_bin if we are interested in SCF kpoints
-            if output_folder.has_file(seedname + '.castep_bin') and (
-                    self.castep_task.lower() not in NON_SCF_BAND_TASKS):
+            if output_folder.has_file(seedname + ".castep_bin") and (
+                self.castep_task.lower() not in NON_SCF_BAND_TASKS
+            ):
                 self.logger.info("Using castep_bin file for the bands data.")
                 bands_node = bands_from_castepbin(seedname, output_folder)
                 if not self._has_empty_bands(bands_node):
@@ -213,22 +231,22 @@ class CastepParser(Parser):
                     out_dict["warnings"].append(
                         "At least one kpoint has no empty bands, energy/forces returned are not reliable."
                     )
-                    if exit_code == 'CALC_FINISHED':
+                    if exit_code == "CALC_FINISHED":
                         exit_code = "ERROR_NO_EMPTY_BANDS"
             else:
                 bands_node = bands_to_bandsdata(**bands_data)
-            self.out(out_ln['bands'], bands_node)
+            self.out(out_ln["bands"], bands_node)
 
         ######## --- PROCESSING MULLIKEN DATA --- ########
         if not err_filenames:
-          input_structure = self.node.inputs.structure
-          idesort = get_desort_args(input_structure)
-          if len(out_dict.get("charges", [])) > 1:
-              new_charges = np.array(out_dict["charges"])[idesort]
-              out_dict["charges"] = new_charges
-          if len(out_dict.get("spins", [])) > 1:
-              new_spins = np.array(out_dict["spins"])[idesort]
-              out_dict["spins"] = new_spins
+            input_structure = self.node.inputs.structure
+            idesort = get_desort_args(input_structure)
+            if len(out_dict.get("charges", [])) > 1:
+                new_charges = np.array(out_dict["charges"])[idesort]
+                out_dict["charges"] = new_charges
+            if len(out_dict.get("spins", [])) > 1:
+                new_spins = np.array(out_dict["spins"])[idesort]
+                out_dict["spins"] = new_spins
 
         ######## --- PROCESSING STRUCTURE DATA --- ########
         no_optimise = False
@@ -244,17 +262,16 @@ class CastepParser(Parser):
                 if "there is nothing to optimise" in warning:
                     no_optimise = True
             if no_optimise is True:
-                self.out(out_ln['structure'],
-                         deepcopy(self.node.inputs.structure))
+                self.out(out_ln["structure"], deepcopy(self.node.inputs.structure))
         else:
-            structure_node = structure_from_input(cell=cell,
-                                                  positions=positions,
-                                                  symbols=symbols)
+            structure_node = structure_from_input(
+                cell=cell, positions=positions, symbols=symbols
+            )
             # Use the output label as the input label
             input_structure = self.node.inputs.structure
             structure_node = desort_structure(structure_node, input_structure)
             structure_node.label = input_structure.label
-            self.out(out_ln['structure'], structure_node)
+            self.out(out_ln["structure"], structure_node)
 
         ######### --- PROCESSING TRAJECTORY DATA --- ########
         # If there is anything to save
@@ -268,8 +285,7 @@ class CastepParser(Parser):
             # If we have .geom file, save as in a trajectory data
             if has_md_geom:
                 try:
-                    positions = np.asarray(
-                        trajectory_data["positions"])[:, idesort]
+                    positions = np.asarray(trajectory_data["positions"])[:, idesort]
                     cells = trajectory_data["cells"]
                     # Assume symbols do not change - symbols are the same for all frames
                     symbols = np.asarray(trajectory_data["symbols"])[idesort]
@@ -277,15 +293,17 @@ class CastepParser(Parser):
 
                 except KeyError:
                     out_dict["parser_warning"].append(
-                        "Cannot "
-                        "extract data from .geom file.")
+                        "Cannot " "extract data from .geom file."
+                    )
 
                 else:
                     traj = TrajectoryData()
-                    traj.set_trajectory(stepids=np.asarray(stepids),
-                                        cells=np.asarray(cells),
-                                        symbols=np.asarray(symbols),
-                                        positions=np.asarray(positions))
+                    traj.set_trajectory(
+                        stepids=np.asarray(stepids),
+                        cells=np.asarray(cells),
+                        symbols=np.asarray(symbols),
+                        positions=np.asarray(positions),
+                    )
                     # Save the rest
                     for name, value in trajectory_data.items():
                         # Skip saving empty arrays
@@ -297,22 +315,22 @@ class CastepParser(Parser):
                         if ("force" in name) or ("velocities" in name):
                             array = array[:, idesort]
                         traj.set_array(name, np.asarray(value))
-                    self.out(out_ln['trajectory'], traj)
+                    self.out(out_ln["trajectory"], traj)
 
             # Or may there is nothing to optimise? still save a Trajectory data
             elif no_optimise is True:
                 traj = TrajectoryData()
                 input_structure = self.node.inputs.structure
-                traj.set_trajectory(stepids=np.asarray([1]),
-                                    cells=np.asarray([input_structure.cell]),
-                                    symbols=np.asarray([
-                                        site.kind_name
-                                        for site in input_structure.sites
-                                    ]),
-                                    positions=np.asarray([[
-                                        site.position
-                                        for site in input_structure.sites
-                                    ]]))
+                traj.set_trajectory(
+                    stepids=np.asarray([1]),
+                    cells=np.asarray([input_structure.cell]),
+                    symbols=np.asarray(
+                        [site.kind_name for site in input_structure.sites]
+                    ),
+                    positions=np.asarray(
+                        [[site.position for site in input_structure.sites]]
+                    ),
+                )
                 # Save the rest
                 for name, value in trajectory_data.items():
                     # Skip saving empty arrays
@@ -324,7 +342,7 @@ class CastepParser(Parser):
                     if ("force" in name) or ("velocities" in name):
                         array = array[:, idesort]
                     traj.set_array(name, np.asarray(value))
-                self.out(out_ln['trajectory'], traj)
+                self.out(out_ln["trajectory"], traj)
             # Otherwise, save data into a ArrayData node
             else:
                 out_array = ArrayData()
@@ -336,11 +354,11 @@ class CastepParser(Parser):
                     if ("force" in name) or ("velocities" in name):
                         array = array[:, idesort]
                     out_array.set_array(name, np.asarray(value))
-                self.out(out_ln['array'], out_array)
+                self.out(out_ln["array"], out_array)
 
         ######## ---- PROCESSING OUTPUT DATA --- ########
         output_params = Dict(dict=out_dict)
-        self.out(out_ln['results'], output_params)
+        self.out(out_ln["results"], output_params)
 
         # Return the exit code
         return self.exit_codes.__getattr__(exit_code)
@@ -354,11 +372,13 @@ class CastepParser(Parser):
         """
 
         # Check if occupation is allowed to vary
-        param = self.node.inputs.parameters.get_dict()['PARAM']
+        param = self.node.inputs.parameters.get_dict()["PARAM"]
         # If it is a fixed occupation calculation we do not need to do anything about it....
-        fix_occ = (param.get('fix_occupancy', False)
-                   or param.get('metals_method', 'dm').lower() == 'none'
-                   or param.get('elec_method', 'dm').lower() == 'none')
+        fix_occ = (
+            param.get("fix_occupancy", False)
+            or param.get("metals_method", "dm").lower() == "none"
+            or param.get("elec_method", "dm").lower() == "none"
+        )
         if fix_occ:
             return True
 
@@ -373,8 +393,11 @@ class CastepParser(Parser):
         if problems:
             for ispin, ikpts, val in problems:
                 self.logger.warning(
-                    "No empty bands for spin %d, kpoint %d - occ: %.5f", ispin,
-                    ikpts, val)
+                    "No empty bands for spin %d, kpoint %d - occ: %.5f",
+                    ispin,
+                    ikpts,
+                    val,
+                )
             return False
         return True
 
@@ -415,17 +438,17 @@ def bands_to_bandsdata(bands_info, kpoints, bands):
     # Squeeze the first dimension e.g when there is a single spin
     if bands_array.shape[0] == 1:
         bands_array = bands_array[0]
-    bands_array = bands_array * units['Eh']
+    bands_array = bands_array * units["Eh"]
     bands_info = dict(bands_info)  # Create a copy
     # Convert the units for the fermi energies
-    if isinstance(bands_info['efermi'], list):
-        bands_info['efermi'] = [x * units['Eh'] for x in bands_info['efermi']]
+    if isinstance(bands_info["efermi"], list):
+        bands_info["efermi"] = [x * units["Eh"] for x in bands_info["efermi"]]
     else:
-        bands_info['efermi'] = bands_info['efermi'] * units['Eh']
+        bands_info["efermi"] = bands_info["efermi"] * units["Eh"]
 
     bands_node.set_bands(bands_array, units="eV")
     # PBC is always true as this is PW DFT....
-    bands_node.set_cell(bands_info['cell'], pbc=(True, True, True))
+    bands_node.set_cell(bands_info["cell"], pbc=(True, True, True))
 
     # Store information from *.bands in the attributes
     # This is needs as we need to know the number of electrons
@@ -440,7 +463,7 @@ def bands_from_castepbin(seedname, fmanager):
     Acquire and prepare bands data from the castep_bin file instead
     """
 
-    with fmanager.open(seedname + '.castep_bin', 'rb') as handle:
+    with fmanager.open(seedname + ".castep_bin", "rb") as handle:
         binfile = CastepbinFile(fileobj=handle)
 
     bands_node = BandsData()
@@ -456,6 +479,6 @@ def bands_from_castepbin(seedname, fmanager):
     bands_node.set_kpoints(kpoints, weights=weights)
     bands_node.set_bands(eigenvalues, occupations=occupancies, units="eV")
     bands_node.set_cell(binfile.cell, pbc=(True, True, True))
-    bands_node.set_attribute('efermi', efermi)
+    bands_node.set_attribute("efermi", efermi)
 
     return bands_node

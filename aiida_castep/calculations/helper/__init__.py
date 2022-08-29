@@ -3,30 +3,30 @@ CASTEP HELPER
 Check for errors in input dictionary
 """
 
-import os
 import json
+import logging
+import os
 from glob import glob
 
-import logging
 logger = logging.getLogger(__name__)
 
 path = os.path.abspath(__file__)
 module_path = os.path.dirname(path)
 
 incompatible_keys = [
-    ('backup_interval', 'num_backup_iter'),
-    ('opt_strategy', 'opt_strategy_bias'),
-    ('basis_precision', 'cut_off_energy'),
-    ('fine_grid_scale', 'fine_gmax', 'find_cut_off_energy'),
-    ('nelectrons', 'charge'),
-    ('nelectrons', 'nup'),
-    ('nelectrons', 'ndown'),
-    ('charge', 'ndown'),
-    ('charge', 'nup'),
-    ('spin', 'nup'),
-    ('spin', 'ndown'),
-    ('nextra_bands', 'perc_extra_bands'),
-    ('metals_method', 'elec_method'),
+    ("backup_interval", "num_backup_iter"),
+    ("opt_strategy", "opt_strategy_bias"),
+    ("basis_precision", "cut_off_energy"),
+    ("fine_grid_scale", "fine_gmax", "find_cut_off_energy"),
+    ("nelectrons", "charge"),
+    ("nelectrons", "nup"),
+    ("nelectrons", "ndown"),
+    ("charge", "ndown"),
+    ("charge", "nup"),
+    ("spin", "nup"),
+    ("spin", "ndown"),
+    ("nextra_bands", "perc_extra_bands"),
+    ("metals_method", "elec_method"),
 ]
 
 
@@ -34,10 +34,11 @@ class HelperCheckError(RuntimeError):
     pass
 
 
-class CastepHelper(object):
+class CastepHelper:
     """
     A class for helping castep inputs
     """
+
     def __init__(self, version=None):
         # Instance level parameter for by passing any check at all
         self.BY_PASS = False
@@ -63,10 +64,11 @@ class CastepHelper(object):
             if self.version is not None:
                 raise RuntimeError(
                     "Cannot found help info for requested version {}".format(
-                        self.version))
+                        self.version
+                    )
+                )
             try:
-                path = pairs[0][
-                    0]  # No explicitly requested - use the first one
+                path = pairs[0][0]  # No explicitly requested - use the first one
             except IndexError:
                 print("No CASTEP help info detected")
                 self.BY_PASS = True
@@ -101,13 +103,15 @@ class CastepHelper(object):
                 with ("castep_helpinfo.json", "w") as fp:
                     json.dump(help_dict, fp)
                     file_path = os.path.realpath("castep_helpinfo.json")
-                    print(("Saving in current path. "
-                           "Please move it to {}".format(file_path)))
+                    print(
+                        "Saving in current path. "
+                        "Please move it to {}".format(file_path)
+                    )
             except OSError:
                 print("Cannot save the retrieved help information")
                 return
 
-        print(("\n\nJSON file saved in {}".format(file_path)))
+        print(f"\n\nJSON file saved in {file_path}")
 
     def _check_dict(self, input_dict):
         """
@@ -151,8 +155,7 @@ class CastepHelper(object):
         """
 
         if self.BY_PASS:
-            raise RuntimeError(
-                "Cannot construct dictionary - No help info found")
+            raise RuntimeError("Cannot construct dictionary - No help info found")
 
         hinfo = self.help_dict
 
@@ -172,8 +175,7 @@ class CastepHelper(object):
                 elif kwtype == "PARAM":
                     param_dict.update({key: input_dict[key]})
                 else:
-                    raise RuntimeError(
-                        "Entry {} does not have key_type value".format(key))
+                    raise RuntimeError(f"Entry {key} does not have key_type value")
 
         out_dict = {"CELL": cell_dict, "PARAM": param_dict}
         return out_dict, not_found
@@ -194,8 +196,9 @@ class CastepHelper(object):
         param_dict = input_dict.pop("PARAM", {})
 
         if input_dict and not auto_fix and not allow_flat:
-            raise HelperCheckError("keywords: {} at top level".format(
-                ", ".join(input_dict)))
+            raise HelperCheckError(
+                "keywords: {} at top level".format(", ".join(input_dict))
+            )
 
         # Following functions require help info to be defined
         if self.BY_PASS:
@@ -208,8 +211,7 @@ class CastepHelper(object):
             suggests = [self.get_suggestion(s) for s in not_found]
             # Warnings
             not_reco = [
-                "keyword '{}' is not recognized at top level".format(s)
-                for s in not_found
+                f"keyword '{s}' is not recognized at top level" for s in not_found
             ]
             # Suggestions
             sugst_str = [a + "\n" + b for a, b in zip(not_reco, suggests)]
@@ -229,9 +231,7 @@ class CastepHelper(object):
 
         if invalid:
             suggests = [self.get_suggestion(s) for s in invalid]
-            not_founds = [
-                "keyword '{}' is not found".format(s) for s in invalid
-            ]
+            not_founds = [f"keyword '{s}' is not found" for s in invalid]
             sugst_str = [a + "\n" + b for a, b in zip(not_founds, suggests)]
             sugst_str = "\n\n".join(sugst_str)
 
@@ -242,24 +242,27 @@ class CastepHelper(object):
             if auto_fix is True:
                 for key, should_be in wrong:
                     if should_be == "PARAM":
-                        logger.warning("Key {} moved to PARAM".format(key))
+                        logger.warning(f"Key {key} moved to PARAM")
                         value = input_dict["CELL"].pop(key)
                         input_dict["PARAM"].update({key: value})
                     else:
-                        logger.warning("Key {} moved to CELL".format(key))
+                        logger.warning(f"Key {key} moved to CELL")
                         value = input_dict["PARAM"].pop(key)
                         input_dict["CELL"].update({key: value})
             else:
                 raise HelperCheckError(
                     "Keywords: {} are in "
-                    "the wrong sub-dictionary".format(", ".join(
-                        ["'{}'".format(k[0]) for k in wrong])))
+                    "the wrong sub-dictionary".format(
+                        ", ".join([f"'{k[0]}'" for k in wrong])
+                    )
+                )
 
         # Check incompatible keys
         incomp = check_incompatible(input_dict["PARAM"], incompatible_keys)
         if incomp:
-            raise HelperCheckError("Incompatible keys found: {}"
-                                   " - only one is allowed.".format(incomp))
+            raise HelperCheckError(
+                "Incompatible keys found: {}" " - only one is allowed.".format(incomp)
+            )
         return input_dict
 
     def get_suggestion(self, string):
@@ -287,10 +290,11 @@ def _get_suggestion(provided_string, allowed_strings):
 
     similar_kws = difflib.get_close_matches(provided_string, allowed_strings)
     if len(similar_kws) == 1:
-        return "(Maybe you wanted to specify {0}?)".format(similar_kws[0])
+        return f"(Maybe you wanted to specify {similar_kws[0]}?)"
     elif len(similar_kws) > 1:
-        return "(Maybe you wanted to specify one of these: {0}?)".format(
-            ", ".join(similar_kws))
+        return "(Maybe you wanted to specify one of these: {}?)".format(
+            ", ".join(similar_kws)
+        )
     else:
         return "(No similar keywords found...)"
 

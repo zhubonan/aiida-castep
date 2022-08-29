@@ -2,10 +2,9 @@
 Command line interface for generating CASTEP help information
 """
 
-from __future__ import print_function
-from __future__ import absolute_import
-import click
 import sys
+
+import click
 from aiida.cmdline.commands.cmd_data import verdi_data
 
 
@@ -33,16 +32,14 @@ def progress(func, *args, **kwargs):
         return tqdm(func, *args, **kwargs)
 
 
-@verdi_data.group('castep-help')
+@verdi_data.group("castep-help")
 def helper_cmd():
     """Commandline interface for controlling helper information"""
     pass
 
 
 @helper_cmd.command(name="generate")
-@click.option("--castep-executable",
-              "-e",
-              help="The excutable of CASTEP to be used")
+@click.option("--castep-executable", "-e", help="The excutable of CASTEP to be used")
 @click.option("--save-as", "-s", help="override default path for saving file")
 def generate(castep_executable, save_as):
     """
@@ -51,28 +48,31 @@ def generate(castep_executable, save_as):
     The generated file will be saved as .castep_help_info_<version>.json
     at the $HOME by default.
     """
-    from aiida_castep.calculations.helper.generate import (get_castep_commands,
-                                                           parse_help_string)
-
-    import subprocess as sbp
     import os
+    import subprocess as sbp
+
+    from aiida_castep.calculations.helper.generate import (
+        get_castep_commands,
+        parse_help_string,
+    )
+
     # Work out the executable name automatically
     if castep_executable is None:
-        castep_executable = 'castep.serial'
-        completed = sbp.run(['which', castep_executable],
-                            stdout=sbp.PIPE,
-                            check=False)
+        castep_executable = "castep.serial"
+        completed = sbp.run(["which", castep_executable], stdout=sbp.PIPE, check=False)
         if completed.returncode == 0:
-            castep_executable = 'castep.serial'
-        elif sbp.run(['which', 'castep.mpi'], stdout=sbp.PIPE,
-                     check=False).returncode == 0:
-            castep_executable = 'castep.mpi'
-        elif sbp.run(['which', 'castep'], stdout=sbp.PIPE,
-                     check=False).returncode == 0:
-            castep_executable = 'castep'
+            castep_executable = "castep.serial"
+        elif (
+            sbp.run(["which", "castep.mpi"], stdout=sbp.PIPE, check=False).returncode
+            == 0
+        ):
+            castep_executable = "castep.mpi"
+        elif sbp.run(["which", "castep"], stdout=sbp.PIPE, check=False).returncode == 0:
+            castep_executable = "castep"
     try:
-        castep_info = sbp.check_output([castep_executable, "--version"],
-                                       universal_newlines=True)
+        castep_info = sbp.check_output(
+            [castep_executable, "--version"], universal_newlines=True
+        )
     except OSError:
         print("Not a valid CASTEP excutable. Aborted.")
         return
@@ -83,14 +83,14 @@ def generate(castep_executable, save_as):
             version_num = line.split(":")[-1].strip()
 
     if save_as is None:
-        fname = ".castep_help_info_{}.json".format(version_num)
+        fname = f".castep_help_info_{version_num}.json"
         save_as = os.path.join(os.getenv("HOME"), fname)
     else:
         save_as = os.path.abspath(save_as)
 
     print("######## Version info of CASTEP ########")
     print(castep_info)
-    print("Save path: {}".format(save_as))
+    print(f"Save path: {save_as}")
 
     respond = click.prompt("Please check CASTEP version. [Y/N]")
     if not respond.lower() == "y":
@@ -108,18 +108,22 @@ def generate(castep_executable, save_as):
 
     for key in progress(all_keys):
         lines, k_type, k_level, v_type = parse_help_string(
-            key, excutable=castep_executable)
-        full_dict[key.lower()] = dict(help_short=all_keys[key],
-                                      help_full="\n".join(lines),
-                                      key_type=k_type,
-                                      key_level=k_level,
-                                      value_type=v_type)
+            key, excutable=castep_executable
+        )
+        full_dict[key.lower()] = dict(
+            help_short=all_keys[key],
+            help_full="\n".join(lines),
+            key_type=k_type,
+            key_level=k_level,
+            value_type=v_type,
+        )
     full_dict["_CASTEP_VERSION"] = version_num
 
     import json
+
     with open(save_as, "w") as json_out:
         json.dump(full_dict, json_out)
-    print("Help information saved at {}".format(save_as))
+    print(f"Help information saved at {save_as}")
 
 
 @helper_cmd.command("show")
@@ -146,7 +150,7 @@ def list_keywords(filter):
     h_dict = helper.help_dict
 
     def print_keys(ktype):
-        print("List of keywords in {} file:\n".format(ktype))
+        print(f"List of keywords in {ktype} file:\n")
         for key, value in h_dict.items():
 
             if not isinstance(value, dict):
@@ -168,17 +172,18 @@ def list_file():
     """
 
     from aiida_castep.calculations.helper import find_help_info
+
     pairs = find_help_info()
     if not pairs:
         print("No avaliale file detected")
 
     print("Avaliable files:")
-    print("{:<67} | {:^10}".format('Path', 'version'))
+    print("{:<67} | {:^10}".format("Path", "version"))
     print("-" * 80)
     for path, version in pairs:
         if version == 0:
-            version = 'NOT_SPECIFIED'
-        print("{:<30} | {:>10}".format(path, version))
+            version = "NOT_SPECIFIED"
+        print(f"{path:<30} | {version:>10}")
 
 
 def get_helper(*args, **kwargs):
@@ -186,6 +191,7 @@ def get_helper(*args, **kwargs):
     Get a helper object
     """
     from aiida_castep.calculations.helper import CastepHelper
+
     helper = CastepHelper(*args, **kwargs)
     return helper
 

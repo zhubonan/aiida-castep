@@ -2,11 +2,17 @@
 Tests for utils module
 """
 
-import pytest
 import numpy as np
+import pytest
 
+from aiida_castep.utils import (
+    ase_to_castep_index,
+    compute_kpoints_spacing,
+    desort_atoms_castep,
+    is_castep_sorted,
+    sort_atoms_castep,
+)
 from aiida_castep.utils.dos import DOSProcessor
-from aiida_castep.utils import ase_to_castep_index, is_castep_sorted, sort_atoms_castep, desort_atoms_castep, compute_kpoints_spacing
 
 try:
     import ase
@@ -18,17 +24,17 @@ except ImportError:
 
 @pytest.fixture
 def unsorted_atoms():
-    atoms = ase.Atoms("TiO2",
-                      cell=[5, 5, 5],
-                      positions=[[0, 0, 0], [1, 0, 0], [0, 1, 0]])
+    atoms = ase.Atoms(
+        "TiO2", cell=[5, 5, 5], positions=[[0, 0, 0], [1, 0, 0], [0, 1, 0]]
+    )
     return atoms
 
 
 @pytest.fixture
 def sorted_atoms():
-    atoms = ase.Atoms(numbers=[8, 8, 22],
-                      cell=[5, 5, 5],
-                      positions=[[1, 0, 0], [0, 1, 0], [0, 0, 0]])
+    atoms = ase.Atoms(
+        numbers=[8, 8, 22], cell=[5, 5, 5], positions=[[1, 0, 0], [0, 1, 0], [0, 0, 0]]
+    )
     return atoms
 
 
@@ -65,7 +71,7 @@ def test_k_spacing():
     assert np.all(spacing == np.array([1, 1, 1]))
 
     spacing = compute_kpoints_spacing([4, 4, 4], [2, 2, 2])
-    assert np.all(spacing == np.array([1. / 8, 1. / 8, 1. / 8]))
+    assert np.all(spacing == np.array([1.0 / 8, 1.0 / 8, 1.0 / 8]))
 
 
 @pytest.fixture
@@ -90,9 +96,9 @@ def test_dos_compute(bands_data):
     dos = DOSProcessor(bands[0], weights, min_eng=-10, max_eng=100)
     energy, values = dos.get_dos(dropdim=True, npoints=3000)
 
-    #assert energy.size == 2000
-    #assert values.size == 2000
-    #assert values.shape == (2000, )
+    # assert energy.size == 2000
+    # assert values.size == 2000
+    # assert values.shape == (2000, )
     np.testing.assert_approx_equal(values[0], 0)
     np.testing.assert_approx_equal(values[-1], 0)
 

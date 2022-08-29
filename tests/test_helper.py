@@ -1,5 +1,9 @@
-from aiida_castep.calculations.helper import CastepHelper, HelperCheckError
 import unittest
+
+from aiida_castep.calculations.helper import (
+    CastepHelper,
+    HelperCheckError,
+)
 
 helper = CastepHelper()
 no_info = helper.BY_PASS
@@ -7,15 +11,14 @@ no_info = helper.BY_PASS
 
 class TestHelper(unittest.TestCase):
     """class  TestHelper for test CastepHepler"""
+
     @classmethod
     def setUpClass(cls):
         cls.helper = CastepHelper()
 
     @property
     def flat_dict(self):
-        return dict(fix_all_cell="true",
-                    cut_off_energy="true",
-                    kpoints_mp_grid="0 0 0")
+        return dict(fix_all_cell="true", cut_off_energy="true", kpoints_mp_grid="0 0 0")
 
     @property
     def only_param_dict(self):
@@ -103,7 +106,7 @@ class TestHelper(unittest.TestCase):
         flat = self.flat_dict
         self.helper.check_dict(flat, auto_fix=False, allow_flat=True)
         with self.assertRaises(HelperCheckError):
-            flat['kpoints_gdrd'] = 1
+            flat["kpoints_gdrd"] = 1
             self.helper.check_dict(flat, auto_fix=False, allow_flat=True)
 
 

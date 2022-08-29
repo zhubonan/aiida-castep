@@ -3,16 +3,15 @@ Module for parsing .castep file
 This module should not rely on any of AiiDA modules
 """
 
-from __future__ import absolute_import
-import re
 import logging
+import re
 from collections import defaultdict
 
 import numpy as np
 
-from aiida_castep.parsers.utils import CASTEPOutputParsingError
-from aiida_castep.common import EXIT_CODES_SPEC
 from aiida_castep._version import CALC_PARSER_VERSION
+from aiida_castep.common import EXIT_CODES_SPEC
+from aiida_castep.parsers.utils import CASTEPOutputParsingError
 
 from .constants import units
 
@@ -32,8 +31,8 @@ STOP_REQUESTED_ERROR = "ERROR_STOP_REQUESTED"
 
 class RawParser:
     """An raw parser object to parse the output of CASTEP"""
-    def __init__(self, out_lines, input_dict, md_geom_info, bands_lines,
-                 **parser_opts):
+
+    def __init__(self, out_lines, input_dict, md_geom_info, bands_lines, **parser_opts):
         """Instantiate the parser by passing list of the lines"""
 
         self.dot_castep_lines = out_lines
@@ -68,10 +67,11 @@ class RawParser:
         parser_info = {}
         parser_info["parser_warnings"] = []
         parser_info["parser_info"] = "AiiDA CASTEP basic Parser v{}".format(
-            parser_version)
+            parser_version
+        )
         parser_info["warnings"] = []
 
-        exit_code = 'UNKNOWN_ERROR'
+        exit_code = "UNKNOWN_ERROR"
         finished_run = False
 
         # Use Total time as a mark for completed run
@@ -103,9 +103,9 @@ class RawParser:
         # may not terminate correctly due unconverged SCF.
         # In this case, we set the exit code to SCF unconverged.
         if finished_run:
-            exit_code = 'CALC_FINISHED'
+            exit_code = "CALC_FINISHED"
         else:
-            exit_code = 'ERROR_NO_END_OF_CALCULATION'
+            exit_code = "ERROR_NO_END_OF_CALCULATION"
             for code in EXIT_CODES_SPEC:
                 if code in self.warnings:
                     exit_code = code
@@ -129,9 +129,9 @@ class RawParser:
                 # Cannot find the last geometry data
                 structure_data = {}
             else:
-                structure_data = dict(cell=last_cell,
-                                      positions=last_positions,
-                                      symbols=symbols)
+                structure_data = dict(
+                    cell=last_cell, positions=last_positions, symbols=symbols
+                )
         else:
             traj_data = {}
             structure_data = {}
@@ -141,24 +141,21 @@ class RawParser:
         results_dict.update(parser_info)
 
         # Combine the warnings
-        all_warnings = results_dict["warnings"] + parser_info[
-            "warnings"] + self.warnings
+        all_warnings = (
+            results_dict["warnings"] + parser_info["warnings"] + self.warnings
+        )
 
         # Make the warnings set-like e.g we don't want to repeat messages
         # Save a bit of the storage space
         all_warnings = list(set(all_warnings))
-        results_dict['warnings'] = all_warnings
+        results_dict["warnings"] = all_warnings
 
         return [results_dict, traj_data, structure_data, bands_res, exit_code]
 
     def parse_dot_bands(self):
         """Parse the dot_bands"""
         bands_info, kpoints, bands = parse_dot_bands(self.bands_lines)
-        self.bands_res = {
-            'bands_info': bands_info,
-            'kpoints': kpoints,
-            'bands': bands
-        }
+        self.bands_res = {"bands_info": bands_info, "kpoints": kpoints, "bands": bands}
         return self.bands_res
 
     def parse_geom(self, glines=None):
@@ -171,19 +168,19 @@ class RawParser:
     def parse_dot_castep(self):
         """Parse the dot-castep file"""
         parsed_data, trajectory_data, critical_message = parse_castep_text_output(
-            self.dot_castep_lines, {})
+            self.dot_castep_lines, {}
+        )
         self.dot_castep_data = parsed_data
         self.dot_castep_traj = trajectory_data
         self.dot_castep_critical_message = critical_message
-        self.warnings = parsed_data['warnings']
+        self.warnings = parsed_data["warnings"]
         return parsed_data, trajectory_data, critical_message
 
 
 # Re for getting unit
 unit_re = re.compile(r"^ output\s+(\w+) unit *: *([^\s]+)")
 time_re = re.compile(r"^(\w+) time += +([0-9.]+) s$")
-parallel_re = re.compile(
-    r"^Overall parallel efficiency rating: [\w ]+ \(([0-9]+)%\)")
+parallel_re = re.compile(r"^Overall parallel efficiency rating: [\w ]+ \(([0-9]+)%\)")
 version_re = re.compile(r"CASTEP version ([0-9.]+)")
 
 
@@ -226,10 +223,8 @@ def parse_castep_text_output(out_lines, input_dict):
     # format {<keywords in line>:<message to pass>}, the message to pass
     # is save in the dictionary and used to set the exit code
     critical_warnings = {
-        "SCF cycles performed but system has not reached the groundstate":
-        SCF_FAILURE_ERROR,
-        "STOP keyword detected in parameter file. Stop execution.":
-        STOP_REQUESTED_ERROR,
+        "SCF cycles performed but system has not reached the groundstate": SCF_FAILURE_ERROR,
+        "STOP keyword detected in parameter file. Stop execution.": STOP_REQUESTED_ERROR,
         "Insufficient time for another iteration": INSUFFICENT_TIME_ERROR,
     }
 
@@ -264,7 +259,7 @@ def parse_castep_text_output(out_lines, input_dict):
             parsed_data["unit_" + uname] = uvalue
 
         if "Files used for pseudopotentials" in line:
-            for line_ in out_lines[i + 1:]:
+            for line_ in out_lines[i + 1 :]:
                 if "---" in line_:
                     break
                 try:
@@ -286,8 +281,7 @@ def parse_castep_text_output(out_lines, input_dict):
             continue
 
         if "Cell constraints" in line:
-            parsed_data["cell_constraints"] = line.strip().split(
-                ":")[1].strip()
+            parsed_data["cell_constraints"] = line.strip().split(":")[1].strip()
             continue
 
         if "Number of kpoints used" in line:
@@ -297,7 +291,7 @@ def parse_castep_text_output(out_lines, input_dict):
         if "MEMORY AND SCRATCH DISK ESTIMATES" in line:
             body_start = i
             break
-                    
+
     parsed_data.update(pseudo_pots=pseudo_files)
 
     # Parse repeating information
@@ -324,8 +318,7 @@ def parse_castep_text_output(out_lines, input_dict):
             continue
 
         if "Stress Tensor" in line:
-            i, stress, pressure = parse_stress_box(body_lines[count:count +
-                                                              20])
+            i, stress, pressure = parse_stress_box(body_lines[count : count + 20])
             assert len(stress) == 3
             if "Symmetrised" in line:
                 prefix = "symm_"
@@ -337,7 +330,7 @@ def parse_castep_text_output(out_lines, input_dict):
 
         if "Forces *******" in line:
             num_lines = parsed_data["num_ions"] + 10
-            box = body_lines[count:(count + num_lines)]
+            box = body_lines[count : (count + num_lines)]
             i, forces = parse_force_box(box)
 
             # Resolve force names
@@ -345,20 +338,22 @@ def parse_castep_text_output(out_lines, input_dict):
             if "Constrained" in line:
                 force_name = "cons_forces"
             else:
-                tmp = line.replace('*', ' ').strip().lower().replace(' ', '_')
-                if tmp == 'symmetrised_forces':
+                tmp = line.replace("*", " ").strip().lower().replace(" ", "_")
+                if tmp == "symmetrised_forces":
                     force_name = "forces"
                 else:
                     force_name = tmp
 
             if not forces:
-                LOGGER.error("Cannot parse force lines {}".format(box))
+                LOGGER.error(f"Cannot parse force lines {box}")
             trajectory_data[force_name].append(forces)
             skip = i
             continue
 
         if "Atomic Populations (Mulliken)" in line:
-            end_index = [index for index, line in enumerate(body_lines) if "Bond" in line][0]
+            end_index = [
+                index for index, line in enumerate(body_lines) if "Bond" in line
+            ][0]
             box = body_lines[count:end_index]
             i, charges, spins = parse_popn_box(box)
             parsed_data["charges"] = charges
@@ -370,7 +365,7 @@ def parse_castep_text_output(out_lines, input_dict):
             if warn_key in line:
                 message = all_warnings[warn_key]
                 if message is None:
-                    message = body_lines[count:count + n_warning_lines]
+                    message = body_lines[count : count + n_warning_lines]
                     message = "\n".join(message)
                 parsed_data["warnings"].append(message)
 
@@ -428,6 +423,7 @@ class LineParser:
     """
     Parser for a line
     """
+
     def __init__(self, conditions):
         """initialize the Parser by passing the conditions"""
         self._cond = conditions
@@ -450,6 +446,7 @@ class Matcher:
     """
     Class of the condition to match the line
     """
+
     def __init__(self, regex, name, convfunc=None):
         """
         Initialize a Matcher object.
@@ -485,11 +482,12 @@ class UnitMatcher(Matcher):
     The pattern of a UnitMatcher should have two groups with second group
     being the unit. The first group will be converted to float
     """
+
     def match_pattern(self, line):
         """
         Match the pattern
         """
-        out, match = super(UnitMatcher, self).match_pattern(line)
+        out, match = super().match_pattern(line)
         if out:
             unit = match.group(2)
             conv = self.convfunc if self.convfunc else float
@@ -501,19 +499,17 @@ def get_iter_parser():
     """
     Generate a LineParser object to parse repeating outputs
     """
-    tail1 = r' *= *([0-9.+-eE]+) +(\w+)'
-    mfree = UnitMatcher(r'^Final free energy \(E-TS\)' + tail1, "free_energy")
-    mtotal = UnitMatcher(r'^Final energy, E' + tail1, "total_energy")
-    mtotal2 = UnitMatcher(r'^Final energy' + tail1, "total_energy")
-    mzeroK = UnitMatcher(r'^NB est. 0K energy \(E-0.5TS\)' + tail1,
-                         "zero_K_energy")
-    spin = UnitMatcher(r'^Integrated Spin Density' + tail1, "spin_density")
-    absspin = UnitMatcher(r'^Integrated \|Spin Density\|' + tail1,
-                          "abs_spin_density")
+    tail1 = r" *= *([0-9.+-eE]+) +(\w+)"
+    mfree = UnitMatcher(r"^Final free energy \(E-TS\)" + tail1, "free_energy")
+    mtotal = UnitMatcher(r"^Final energy, E" + tail1, "total_energy")
+    mtotal2 = UnitMatcher(r"^Final energy" + tail1, "total_energy")
+    mzeroK = UnitMatcher(r"^NB est. 0K energy \(E-0.5TS\)" + tail1, "zero_K_energy")
+    spin = UnitMatcher(r"^Integrated Spin Density" + tail1, "spin_density")
+    absspin = UnitMatcher(r"^Integrated \|Spin Density\|" + tail1, "abs_spin_density")
     enthalpy = UnitMatcher(
-        r'^ *\w+: finished iteration +\d+ +with enthalpy' + tail1, "enthalpy")
-    parser = LineParser(
-        [mfree, mtotal, mtotal2, mzeroK, spin, absspin, enthalpy])
+        r"^ *\w+: finished iteration +\d+ +with enthalpy" + tail1, "enthalpy"
+    )
+    parser = LineParser([mfree, mtotal, mtotal2, mzeroK, spin, absspin, enthalpy])
     return parser
 
 
@@ -529,10 +525,10 @@ def parse_geom_text_output(out_lines, input_dict) -> dict:
     _ = input_dict
 
     txt = out_lines
-    Hartree = units['Eh']  # eV
-    Bohr = units['a0']  # A
-    kB = units['kB']  # eV/K
-    hBar = units['hbar']  # in eV
+    Hartree = units["Eh"]  # eV
+    Bohr = units["a0"]  # A
+    kB = units["kB"]  # eV/K
+    hBar = units["hbar"]  # in eV
     eV = units["e"]  # in J
 
     cell_list = []
@@ -570,26 +566,26 @@ def parse_geom_text_output(out_lines, input_dict) -> dict:
                 time_list.append(float(sline[0]))
             except ValueError:
                 continue
-        elif '<-- E' in line:
+        elif "<-- E" in line:
             energy_list.append(float(sline[0]))  # Total energy
             hamilt_list.append(float(sline[1]))  # Hamitonian (MD)
             # Kinetic energy is not blank in GEOM OPT runs
             if len(sline) == 5:
                 kinetic_list.append(float(sline[2]))  # Kinetic (MD)
             continue
-        elif '<-- h' in line:
+        elif "<-- h" in line:
             current_cell.append(list(map(float, sline[:3])))
             continue
-        elif '<-- R' in line:
+        elif "<-- R" in line:
             current_pos.append(list(map(float, sline[2:5])))
             current_species.append(sline[0])
-        elif '<-- F' in line:
+        elif "<-- F" in line:
             current_forces.append(list(map(float, sline[2:5])))
-        elif '<-- V' in line:
+        elif "<-- V" in line:
             current_velocity.append(list(map(float, sline[2:5])))
-        elif '<-- T' in line:
+        elif "<-- T" in line:
             temperature_list.append(float(sline[0]))
-        elif '<-- P' in line:
+        elif "<-- P" in line:
             pressure_list.append(float(sline[0]))
         elif not line.strip() and current_cell:
             cell_list.append(current_cell)
@@ -618,7 +614,7 @@ def parse_geom_text_output(out_lines, input_dict) -> dict:
     # optional lists
     unit_V = Hartree * Bohr / hBar
     unit_K = Hartree / kB  # temperature in K
-    unit_P = Hartree / (Bohr * 1e-10)**3 * eV
+    unit_P = Hartree / (Bohr * 1e-10) ** 3 * eV
     unit_s = hBar / Hartree
     opt = {
         "velocities": (velocity_list, unit_V),
@@ -626,7 +622,7 @@ def parse_geom_text_output(out_lines, input_dict) -> dict:
         "pressures": (pressure_list, unit_P),
         "hamilt_energy": (hamilt_list, Hartree),
         "times": (time_list, unit_s),
-        "kinetic_energy": (kinetic_list, Hartree)
+        "kinetic_energy": (kinetic_list, Hartree),
     }
     for key, value in opt.items():
         if value[0]:
@@ -635,9 +631,9 @@ def parse_geom_text_output(out_lines, input_dict) -> dict:
 
 
 force_match = re.compile(
-    r"^ +\* +(\w+) +([0-9]+) +([0-9.\-+]+) +([0-9.\-+]+) +([0-9.\-+]+) +\*")
-stress_match = re.compile(
-    r"^ +\* +(\w+) +([0-9.\-+]+) +([0-9.\-+]+) +([0-9.\-+]+) +\*")
+    r"^ +\* +(\w+) +([0-9]+) +([0-9.\-+]+) +([0-9.\-+]+) +([0-9.\-+]+) +\*"
+)
+stress_match = re.compile(r"^ +\* +(\w+) +([0-9.\-+]+) +([0-9.\-+]+) +([0-9.\-+]+) +\*")
 
 
 def parse_force_box(lines):
@@ -658,7 +654,7 @@ def parse_force_box(lines):
         if "***********************" in line:
             break
         # remove the cons'd tags
-        line = line.replace('(cons\'d)', '        ')
+        line = line.replace("(cons'd)", "        ")
 
         match = force_match.match(line)
         if match:
@@ -725,7 +721,7 @@ def parse_popn_box(lines):
                 spins.append(float(line[-1]))
             else:
                 charges.append(float(line[-1]))
-    
+
     return i, charges, spins
 
 
@@ -764,29 +760,31 @@ def parse_dot_bands(bands_lines):
             continue
         if "Number of k-points" in line:
             nkps = line.strip().split()[-1]
-            bands_info['nkpts'] = int(float(nkps))
+            bands_info["nkpts"] = int(float(nkps))
             continue
         if "Number of spin components" in line:
             nspin = line.strip().split()[-1]
-            bands_info['nspins'] = int(float(nspin))
+            bands_info["nspins"] = int(float(nspin))
             continue
         if "Number of electrons" in line:
             nelec = line.strip().split()[-1]
-            bands_info['nelecs'] = float(nelec)
+            bands_info["nelecs"] = float(nelec)
             continue
         if "Number of eigenvalues" in line:
             neigns = line.strip().split()[-1]
-            bands_info['neigns'] = int(float(neigns))
+            bands_info["neigns"] = int(float(neigns))
             continue
-        if "Fermi energ" in line:  # NOTE possible different format with spin polarisation?
+        if (
+            "Fermi energ" in line
+        ):  # NOTE possible different format with spin polarisation?
             tokens = line.strip().split()
             # Check if there are two fermi energies
-            if re.match(r'^[-.0-9eE]+$', tokens[-2]):
+            if re.match(r"^[-.0-9eE]+$", tokens[-2]):
                 efermi = [float(tokens[-2]), float(tokens[-1])]
             else:
                 efermi = float(tokens[-1])
 
-            bands_info['efermi'] = efermi
+            bands_info["efermi"] = efermi
             continue
         if "Unit cell" in line:
             i_finish = i + 3
@@ -797,14 +795,14 @@ def parse_dot_bands(bands_lines):
             cell.append([float(n) for n in line.strip().split()])
         if i == i_finish:
             break
-    bands_info['cell'] = cell
+    bands_info["cell"] = cell
 
     # Now parse the body
     kpoints = []
     bands = []
     this_band = []
     this_spin = []
-    for line in bands_lines[i + 1:]:
+    for line in bands_lines[i + 1 :]:
         if "K-point" in line:
             # We are not at the first kpoints
             if kpoints:
@@ -837,11 +835,10 @@ def parse_dot_bands(bands_lines):
     assert len(bands) == len(kpoints), "Missing bands for certain kpoints"
 
     for n, b in enumerate(bands):
-        assert len(b) == int(nspin), "Missing spins for kpoint {}".format(n +
-                                                                          1)
+        assert len(b) == int(nspin), f"Missing spins for kpoint {n + 1}"
         for i, s in enumerate(b):
-            assert len(s) == int(neigns), ("Missing eigenvalues "
-                                           "for kpoint {} spin {}".format(
-                                               n + 1, i + 1))
+            assert len(s) == int(
+                neigns
+            ), "Missing eigenvalues " "for kpoint {} spin {}".format(n + 1, i + 1)
 
     return bands_info, kpoints, bands

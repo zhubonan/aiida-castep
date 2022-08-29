@@ -1,17 +1,14 @@
 """
 Utility module
 """
-from __future__ import absolute_import
 from collections import Counter
+
 from aiida.common import InputValidationError
 
 
-def get_castep_ion_line(name,
-                        pos,
-                        label=None,
-                        spin=None,
-                        occupation=None,
-                        mix_num=None):
+def get_castep_ion_line(
+    name, pos, label=None, spin=None, occupation=None, mix_num=None
+):
     """
     Generate a line in POSITIONS_ABS or POSITIONS_FRAC block
 
@@ -29,26 +26,20 @@ def get_castep_ion_line(name,
     if isinstance(name, (tuple, list)):
 
         lines = [
-            "{n:18} {x:18.10f} {y:18.10f} {z:18.10f}".format(n=n,
-                                                             x=pos[0],
-                                                             y=pos[1],
-                                                             z=pos[2])
+            "{n:18} {x:18.10f} {y:18.10f} {z:18.10f}".format(
+                n=n, x=pos[0], y=pos[1], z=pos[2]
+            )
             for n in name
         ]
 
         assert sum(occupation) == 1, "Occupation need to sum up to 1"
-        lines = [
-            lines[i] + " MIXTURE= ({} {})".format(mix_num, occupation[i])
-            for i in range(2)
-        ]
+        lines = [lines[i] + f" MIXTURE= ({mix_num} {occupation[i]})" for i in range(2)]
 
         if label is not None:
             if not isinstance(label, (list, tuple)):
                 label = [label, label]
 
-            lines = [
-                line + " LABEL={} ".format(l) for line, l in zip(lines, label)
-            ]
+            lines = [line + f" LABEL={l} " for line, l in zip(lines, label)]
 
         # Handle spin
         # spin might be (s1, s2) or (s1) or ((s11, s12, s12), (s21, s22, s23))
@@ -65,25 +56,24 @@ def get_castep_ion_line(name,
             ]
         else:
             if None not in spin:
-                lines = [l + " SPIN={:.3f} ".format(s) for l, s in zip(lines, spin)]
+                lines = [l + f" SPIN={s:.3f} " for l, s in zip(lines, spin)]
 
         return "\n".join(lines)
 
-    line = "{name:18} {x:18.10f} {y:18.10f} {z:18.10f}".format(name=name,
-                                                               x=pos[0],
-                                                               y=pos[1],
-                                                               z=pos[2])
+    line = "{name:18} {x:18.10f} {y:18.10f} {z:18.10f}".format(
+        name=name, x=pos[0], y=pos[1], z=pos[2]
+    )
 
     if spin is not None:
 
         if isinstance(spin, (list, tuple)):
             line += " SPIN=( {:.6f} {:.6f} {:.6f} ) ".format(*spin)
         else:
-            line += " SPIN={:.3f} ".format(spin)
+            line += f" SPIN={spin:.3f} "
 
     if label is not None:
 
-        line += " LABEL={} ".format(label)
+        line += f" LABEL={label} "
 
     return line
 
@@ -96,16 +86,15 @@ def _lowercase_dict(in_dict, dict_name):
     """
 
     if isinstance(in_dict, dict):
-        new_dict = dict(
-            (str(key).lower(), value) for key, value in in_dict.items())
+        new_dict = {str(key).lower(): value for key, value in in_dict.items()}
         if len(new_dict) != len(in_dict):
             num_items = Counter(str(key).lower() for key in in_dict.keys())
-            double_keys = ",".join(
-                [key for key, value in num_items if value > 1])
+            double_keys = ",".join([key for key, value in num_items if value > 1])
             raise InputValidationError(
                 "Inside the dictionary '{}' there are the following keys that "
                 "are repeated more than once when compared case-insensitively: {}."
-                "This is not allowed.".format(dict_name, double_keys))
+                "This is not allowed.".format(dict_name, double_keys)
+            )
         return new_dict
     raise TypeError("_lowercase_dict accepts only dictionaries as argument")
 
@@ -117,15 +106,14 @@ def _uppercase_dict(in_dict, dict_name):
     warning message.
     """
     if isinstance(in_dict, dict):
-        new_dict = dict(
-            (str(key).upper(), value) for key, value in in_dict.items())
+        new_dict = {str(key).upper(): value for key, value in in_dict.items()}
         if len(new_dict) != len(in_dict):
             num_items = Counter(str(key).upper() for key in in_dict.keys())
-            double_keys = ",".join(
-                [key for key, value in num_items if value > 1])
+            double_keys = ",".join([key for key, value in num_items if value > 1])
             raise InputValidationError(
                 "Inside the dictionary '{}' there are the following keys that "
                 "are repeated more than once when compared case-insensitively: {}."
-                "This is not allowed.".format(dict_name, double_keys))
+                "This is not allowed.".format(dict_name, double_keys)
+            )
         return new_dict
     raise TypeError("_uppercase_dict accepts only dictionaries as argument")

@@ -8,24 +8,25 @@ from fnmatch import fnmatch
 from subprocess import call, check_output
 from textwrap import TextWrapper
 
-from aiida.manage.manager import get_manager
-
+import aiida.orm as orm
+from aiida.common import CalcInfo, CodeInfo, InputValidationError
 from aiida.common.folders import Folder
-from aiida.common import InputValidationError
-from aiida.common import CalcInfo, CodeInfo
-from aiida.engine import ProcessBuilder, run_get_node
+from aiida.engine import CalcJob, ProcessBuilder, run_get_node
+from aiida.manage.manager import get_manager
 from aiida.orm.nodes.data.base import to_aiida_type
 
-import aiida.orm as orm
-from aiida.engine import CalcJob
-
 from aiida_castep._version import CALC_PARSER_VERSION
-from ..common import INPUT_LINKNAMES, OUTPUT_LINKNAMES, EXIT_CODES_SPEC
+
+from ..common import EXIT_CODES_SPEC, INPUT_LINKNAMES, OUTPUT_LINKNAMES
 from .inpgen import CastepInputGenerator
+from .tools import (
+    castep_input_summary,
+    check_restart,
+    input_param_validator,
+    update_parameters,
+    use_pseudos_from_family,
+)
 from .utils import get_castep_ion_line
-from .tools import (castep_input_summary, update_parameters,
-                    use_pseudos_from_family, input_param_validator,
-                    check_restart)
 
 __version__ = CALC_PARSER_VERSION
 
@@ -35,7 +36,7 @@ ecodes = EXIT_CODES_SPEC
 
 # Define the version of the calculation
 
-__all__ = ['CastepCalculation', 'submit_test']
+__all__ = ["CastepCalculation", "submit_test"]
 
 
 class CastepCalculation(CalcJob, CastepInputGenerator):
@@ -46,18 +47,22 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
 
     # Create a dict of the defaults
     _DEFAULTS = {
-        "seedname": 'aiida',
-        'symlink_usage': True,
-        'parent_folder_name': 'parent',
-        'parser_name': 'castep.castep',
-        'use_kpoints': True,
-        'withmpi': True,
+        "seedname": "aiida",
+        "symlink_usage": True,
+        "parent_folder_name": "parent",
+        "parser_name": "castep.castep",
+        "use_kpoints": True,
+        "withmpi": True,
     }
-    _DEFAULTS['input_filename'] = _DEFAULTS['seedname'] + '.cell'
-    _DEFAULTS['output_filename'] = _DEFAULTS['seedname'] + '.castep'
+    _DEFAULTS["input_filename"] = _DEFAULTS["seedname"] + ".cell"
+    _DEFAULTS["output_filename"] = _DEFAULTS["seedname"] + ".castep"
 
     _default_retrieve_list = [
-        "*.err", "*.den_fmt", "*.elf_fmt", "*-out.cell", "*.pdos_bin"
+        "*.err",
+        "*.den_fmt",
+        "*.elf_fmt",
+        "*-out.cell",
+        "*.pdos_bin",
     ]
 
     # Some class methods
@@ -81,121 +86,140 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
     ]
 
     _copied_attributes = [
-        "jobresource_param", "custom_scheduler_commands",
-        "max_wallclock_seconds"
+        "jobresource_param",
+        "custom_scheduler_commands",
+        "max_wallclock_seconds",
     ]
     _write_headers = True
 
     _cell_links = [
-        inp_ln['parameters'], inp_ln['structure'], inp_ln['settings'],
-        inp_ln['kpoints']
+        inp_ln["parameters"],
+        inp_ln["structure"],
+        inp_ln["settings"],
+        inp_ln["kpoints"],
     ]
 
-    _param_links = [inp_ln['parameters']]
+    _param_links = [inp_ln["parameters"]]
 
     # Extra kpoints - CASTEP has many calculation mode that take extra kpoints
     _extra_kpoints = {
-        'spectral': {  # name XX_kpoints_list
-            'task': ('spectral', ),
-            'need_weights':
-            True  # Whether the explicit kpoints need weights or not
+        "spectral": {  # name XX_kpoints_list
+            "task": ("spectral",),
+            "need_weights": True,  # Whether the explicit kpoints need weights or not
         },
-        'bs': {
-            'task': ('bandstructure', ),  # task where the kpoints will be used
-            'need_weigthts': False,
+        "bs": {
+            "task": ("bandstructure",),  # task where the kpoints will be used
+            "need_weigthts": False,
         },
-        'phonon': {
-            'task': ('phonon', 'phonon+efield'),
-            'need_weights': False,
+        "phonon": {
+            "task": ("phonon", "phonon+efield"),
+            "need_weights": False,
         },
-        'phonon_fine': {
-            'task': ('phonon', 'phonon+efield'),
-            'need_weights': False,
+        "phonon_fine": {
+            "task": ("phonon", "phonon+efield"),
+            "need_weights": False,
         },
-        'supercell': {
-            'task': ('phonon', ),
-            'need_weights': True,
+        "supercell": {
+            "task": ("phonon",),
+            "need_weights": True,
         },
-        'magres': {
-            'task': ('magres', ),
-            'need_weights': True,
+        "magres": {
+            "task": ("magres",),
+            "need_weights": True,
         },
-        'optics': {
-            'task': ('optics', ),
-            'need_weights': True,
+        "optics": {
+            "task": ("optics",),
+            "need_weights": True,
         },
-        'elnes': {
-            'task': ('elnes', ),
-            'need_weights': True,
-        }
+        "elnes": {
+            "task": ("elnes",),
+            "need_weights": True,
+        },
     }
 
     @classmethod
     def define(cls, spec):
-        super(CastepCalculation, cls).define(spec)
+        super().define(spec)
 
         # Initialise interal params, saved as metadata.options
         for key, value in cls._DEFAULTS.items():
-            port_name = 'metadata.options.' + key
+            port_name = "metadata.options." + key
             spec.input(port_name, default=value)
 
-        spec.input('metadata.options.retrieve_list',
-                   valid_type=list,
-                   default=cls._default_retrieve_list)
+        spec.input(
+            "metadata.options.retrieve_list",
+            valid_type=list,
+            default=cls._default_retrieve_list,
+        )
 
         # Begin defining the input nodes
-        spec.input(inp_ln['structure'],
-                   valid_type=orm.StructureData,
-                   help="The input structure")
-        spec.input(inp_ln['settings'],
-                   valid_type=orm.Dict,
-                   serializer=to_aiida_type,
-                   required=False,
-                   help="A node for additional settings")
-        spec.input(inp_ln['parameters'],
-                   valid_type=orm.Dict,
-                   serializer=to_aiida_type,
-                   validator=input_param_validator,
-                   help="A node that defines the input parameters")
         spec.input(
-            inp_ln['parent_calc_folder'],
+            inp_ln["structure"],
+            valid_type=orm.StructureData,
+            help="The input structure",
+        )
+        spec.input(
+            inp_ln["settings"],
+            valid_type=orm.Dict,
+            serializer=to_aiida_type,
+            required=False,
+            help="A node for additional settings",
+        )
+        spec.input(
+            inp_ln["parameters"],
+            valid_type=orm.Dict,
+            serializer=to_aiida_type,
+            validator=input_param_validator,
+            help="A node that defines the input parameters",
+        )
+        spec.input(
+            inp_ln["parent_calc_folder"],
             valid_type=orm.RemoteData,
-            help=
-            'Use a remote folder as the parent folder. Useful for restarts.',
-            required=False)
+            help="Use a remote folder as the parent folder. Useful for restarts.",
+            required=False,
+        )
         spec.input_namespace(
-            'pseudos',
-            help=("Use nodes for the pseudopotentails of one of"
-                  "the element in the structure. You should pass a"
-                  "a dictionary specifying the pseudpotential node for"
-                  "each kind such as {O: <PsudoNode>}"),
-            dynamic=True)
-        spec.input(inp_ln['kpoints'],
-                   valid_type=orm.KpointsData,
-                   required=False,
-                   help="Use a node defining the kpoints for the calculation")
+            "pseudos",
+            help=(
+                "Use nodes for the pseudopotentails of one of"
+                "the element in the structure. You should pass a"
+                "a dictionary specifying the pseudpotential node for"
+                "each kind such as {O: <PsudoNode>}"
+            ),
+            dynamic=True,
+        )
+        spec.input(
+            inp_ln["kpoints"],
+            valid_type=orm.KpointsData,
+            required=False,
+            help="Use a node defining the kpoints for the calculation",
+        )
 
         # Define additional kpoints for different tasks
         for key, value in cls._extra_kpoints.items():
-            tasks = ', '.join(value['task'])
-            spec.input(key + '_' + inp_ln['kpoints'],
-                       valid_type=orm.KpointsData,
-                       required=False,
-                       help="Extra kpoints input for task: {}".format(tasks))
+            tasks = ", ".join(value["task"])
+            spec.input(
+                key + "_" + inp_ln["kpoints"],
+                valid_type=orm.KpointsData,
+                required=False,
+                help=f"Extra kpoints input for task: {tasks}",
+            )
 
         # Define the exit codes
         for smsg, (code, msg, inv) in ecodes.items():
             spec.exit_code(code, smsg, message=msg, invalidates_cache=inv)
 
         # Define the output nodes
-        spec.output(out_ln['results'],
-                    required=True,
-                    valid_type=orm.Dict,
-                    help='Parsed results in a dictionary format.')
+        spec.output(
+            out_ln["results"],
+            required=True,
+            valid_type=orm.Dict,
+            help="Parsed results in a dictionary format.",
+        )
 
         spec.outputs.dynamic = True
         # Define the default inputs, enable CalcJobNode to use .res
-        spec.default_output_node = out_ln['results']
+        spec.default_output_node = out_ln["results"]
 
     def prepare_for_submission(self, folder):
         """
@@ -218,11 +242,12 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
                 require_parent = True
                 break
 
-        parent_calc_folder = self.inputs.get('parent_calc_folder')
+        parent_calc_folder = self.inputs.get("parent_calc_folder")
         if parent_calc_folder is None and require_parent:
             raise InputValidationError(
                 "No parent calculation folder passed"
-                " for restart calculation using reuse/continuation")
+                " for restart calculation using reuse/continuation"
+            )
 
         ##############################
         # END OF INITIAL INPUT CHECK #
@@ -239,7 +264,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
 
             # process pseudos
             for name, pseudo in self.inputs.pseudos.items():
-                cell_nodes.append(['pseudo__{}'.format(name), pseudo])
+                cell_nodes.append([f"pseudo__{name}", pseudo])
 
             self.cell_file.header = self._generate_header_lines(cell_nodes)
 
@@ -256,7 +281,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         cell_fn = seedname + ".cell"
         param_fn = seedname + ".param"
 
-        with folder.open(cell_fn, mode='w') as incell:
+        with folder.open(cell_fn, mode="w") as incell:
             incell.write(self.cell_file.get_string())
 
         with folder.open(param_fn, mode="w") as inparam:
@@ -265,7 +290,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         # IMPLEMENT OPERATIONS FOR RESTART
 
         symlink = self.inputs.metadata.options.symlink_usage
-        parent_calc_folder = self.inputs.get('parent_calc_folder', None)
+        parent_calc_folder = self.inputs.get("parent_calc_folder", None)
         if parent_calc_folder:
             comp_uuid = parent_calc_folder.computer.uuid
             remote_path = parent_calc_folder.get_remote_path()
@@ -274,8 +299,12 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
             else:
                 remote_list = remote_copy_list
             remote_list.append(
-                (comp_uuid, remote_path,
-                 self.inputs.metadata.options.parent_folder_name))
+                (
+                    comp_uuid,
+                    remote_path,
+                    self.inputs.metadata.options.parent_folder_name,
+                )
+            )
 
         calcinfo = CalcInfo()
         calcinfo.uuid = self.uuid
@@ -306,13 +335,13 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         calcinfo.retrieve_list.append(seedname + ".castep")
         calcinfo.retrieve_list.append(seedname + ".bands")
 
-        settings_retrieve_list = self.settings_dict.pop(
-            "ADDITIONAL_RETRIEVE_LIST", [])
+        settings_retrieve_list = self.settings_dict.pop("ADDITIONAL_RETRIEVE_LIST", [])
         calcinfo.retrieve_list.extend(settings_retrieve_list)
 
         calcinfo.retrieve_temporary_list = []
         calcinfo.retrieve_temporary_list.extend(
-            self.settings_dict.pop("ADDITIONAL_RETRIEVE_TEMPORARY_LIST", []))
+            self.settings_dict.pop("ADDITIONAL_RETRIEVE_TEMPORARY_LIST", [])
+        )
 
         calculation_mode = self.param_file.get("task", "singlepoint")
 
@@ -336,7 +365,9 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
             raise InputValidationError(
                 "The following keys have been found in "
                 "the settings input node, but were not understood: {}".format(
-                    ",".join(list(self.settings_dict.keys()))))
+                    ",".join(list(self.settings_dict.keys()))
+                )
+            )
 
         return calcinfo
 
@@ -359,7 +390,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         check_restart(builder, verbose)
 
     @classmethod
-    def dryrun_test(cls, inputs, castep_exe='castep.serial', verbose=True):
+    def dryrun_test(cls, inputs, castep_exe="castep.serial", verbose=True):
         """
         Do a dryrun test in a folder with prepared builder or inputs
         """
@@ -370,7 +401,7 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
             res = cls.submit_test(cls, **inputs)
         folder = Folder(res[1])
         dry_run_node = res[0]
-        seedname = dry_run_node.get_option('seedname')
+        seedname = dry_run_node.get_option("seedname")
 
         def _print(inp):
             if verbose:
@@ -380,12 +411,15 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         try:
             output = check_output([castep_exe, "-v"], universal_newlines=True)
         except OSError:
-            _print("CASTEP executable '{}' is not found".format(castep_exe))
+            _print(f"CASTEP executable '{castep_exe}' is not found")
             return None
 
         # Now start dryrun
-        _print("Running with {}".format(
-            check_output(["which", castep_exe], universal_newlines=True)))
+        _print(
+            "Running with {}".format(
+                check_output(["which", castep_exe], universal_newlines=True)
+            )
+        )
         _print(output)
 
         _print("Starting dryrun...")
@@ -396,30 +430,30 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         for fname in contents:
             if fnmatch(fname, "*.err"):
                 with folder.open(fname) as fhandle:
-                    _print("Error found in {}:\fname".format(fname))
+                    _print(f"Error found in {fname}:\fname")
                     _print(fhandle.read())
                 raise InputValidationError("Error found during dryrun")
 
         # Gather information from the dryrun file
         dryrun_results = {}
-        out_file = seedname + '.castep'
+        out_file = seedname + ".castep"
         with folder.open(out_file) as fhandle:
             for line in fhandle:
-                mth = re.match(r"\s*k-Points For SCF Sampling:\s+(\d+)\s*",
-                               line)
+                mth = re.match(r"\s*k-Points For SCF Sampling:\s+(\d+)\s*", line)
                 if mth:
                     dryrun_results["num_kpoints"] = int(mth.group(1))
-                    _print("Number of k-points: {}".format(mth.group(1)))
+                    _print(f"Number of k-points: {mth.group(1)}")
                     mth = None
                     continue
                 mth = re.match(
                     r"\| Approx\. total storage required"
-                    r" per process\s+([0-9.]+)\sMB\s+([0-9.]+)", line)
+                    r" per process\s+([0-9.]+)\sMB\s+([0-9.]+)",
+                    line,
+                )
                 if mth:
-                    dryrun_results["memory_MB"] = (float(mth.group(1)))
-                    dryrun_results["disk_MB"] = (float(mth.group(2)))
-                    _print("RAM: {} MB, DISK: {} MB".format(
-                        mth.group(1), mth.group(2)))
+                    dryrun_results["memory_MB"] = float(mth.group(1))
+                    dryrun_results["disk_MB"] = float(mth.group(2))
+                    _print(f"RAM: {mth.group(1)} MB, DISK: {mth.group(2)} MB")
                     mth = None
                     continue
 
@@ -428,22 +462,24 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
     def _prepare_cell_file(self):
         """Add extra kpoints information to the calculation"""
         # First, call the base method
-        super(CastepCalculation, self)._prepare_cell_file()
-        param = self.inputs.get(inp_ln['parameters']).get_dict()
-        task = param['PARAM'].get('task', 'singlepoint')
+        super()._prepare_cell_file()
+        param = self.inputs.get(inp_ln["parameters"]).get_dict()
+        task = param["PARAM"].get("task", "singlepoint")
 
         # Check if we have more kpoints
         for kpn_name, kpn_settings in self._extra_kpoints.items():
-            extra_kpns = self.inputs.get(kpn_name + '_' + inp_ln['kpoints'])
+            extra_kpns = self.inputs.get(kpn_name + "_" + inp_ln["kpoints"])
             # No need to proceed if it is not defined
             if extra_kpns is None:
                 continue
             self._include_extra_kpoints(extra_kpns, kpn_name, kpn_settings)
             # Warn if this kpoint will not be used by the task
-            if task not in kpn_settings['task']:
+            if task not in kpn_settings["task"]:
                 self.report(
-                    'Warning: kpoints for {} will not be used for task {}'.
-                    format(kpn_name, task))
+                    "Warning: kpoints for {} will not be used for task {}".format(
+                        kpn_name, task
+                    )
+                )
 
     @staticmethod
     def update_paraemters(inputs, *args, **kwargs):
@@ -467,21 +503,20 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
         wrapper = TextWrapper(initial_indent="# ", subsequent_indent="# ")
         time_str = time.strftime("%H:%M:%S %d/%m/%Y %Z")
         lines = [
-            "##### Generated by aiida_castep {} #####".format(time_str),
+            f"##### Generated by aiida_castep {time_str} #####",
             "#         author: Bonan Zhu (zhubonan@outlook.com)",
             "# "
-            "# AiiDA User: {}".format(
-                orm.User.objects.get_default().get_full_name()),
-            "# AiiDA profile: {}".format(profile.name),
+            "# AiiDA User: {}".format(orm.User.objects.get_default().get_full_name()),
+            f"# AiiDA profile: {profile.name}",
             "# Information of the calculation node",
-            #"# type: {}".format(self.get_name()),
-            #"# pk: {}".format(self.pk),
-            #"# uuid: {}".format(self.uuid),
-            "# label: {}".format(self.inputs.metadata.get('label')),
+            # "# type: {}".format(self.get_name()),
+            # "# pk: {}".format(self.pk),
+            # "# uuid: {}".format(self.uuid),
+            "# label: {}".format(self.inputs.metadata.get("label")),
             "# description:",
         ]
 
-        description = self.inputs.metadata.get('description')
+        description = self.inputs.metadata.get("description")
         if description:
             lines.extend(wrapper.wrap(description))
         lines.append("")
@@ -492,9 +527,13 @@ class CastepCalculation(CalcJob, CastepInputGenerator):
 
         for name, node in other_nodes:
             node_lines = [
-                "# ", "# type: {}".format(node), "# pk: {}".format(node.pk),
-                "# linkname: {}".format(name), "# uuid: {}".format(node.uuid),
-                "# label: {}".format(node.label), "# description:"
+                "# ",
+                f"# type: {node}",
+                f"# pk: {node.pk}",
+                f"# linkname: {name}",
+                f"# uuid: {node.uuid}",
+                f"# label: {node.label}",
+                "# description:",
             ]
             _desc = node.description
             if _desc:
@@ -516,39 +555,42 @@ class TaskSpecificCalculation(CastepCalculation):
 
     def prepare_for_submission(self, folder):
 
-        in_dict = self.inputs[INPUT_LINKNAMES['parameters']].get_dict()
+        in_dict = self.inputs[INPUT_LINKNAMES["parameters"]].get_dict()
 
         # Check if task is correctly set
         all_tasks = [t.lower() for t in self._acceptable_tasks]
-        if in_dict['PARAM']['task'].lower() not in all_tasks:
-            raise InputValidationError("Wrong TASK value {}"
-                                       " set in PARAM".format(
-                                           in_dict['PARAM']['task'].lower()))
-        return super(TaskSpecificCalculation,
-                     self).prepare_for_submission(folder)
+        if in_dict["PARAM"]["task"].lower() not in all_tasks:
+            raise InputValidationError(
+                "Wrong TASK value {}"
+                " set in PARAM".format(in_dict["PARAM"]["task"].lower())
+            )
+        return super().prepare_for_submission(folder)
 
 
 class CastepTSCalculation(TaskSpecificCalculation):
     """
     CASTEP calculation for transition state search. Use an extra input product structure.
     """
+
     _acceptable_tasks = ["transitionstatesearch"]
 
     @classmethod
     def define(cls, spec):
-        super(CastepTSCalculation, cls).define(spec)
-        spec.input(inp_ln['prod_structure'],
-                   valid_type=orm.StructureData,
-                   required=True,
-                   help='Product structure for transition state search.')
+        super().define(spec)
+        spec.input(
+            inp_ln["prod_structure"],
+            valid_type=orm.StructureData,
+            required=True,
+            help="Product structure for transition state search.",
+        )
 
     def _prepare_cell_file(self):
         """
         Extend the prepare_cell_filer method to include product
         structure
         """
-        super(CastepTSCalculation, self)._prepare_cell_file()
-        p_structure = self.inputs[inp_ln['prod_structure']]
+        super()._prepare_cell_file()
+        p_structure = self.inputs[inp_ln["prod_structure"]]
         pdt_position_list = []
         for site in p_structure.sites:
             kind = p_structure.get_kind(site.kind_name)
@@ -566,18 +608,18 @@ def submit_test(arg, **kwargs):
     if isinstance(arg, ProcessBuilder):
         inputs = arg
 
-        inputs['metadata']['store_provenance'] = False
-        inputs['metadata']['dry_run'] = True
+        inputs["metadata"]["store_provenance"] = False
+        inputs["metadata"]["dry_run"] = True
 
         output_node = run_get_node(inputs).node
-        inputs['metadata']['store_provenance'] = True
-        inputs['metadata']['dry_run'] = False
+        inputs["metadata"]["store_provenance"] = True
+        inputs["metadata"]["dry_run"] = False
     else:
         inputs = kwargs
-        inputs['metadata']['store_provenance'] = False
-        inputs['metadata']['dry_run'] = True
+        inputs["metadata"]["store_provenance"] = False
+        inputs["metadata"]["dry_run"] = True
         output_node = run_get_node(arg, **inputs).node
-        inputs['metadata']['store_provenance'] = True
-        inputs['metadata']['dry_run'] = False
+        inputs["metadata"]["store_provenance"] = True
+        inputs["metadata"]["dry_run"] = False
 
-    return output_node, output_node.dry_run_info['folder']
+    return output_node, output_node.dry_run_info["folder"]

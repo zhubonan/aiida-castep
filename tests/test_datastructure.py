@@ -2,6 +2,7 @@
 Tests for datastructure
 """
 import pytest
+
 from aiida_castep.calculations.datastructure import CastepInputFile
 
 

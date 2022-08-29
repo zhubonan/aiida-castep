@@ -2,12 +2,12 @@
 Storing OTFG configuration as Data nodes
 """
 
+from aiida.common import ValidationError
+from aiida.common.utils import classproperty
 from aiida.orm import Data, Group, QueryBuilder, User
 
-from aiida.common.utils import classproperty
-from aiida.common import ValidationError
-from .utils import split_otfg_entry
 from .usp import UspData
+from .utils import split_otfg_entry
 
 OLD_OTFGGROUP_TYPE = "data.castep.otfg.family"
 OTFGGROUP_TYPE = "castep.otfg"
@@ -21,42 +21,41 @@ def migrate_otfg_family():
     """Migrate the old OTFG families to new families"""
     old_types = [OLD_OTFGGROUP_TYPE, "data.castep.usp.family"]
     q = QueryBuilder()
-    q.append(Group, filters={'type_string': {'in': old_types}})
+    q.append(Group, filters={"type_string": {"in": old_types}})
 
     migrated = []
     created = []
-    for (old_group, ) in q.iterall():
+    for (old_group,) in q.iterall():
         new_group, created = OTFGGroup.objects.get_or_create(
-            label=old_group.label, description=old_group.description)
+            label=old_group.label, description=old_group.description
+        )
         new_group.add_nodes(list(old_group.nodes))
         new_group.store()
         migrated.append(new_group.label)
         if created:
-            print("Created new style Group for <{}>".format(old_group.label))
+            print(f"Created new style Group for <{old_group.label}>")
         else:
-            print(("Adding nodes to existing group <{}>".format(
-                old_group.label)))
+            print(f"Adding nodes to existing group <{old_group.label}>")
 
     return
 
 
-def upload_otfg_family(entries,
-                       group_label,
-                       group_description,
-                       stop_if_existing=True):
+def upload_otfg_family(entries, group_label, group_description, stop_if_existing=True):
     """
     Set a family for the OTFG pseudo potential strings
     """
-    from aiida.common import UniquenessError, NotExistent
+    from aiida.common import NotExistent, UniquenessError
     from aiida.orm.querybuilder import QueryBuilder
-    #from aiida.common import aiidalogger
 
+    # from aiida.common import aiidalogger
     # Try to retrieve a group if it exists
     try:
         group = OTFGGroup.get(label=group_label)
         group_created = False
     except NotExistent:
-        group = OTFGGroup(label=group_label, )
+        group = OTFGGroup(
+            label=group_label,
+        )
         group_created = True
 
     group.description = group_description
@@ -74,30 +73,26 @@ def upload_otfg_family(entries,
             element, setting = entry.element, entry.md5sum
 
         qb = QueryBuilder()
-        qb.append(OTFGData,
-                  filters={
-                      'attributes.otfg_entry': {
-                          "==": setting
-                      },
-                      'attributes.element': {
-                          "==": element
-                      }
-                  })
+        qb.append(
+            OTFGData,
+            filters={
+                "attributes.otfg_entry": {"==": setting},
+                "attributes.element": {"==": element},
+            },
+        )
         existing_otfg = qb.first()
 
         # Try find Usp data
         if existing_otfg is None:
 
             qb = QueryBuilder()
-            qb.append(UspData,
-                      filters={
-                          'attributes.md5sum': {
-                              "==": setting
-                          },
-                          'attributes.element': {
-                              "==": element
-                          }
-                      })
+            qb.append(
+                UspData,
+                filters={
+                    "attributes.md5sum": {"==": setting},
+                    "attributes.element": {"==": element},
+                },
+            )
             existing_otfg = qb.first()
 
         # Act based on wether the data exists
@@ -106,9 +101,9 @@ def upload_otfg_family(entries,
             if isinstance(entry, OTFGData):
                 otfg_and_created.append((entry, True))
             elif isinstance(entry, str):
-                otfg, created = OTFGData.get_or_create(entry,
-                                                       use_first=True,
-                                                       store_otfg=False)
+                otfg, created = OTFGData.get_or_create(
+                    entry, use_first=True, store_otfg=False
+                )
                 otfg_and_created.append((otfg, created))
             elif isinstance(entry, UspData):
                 otfg_and_created.append((entry, True))
@@ -128,7 +123,7 @@ def upload_otfg_family(entries,
     if not group_created:
         for aiida_n in group.nodes:
             if not isinstance(aiida_n, (OTFGData, UspData)):
-                print(("Warning: unsupported node: {}".format(aiida_n)))
+                print(f"Warning: unsupported node: {aiida_n}")
                 continue
             elements.append((aiida_n.element, aiida_n.string))
 
@@ -138,11 +133,11 @@ def upload_otfg_family(entries,
 
     # Check the uniqueness of the complete group
     if not len(elements_names) == len(set(elements_names)):
-        duplicates = set(
-            [x for x in elements_names if elements_names.count(x) > 1])
+        duplicates = {x for x in elements_names if elements_names.count(x) > 1}
         dup_string = ", ".join(duplicates)
-        raise UniquenessError("More than one Nodes found for the elements: " +
-                              dup_string + ".")
+        raise UniquenessError(
+            "More than one Nodes found for the elements: " + dup_string + "."
+        )
 
     # If we survive here uniqueness is fine
 
@@ -169,6 +164,7 @@ class OTFGData(Data):
     """
     Class representing an OTFG configuration
     """
+
     def __init__(self, **kwargs):
         """
         Store a string for on-the-fly generation of pseudopotentials
@@ -178,8 +174,8 @@ class OTFGData(Data):
         The element this  potential is for can also be included.
         For example: 'O 2|1.1|15|18|20|20:21(qc=7)'
         """
-        otfg_entry = kwargs.pop('otfg_entry', None)
-        super(OTFGData, self).__init__(**kwargs)
+        otfg_entry = kwargs.pop("otfg_entry", None)
+        super().__init__(**kwargs)
         if otfg_entry:
             element, entry = split_otfg_entry(otfg_entry)
             self.set_string(entry)
@@ -217,8 +213,10 @@ class OTFGData(Data):
                 else:
                     pks = ", ".join([str(i.pk) for i in in_db])
                     raise ValueError(
-                        "More than one duplicated OTFG data has been found. pks={}"
-                        .format(pks))
+                        "More than one duplicated OTFG data has been found. pks={}".format(
+                            pks
+                        )
+                    )
             else:
                 return (in_db[0], False)
 
@@ -234,16 +232,16 @@ class OTFGData(Data):
 
     def store(self, *args, **kwargs):
         self._validate()
-        return super(OTFGData, self).store(*args, **kwargs)
+        return super().store(*args, **kwargs)
 
     @property
     def string(self):
-        return self.get_attribute('otfg_entry', None)
+        return self.get_attribute("otfg_entry", None)
 
     @property
     def element(self):
         """Element of the OTFG. May not be available"""
-        return self.get_attribute('element', None)
+        return self.get_attribute("element", None)
 
     @property
     def entry(self):
@@ -263,29 +261,30 @@ class OTFGData(Data):
         """
 
         from aiida.orm.querybuilder import QueryBuilder
+
         from .utils import split_otfg_entry
 
         element, string = split_otfg_entry(entry)
         qb = QueryBuilder()
-        qb.append(cls,
-                  filters={
-                      'attributes.otfg_entry': {
-                          '==': string
-                      },
-                      'attributes.element': {
-                          '==': element
-                      }
-                  })
+        qb.append(
+            cls,
+            filters={
+                "attributes.otfg_entry": {"==": string},
+                "attributes.element": {"==": element},
+            },
+        )
 
         return [i[0] for i in qb.all()]
 
     def _validate(self):
         """Validate the format of OTFG configuration"""
-        super(OTFGData, self)._validate()
+        super()._validate()
         if self.element is None:
-            raise ValidationError("The value of element is not set. "
-                                  "Set it to 'LIBRARY' manually to indicate. "
-                                  "This is a library")
+            raise ValidationError(
+                "The value of element is not set. "
+                "Set it to 'LIBRARY' manually to indicate. "
+                "This is a library"
+            )
 
     @classproperty
     def otfg_family_type_string(cls):
@@ -313,16 +312,12 @@ class OTFGData(Data):
         """
 
         query = QueryBuilder()
-        filters = {'type_string': {'==': cls.otfg_family_type_string}}
+        filters = {"type_string": {"==": cls.otfg_family_type_string}}
 
-        query.append(OTFGGroup, filters=filters, tag='group', project='*')
+        query.append(OTFGGroup, filters=filters, tag="group", project="*")
 
         if user:
-            query.append(User,
-                         filters={'email': {
-                             '==': user
-                         }},
-                         with_group='group')
+            query.append(User, filters={"email": {"==": user}}, with_group="group")
 
         if isinstance(filter_elements, str):
             filter_elements = [filter_elements]
@@ -334,10 +329,9 @@ class OTFGData(Data):
 
             query.append(
                 cls,
-                filters={'attributes.element': {
-                    'in': filter_elements
-                }},
-                with_group='group')
+                filters={"attributes.element": {"in": filter_elements}},
+                with_group="group",
+            )
 
-        query.order_by({'group': {'id': 'asc'}})
+        query.order_by({"group": {"id": "asc"}})
         return [_[0] for _ in query.all()]

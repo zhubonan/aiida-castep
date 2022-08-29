@@ -6,6 +6,7 @@ Use pytest
 
 import pytest
 from aiida.common import ValidationError
+
 from aiida_castep.data.otfg import upload_otfg_family
 
 Ti_otfg = "Ti 3|1.8|9|10|11|30U:40:31:32(qc=5.5)"
@@ -20,12 +21,14 @@ OTFG_COLLECTION = {"Sr": Sr_otfg, "Ti": Ti_otfg, "O": O_otfg}
 @pytest.fixture(scope="module")
 def otfgdata():
     from aiida_castep.data.otfg import OTFGData
+
     return OTFGData
 
 
 @pytest.fixture(scope="module")
 def otfg():
     import aiida_castep.data.otfg as otfg
+
     return otfg
 
 
@@ -105,8 +108,7 @@ def otfg_nodes(aiida_profile, otfgdata):
     return list(otfgs.values())
 
 
-def test_set_up_family_from_string(clear_database_before_test, otfg_nodes,
-                                   otfgdata):
+def test_set_up_family_from_string(clear_database_before_test, otfg_nodes, otfgdata):
 
     text_entries = [n.entry for n in otfg_nodes]
     entry, uploaded = upload_otfg_family(text_entries[:1], "Test", "Test")
@@ -116,10 +118,9 @@ def test_set_up_family_from_string(clear_database_before_test, otfg_nodes,
     with pytest.raises(ValidationError):
         entry, uploaded = upload_otfg_family(text_entries, "Test", "Test")
 
-    entry, uploaded = upload_otfg_family(text_entries,
-                                         "Test",
-                                         "Test",
-                                         stop_if_existing=False)
+    entry, uploaded = upload_otfg_family(
+        text_entries, "Test", "Test", stop_if_existing=False
+    )
 
     assert (entry, uploaded) == (3, 2)
 
@@ -131,28 +132,26 @@ def test_set_up_family_from_string(clear_database_before_test, otfg_nodes,
         assert txt in retrieved_entries
 
 
-def test_set_up_family_from_nodes(clear_database_before_test, otfg, otfg_nodes,
-                                  otfgdata):
+def test_set_up_family_from_nodes(
+    clear_database_before_test, otfg, otfg_nodes, otfgdata
+):
 
-    entry, uploaded = otfg.upload_otfg_family(otfg_nodes[:1],
-                                              "Test",
-                                              "Test",
-                                              stop_if_existing=True)
+    entry, uploaded = otfg.upload_otfg_family(
+        otfg_nodes[:1], "Test", "Test", stop_if_existing=True
+    )
 
     groups = otfgdata.get_otfg_groups()
     assert len(groups) == 1
     assert len(groups[0].nodes) == 1
 
     with pytest.raises(ValidationError):
-        entry, uploaded = otfg.upload_otfg_family(otfg_nodes,
-                                                  "Test",
-                                                  "Test",
-                                                  stop_if_existing=True)
+        entry, uploaded = otfg.upload_otfg_family(
+            otfg_nodes, "Test", "Test", stop_if_existing=True
+        )
 
-    entry, uploaded = otfg.upload_otfg_family(otfg_nodes,
-                                              "Test",
-                                              "Test",
-                                              stop_if_existing=False)
+    entry, uploaded = otfg.upload_otfg_family(
+        otfg_nodes, "Test", "Test", stop_if_existing=False
+    )
     groups = otfgdata.get_otfg_groups()
     assert len(groups) == 1
     assert len(groups[0].nodes) == 3
@@ -160,10 +159,9 @@ def test_set_up_family_from_nodes(clear_database_before_test, otfg, otfg_nodes,
     Ce = otfgdata()
     Ce.set_string("Ce BLA")
 
-    entry, uploaded = otfg.upload_otfg_family(otfg_nodes + [Ce],
-                                              "Test",
-                                              "Test",
-                                              stop_if_existing=False)
+    entry, uploaded = otfg.upload_otfg_family(
+        otfg_nodes + [Ce], "Test", "Test", stop_if_existing=False
+    )
 
     group = otfgdata.get_otfg_group("Test")
 
@@ -173,15 +171,17 @@ def test_set_up_family_from_nodes(clear_database_before_test, otfg, otfg_nodes,
 
 
 def test_assign_from_structure(
-        clear_database_before_test,
-        db_test_app,
+    clear_database_before_test,
+    db_test_app,
 ):
     """
     Test using get_pseudos_from_structure
     """
 
-    from aiida_castep.data import get_pseudos_from_structure
     from aiida.common import NotExistent
+
+    from aiida_castep.data import get_pseudos_from_structure
+
     from ..utils import get_sto_structure
 
     db_test_app.upload_otfg_family([Sr_otfg, Ti_otfg, O_otfg], "STO")
@@ -196,9 +196,9 @@ def test_assign_from_structure(
     with pytest.raises(NotExistent):
         pseudo_list = get_pseudos_from_structure(STO, "STO_O_missing")
 
-    db_test_app.upload_otfg_family([Sr_otfg, Ti_otfg, O_otfg, "C9"],
-                                   "STO+C9",
-                                   stop_if_existing=False)
+    db_test_app.upload_otfg_family(
+        [Sr_otfg, Ti_otfg, O_otfg, "C9"], "STO+C9", stop_if_existing=False
+    )
     STO.append_atom(symbols=["Ce"], position=[0, 0, 0])
     pseudo_list = get_pseudos_from_structure(STO, "STO+C9")
     assert pseudo_list["Sr"].entry == OTFG_COLLECTION["Sr"]
@@ -219,31 +219,30 @@ def test_usp_upload_family(clear_database_before_test, usp_folder):
     """
     Test uploading the usp family
     """
+    from aiida_castep.data.otfg import OTFGGroup, upload_otfg_family
     from aiida_castep.data.usp import upload_usp_family
-    from aiida_castep.data.otfg import upload_otfg_family, OTFGGroup
+
     upload_usp_family(str(usp_folder), "Test", "Test")
 
     new = usp_folder / "O_00.usp"
     new.write_text("asdfgghhd")
     # This will raise an exception as the same file is being uploaded
     with pytest.raises(ValueError):
-        upload_usp_family(str(usp_folder),
-                          "Test",
-                          "Test",
-                          stop_if_existing=True)
+        upload_usp_family(str(usp_folder), "Test", "Test", stop_if_existing=True)
     # This should be OK
     upload_usp_family(str(usp_folder), "Test", "Test", stop_if_existing=False)
 
     # Should be able to mix-in Usp and OTFG entries
-    upload_otfg_family(['C18'], "Test", "Test")
+    upload_otfg_family(["C18"], "Test", "Test")
 
-    nodes = list(OTFGGroup.get(label='Test').nodes)
+    nodes = list(OTFGGroup.get(label="Test").nodes)
     upload_otfg_family(nodes, "Test2", "Test", stop_if_existing=False)
 
 
 def test_usp_get_or_create(clear_database_before_test, usp_folder):
     """Testing the logic or get_or_create"""
     import aiida_castep.data.usp as usp
+
     fpath = usp_folder / "Sr_00.usp"
     node1, create = usp.UspData.get_or_create(fpath)
 
@@ -267,6 +266,7 @@ def test_usp_element_validation(clear_database_before_test, usp_folder):
     """Test the validation mechanism"""
 
     import aiida_castep.data.usp as usp
+
     fpath = str(usp_folder / "Sr_00.usp")
     # Pass a inconsistent element should not work
     with pytest.raises(ValidationError):

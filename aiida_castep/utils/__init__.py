@@ -3,11 +3,11 @@ Utility module with useful functions
 """
 import io
 from pathlib import Path
+
 import numpy as np
+from aiida.repository.common import FileType
 
 # pylint: disable=import-outside-toplevel, too-many-locals
-
-from aiida.repository.common import FileType
 
 
 def band_array_ensure_ndim(array):
@@ -18,7 +18,7 @@ def band_array_ensure_ndim(array):
     This function ensures that there are three dimensions (ns, nk, nb).
     """
     if array.ndim == 2:
-        return array.reshape((1, ) + array.shape)
+        return array.reshape((1,) + array.shape)
     return array
 
 
@@ -75,14 +75,11 @@ def generate_ionic_fix_cons(atoms, indices, mask=None, count_start=1):
         mask = (1, 1, 1)
     for symbol, i in castep_indices:
         if mask[0]:
-            lines.append("{:<4d} {:<2}    {:<4d} 1 0 0".format(
-                count, symbol, i))
+            lines.append(f"{count:<4d} {symbol:<2}    {i:<4d} 1 0 0")
         if mask[1]:
-            lines.append("{:<4d} {:<2}    {:<4d} 0 1 0".format(
-                count + 1, symbol, i))
+            lines.append(f"{count + 1:<4d} {symbol:<2}    {i:<4d} 0 1 0")
         if mask[2]:
-            lines.append("{:<4d} {:<2}    {:<4d} 0 0 1".format(
-                count + 2, symbol, i))
+            lines.append(f"{count + 2:<4d} {symbol:<2}    {i:<4d} 0 0 1")
         count += sum(mask)
     return lines, count
 
@@ -112,17 +109,12 @@ def generate_rel_fix(atoms, indices, ref_index=0, count_start=1):
     count = count_start
     symbol_ref, i_ref = castep_indices[ref_index]
     for symbol, i in castep_indices[1:]:
-        lines.append("{:<4d} {:<2}    {:<4d} 1 0 0".format(count, symbol, i))
-        lines.append("{:<4d} {:<2}    {:<4d} -1 0 0".format(
-            count, symbol_ref, i_ref))
-        lines.append("{:<4d} {:<2}    {:<4d} 0 1 0".format(
-            count + 1, symbol, i))
-        lines.append("{:<4d} {:<2}    {:<4d} 0 -1 0".format(
-            count + 1, symbol_ref, i_ref))
-        lines.append("{:<4d} {:<2}    {:<4d} 0 0 1".format(
-            count + 2, symbol, i))
-        lines.append("{:<4d} {:<2}    {:<4d} 0 0 -1".format(
-            count + 2, symbol_ref, i_ref))
+        lines.append(f"{count:<4d} {symbol:<2}    {i:<4d} 1 0 0")
+        lines.append(f"{count:<4d} {symbol_ref:<2}    {i_ref:<4d} -1 0 0")
+        lines.append(f"{count + 1:<4d} {symbol:<2}    {i:<4d} 0 1 0")
+        lines.append(f"{count + 1:<4d} {symbol_ref:<2}    {i_ref:<4d} 0 -1 0")
+        lines.append(f"{count + 2:<4d} {symbol:<2}    {i:<4d} 0 0 1")
+        lines.append(f"{count + 2:<4d} {symbol_ref:<2}    {i_ref:<4d} 0 0 -1")
 
         count += 3
     return lines, count
@@ -166,7 +158,7 @@ def desort_atoms_castep(atoms, original_atoms):
     :returns: A ``ase.Atoms`` object that has be sorted
     """
 
-    isort = np.argsort(original_atoms.numbers, kind='mergesort')
+    isort = np.argsort(original_atoms.numbers, kind="mergesort")
     rsort = np.zeros(isort.shape, dtype=int)
     rsort.fill(-1)
     for i, j in enumerate(isort):
@@ -193,16 +185,18 @@ def reuse_kpoints_grid(grid, lowest_pk=False):
 
     :returns: A KpointsData node representing the grid requested
     """
-    from aiida.orm import QueryBuilder
-    from aiida.orm import KpointsData
+    from aiida.orm import KpointsData, QueryBuilder
+
     qbd = QueryBuilder()
-    qbd.append(KpointsData,
-               tag="kpoints",
-               filters={
-                   "attributes.mesh.0": grid[0],
-                   "attributes.mesh.1": grid[1],
-                   "attributes.mesh.2": grid[2]
-               })
+    qbd.append(
+        KpointsData,
+        tag="kpoints",
+        filters={
+            "attributes.mesh.0": grid[0],
+            "attributes.mesh.1": grid[1],
+            "attributes.mesh.2": grid[2],
+        },
+    )
     if lowest_pk:
         order = "asc"
     else:
@@ -224,14 +218,15 @@ def traj_to_atoms(traj, combine_ancesters=False, eng_key="enthalpy"):
 
     :returns: A list of atoms for the trajectory.
     """
+    from aiida.orm import CalcJobNode, Node, QueryBuilder
     from ase import Atoms
     from ase.calculators.singlepoint import SinglePointCalculator
-    from aiida.orm import QueryBuilder, Node, CalcJobNode
+
     from aiida_castep.common import OUTPUT_LINKNAMES
 
     # If a CalcJobNode is passed, select its output trajectory
     if isinstance(traj, CalcJobNode):
-        traj = traj.outputs.__getattr__(OUTPUT_LINKNAMES['trajectory'])
+        traj = traj.outputs.__getattr__(OUTPUT_LINKNAMES["trajectory"])
     # Combine trajectory from ancesters
     if combine_ancesters is True:
         qbd = QueryBuilder()
@@ -242,10 +237,12 @@ def traj_to_atoms(traj, combine_ancesters=False, eng_key="enthalpy"):
         atoms_list = []
         for counter in calcs:
             atoms_list.extend(
-                traj_to_atoms(counter.outputs.__getattr__(
-                    OUTPUT_LINKNAMES['trajectory']),
-                              combine_ancesters=False,
-                              eng_key=eng_key))
+                traj_to_atoms(
+                    counter.outputs.__getattr__(OUTPUT_LINKNAMES["trajectory"]),
+                    combine_ancesters=False,
+                    eng_key=eng_key,
+                )
+            )
         return atoms_list
     forces = traj.get_array("forces")
     symbols = traj.get_array("symbols")
@@ -278,12 +275,12 @@ def get_remote_folder_size(calc, transport):
     """
     try:
         lsattrs = get_remote_folder_info(calc, transport)
-    except IOError:
+    except OSError:
         return 0
     total_size = 0
     for attr in lsattrs:
-        total_size += attr['attributes'].st_size  # in byres
-    return total_size / (1024)**2
+        total_size += attr["attributes"].st_size  # in byres
+    return total_size / (1024) ** 2
 
 
 def take_popn(seed):
@@ -293,7 +290,7 @@ def take_popn(seed):
     """
     popns = []
     rec = False
-    with open(seed + '.castep') as fhd:
+    with open(seed + ".castep") as fhd:
         for line in fhd:
             if "Atomic Populations (Mulliken)" in line:
                 record = io.StringIO()
@@ -314,11 +311,8 @@ def take_popn(seed):
 def read_popn(fname):
     """Read population file into pandas dataframe"""
     import pandas as pd
-    table = pd.read_table(fname,
-                          sep=r"\s\s+",
-                          header=2,
-                          comment="=",
-                          engine="python")
+
+    table = pd.read_table(fname, sep=r"\s\s+", header=2, comment="=", engine="python")
     return table
 
 
@@ -333,20 +327,20 @@ def export_calculation(node, output_dir, prefix=None):
     def bwrite(node, outpath):
         """Write the objects stored under a node to a certain path"""
         try:
-            seedname = node.get_option('seedname')
+            seedname = node.get_option("seedname")
         except AttributeError:
             seedname = None
         for objname in node.list_object_names():
             if node.get_object(objname).type != FileType.FILE:
                 continue
-            with node.open(objname, mode='rb') as fsource:
-                name, suffix = objname.split('.')
+            with node.open(objname, mode="rb") as fsource:
+                name, suffix = objname.split(".")
                 if prefix and name == seedname:
-                    outname = prefix + '.' + suffix
+                    outname = prefix + "." + suffix
                 else:
                     outname = objname
                 fpath = str(outpath / outname)
-                with open(fpath, 'wb') as fout:
+                with open(fpath, "wb") as fout:
                     readlength = 1024 * 512  # 1MB
                     while True:
                         buf = fsource.read(readlength)
@@ -355,7 +349,7 @@ def export_calculation(node, output_dir, prefix=None):
                         else:
                             break
 
-    #inputs
+    # inputs
     bwrite(node, output_dir)
 
     # outputs
@@ -372,9 +366,9 @@ def compute_kpoints_spacing(cell, grid, unit="2pi"):
     cell = np.asarray(cell, dtype=float)
     grid = np.asarray(grid, dtype=float)
 
-    spacings = 1. / cell / grid
+    spacings = 1.0 / cell / grid
     if unit == "1/A":
         spacings *= 2 * np.pi
     elif unit != "2pi":
-        raise ValueError("Unit {} is not unkown".format(unit))
+        raise ValueError(f"Unit {unit} is not unkown")
     return spacings

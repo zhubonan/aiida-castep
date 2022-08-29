@@ -1,7 +1,7 @@
 """
 Tests for data module
 """
-from aiida_castep.data.utils import split_otfg_entry, get_usp_element
+from aiida_castep.data.utils import get_usp_element, split_otfg_entry
 
 Ti_otfg = "Ti 3|1.8|9|10|11|30U:40:31:32(qc=5.5)"
 Sr_otfg = "Sr 3|2.0|5|6|7|40U:50:41:42"
@@ -37,5 +37,5 @@ def test_usp_element():
     elem = get_usp_element(fpath)
     assert elem == "Sr"
 
-    elem = get_usp_element('/tmp/Sr_00.upf')
+    elem = get_usp_element("/tmp/Sr_00.upf")
     assert elem is None

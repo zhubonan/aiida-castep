@@ -54,4 +54,3 @@ When running under ``aiida_castep`` parent and children calculations will be lin
    It depends on whether there is any change in parameters.
 
 The command ``verdi node tree`` is useful for drawing a tree of children for visualisation in terminal.
-

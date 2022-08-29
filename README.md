@@ -43,8 +43,8 @@ Quick glimpse into how to use the plugin for running calculations:
 - [Running CastepCalculation](https://nbviewer.org/github/zhubonan/aiida-castep/blob/dev/examples/aiida-castep-quick-start.ipynb)
 - [Running CastepBaseWorkChain](https://nbviewer.org/github/zhubonan/aiida-castep/blob/dev/examples/aiida-castep-quick-workchain.ipynb)
 
-Documentation is hosted at Read the Docs:  
-[dev version](https://aiida-castep.readthedocs.io/en/dev/)  
+Documentation is hosted at Read the Docs:
+[dev version](https://aiida-castep.readthedocs.io/en/dev/)
 [master version](https://aiida-castep.readthedocs.io/en/master/)
 
 

@@ -11,6 +11,3 @@ User's guide
     additional
     tips
     workflows
-
-
-

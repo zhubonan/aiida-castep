@@ -2,9 +2,8 @@
 Utilities module
 This module does not have top level AiiDA orm imports
 """
-from __future__ import absolute_import
-import re
 import os
+import re
 
 
 def split_otfg_entry(otfg):
@@ -14,7 +13,7 @@ def split_otfg_entry(otfg):
     """
     otfg = otfg.strip()
     # Check it is a library
-    lib = re.match(r'^[A-Za-z]+\d+$', otfg)
+    lib = re.match(r"^[A-Za-z]+\d+$", otfg)
     if lib:
         element = "LIBRARY"
         return element, otfg

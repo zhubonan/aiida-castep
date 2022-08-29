@@ -1,21 +1,21 @@
 """
 Collection of fixtures for basic setup
 """
+import shutil
+import tempfile
 from pathlib import Path
 
 import pytest
-import tempfile
-import shutil
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def data_path():
     """Return a path relative to the test data folder"""
     this_file = __file__
-    return (Path(this_file).parent / 'data').resolve()
+    return (Path(this_file).parent / "data").resolve()
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def new_workdir():
     """get a new temporary folder to use as the computer's workdir"""
     dirpath = tempfile.mkdtemp()

@@ -8,13 +8,16 @@ class DOSProcessor:
     """
     Class for post-processing DOS data
     """
-    def __init__(self,
-                 bands_data,
-                 weights,
-                 smearing=0.05,
-                 min_eng=None,
-                 max_eng=None,
-                 bin_width_internal=0.001):
+
+    def __init__(
+        self,
+        bands_data,
+        weights,
+        smearing=0.05,
+        min_eng=None,
+        max_eng=None,
+        bin_width_internal=0.001,
+    ):
         """
         Instantiate an ``DOSProcessor`` object
 
@@ -29,7 +32,7 @@ class DOSProcessor:
 
         # Reshape to ensure always 3 dimensions
         if bands_data.ndim == 2:
-            bands_data = np.reshape(bands_data, (1, ) + bands_data.shape)
+            bands_data = np.reshape(bands_data, (1,) + bands_data.shape)
 
         self.bands_data = bands_data
         self.weights = weights
@@ -40,8 +43,9 @@ class DOSProcessor:
         self.max_eng = max_eng if max_eng else self.max_eigen_value + 5.0
 
         # Set the bins for the energies initially - these are the "left" edges
-        self.bins = np.arange(self.min_eng, self.max_eng + bin_width_internal,
-                              bin_width_internal)
+        self.bins = np.arange(
+            self.min_eng, self.max_eng + bin_width_internal, bin_width_internal
+        )
 
         # Nominated energies are the mid points of the bins
         self.energies = (self.bins[1:] + self.bins[:-1]) / 2
@@ -72,9 +76,9 @@ class DOSProcessor:
             weights = np.stack([self.weights] * nbands, axis=-1)
 
             # Construct the weights array with the same shape as the bands array
-            hist_count, _ = np.histogram(self.bands_data[ispin, :, :],
-                                         bins=self.bins,
-                                         weights=weights)
+            hist_count, _ = np.histogram(
+                self.bands_data[ispin, :, :], bins=self.bins, weights=weights
+            )
             counts.append(hist_count)
 
         counts = np.stack(counts, axis=0)
@@ -84,16 +88,15 @@ class DOSProcessor:
 
         broadened = np.zeros(counts.shape)
         for ispin in range(nspin):
-            broadened[ispin, :] = np.convolve(counts[ispin, :],
-                                              kernel,
-                                              mode='same')
+            broadened[ispin, :] = np.convolve(counts[ispin, :], kernel, mode="same")
 
         # Resample by linear interpolation
         out_energies = np.linspace(self.min_eng, self.max_eng, npoints)
-        interp_dos = np.zeros((nspin, ) + out_energies.shape)
+        interp_dos = np.zeros((nspin,) + out_energies.shape)
         for ispin in range(nspin):
-            interp_dos[ispin, :] = np.interp(out_energies, self.energies,
-                                             broadened[ispin, :])
+            interp_dos[ispin, :] = np.interp(
+                out_energies, self.energies, broadened[ispin, :]
+            )
 
         if dropdim and interp_dos.shape[0] == 1:
             interp_dos = np.squeeze(interp_dos, axis=0)

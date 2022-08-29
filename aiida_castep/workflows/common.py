@@ -2,19 +2,20 @@
 Common module
 Courtesy to aiida-quantumespresso's WorkChain design
 """
-from __future__ import absolute_import
-from aiida.common import AiidaException
 from collections import namedtuple
 from functools import wraps
+
+from aiida.common import AiidaException
 from aiida.engine import ExitCode
 
 
 class UnexpectedCalculationFailure(AiidaException):
     """Exception for encountering unknown errors"""
+
     pass
 
 
-ErrorHandler = namedtuple('ErrorHandler', 'priority method')
+ErrorHandler = namedtuple("ErrorHandler", "priority method")
 """
 A namedtuple to define an error handler for a :class:`~aiida.engine.processes.workchains.workchain.WorkChain`.
 
@@ -27,8 +28,7 @@ as its sole argument. If the condition of the error handler is met, it should re
 :param method: the workchain class method
 """
 
-ErrorHandlerReport = namedtuple('ErrorHandlerReport',
-                                'is_handled do_break exit_code')
+ErrorHandlerReport = namedtuple("ErrorHandlerReport", "is_handled do_break exit_code")
 ErrorHandlerReport.__new__.__defaults__ = (False, False, ExitCode())
 """
 A namedtuple to define an error handler report for a :class:`~aiida.engine.processes.workchains.workchain.WorkChain`.
@@ -71,16 +71,17 @@ def register_error_handler(cls, priority):
     :param priority: an integer that defines the order in which registered handlers will be called
         during the handling of a failed calculation. Higher priorities will be handled first
     """
+
     def error_handler_decorator(handler):
         @wraps(handler)
         def error_handler(self, calculation):
-            if hasattr(cls, '_verbose') and cls._verbose:
-                self.report('({}){}'.format(priority, handler.__name__))
+            if hasattr(cls, "_verbose") and cls._verbose:
+                self.report(f"({priority}){handler.__name__}")
             return handler(self, calculation)
 
         setattr(cls, handler.__name__, error_handler)
 
-        if not hasattr(cls, '_error_handlers'):
+        if not hasattr(cls, "_error_handlers"):
             cls._error_handlers = []
         cls._error_handlers.append(ErrorHandler(priority, error_handler))
 

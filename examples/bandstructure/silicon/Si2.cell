@@ -7,7 +7,7 @@
 !  N.B. These are the vectors of the *primitive* rhombohedral
 !  cell of Si2 in the diamond structure.
 %block lattice_cart
-2.6954645 2.6954645 0.0 
+2.6954645 2.6954645 0.0
 2.6954645 0.0       2.6954645
 0.0       2.6954645 2.6954645
 %endblock lattice_cart
@@ -37,11 +37,11 @@ kpoint_mp_grid 4 4 4
 !
 ! Specify a path through the Brillouin Zone to compute the band structure.
 !
-%block bs_kpoint_path 
+%block bs_kpoint_path
 0.5 0.25 0.75    ! W
 0.5 0.5 0.5      ! L
 0.0 0.0  0.0     ! Gamma
 0.5 0.0 0.5      ! X
 0.5 0.25 0.75    ! W
 0.375 0.375 0.75 ! K
-%endblock bs_kpoint_path 
+%endblock bs_kpoint_path

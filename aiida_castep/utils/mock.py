@@ -3,19 +3,17 @@
 Mock running CASTEP
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
 import hashlib
 import json
-import tempfile
-import click
 import shutil
-
-import castepinput
+import tempfile
 from pathlib import Path
 
-_TEST_BASE_FOLDER = Path(__file__).parent.parent.parent / 'tests'
-_TEST_DATA_FOLDER = _TEST_BASE_FOLDER / 'data'
+import castepinput
+import click
+
+_TEST_BASE_FOLDER = Path(__file__).parent.parent.parent / "tests"
+_TEST_DATA_FOLDER = _TEST_BASE_FOLDER / "data"
 
 
 def get_hash(dict_obj):
@@ -39,19 +37,19 @@ def get_hash(dict_obj):
 
 def test_hash():
     """Test hashing"""
-    exmp = {'a': 'b', 'b': 'a'}
+    exmp = {"a": "b", "b": "a"}
     get_hash(exmp)
 
-    exmp = {'a': 'b', 'b': ['a', 'c']}
+    exmp = {"a": "b", "b": ["a", "c"]}
     h1, b1 = get_hash(exmp)
 
-    exmp = {'b': ['a', 'c'], 'a': 'b'}
+    exmp = {"b": ["a", "c"], "a": "b"}
     h2, b2 = get_hash(exmp)
     assert b1 == b2
     assert h1 == h2
 
 
-class MockOutput(object):
+class MockOutput:
     def __init__(self, base_dir=None):
         """
         Initialize the object
@@ -64,12 +62,12 @@ class MockOutput(object):
     def calculate_hash(self, path):
 
         path = str(path)
-        param = castepinput.ParamInput.from_file(path + '.param', plain=True)
-        cell = castepinput.CellInput.from_file(path + '.cell', plain=True)
+        param = castepinput.ParamInput.from_file(path + ".param", plain=True)
+        cell = castepinput.CellInput.from_file(path + ".cell", plain=True)
         all_inp = dict(param)
         all_inp.update(cell)
-        all_inp.pop('comment', None)
-        all_inp.pop('COMMENT', None)
+        all_inp.pop("comment", None)
+        all_inp.pop("COMMENT", None)
         return get_hash(all_inp)[0]
 
     @property
@@ -77,7 +75,7 @@ class MockOutput(object):
         """
         Path to the registry file
         """
-        return self.base_dir / 'registry.json'
+        return self.base_dir / "registry.json"
 
     @property
     def registry(self):
@@ -87,7 +85,7 @@ class MockOutput(object):
         if not self._reg_file.is_file():
             return {}
 
-        with open(str(self._reg_file), 'r') as fh:
+        with open(str(self._reg_file)) as fh:
             reg = json.load(fh)
         return reg
 
@@ -104,14 +102,13 @@ class MockOutput(object):
         retrieved = calcjob.outputs.retrieved
         for node in [retrieved, calcjob]:
             for nm in node.list_object_names():
-                if nm.startswith('.') or \
-                   nm.startswith('_'):
+                if nm.startswith(".") or nm.startswith("_"):
                     continue
                 with node.open(nm) as fin:
                     fpath = Path(tmpwork) / nm
                     fpath.write_text(fin.read())
 
-        seedpath = Path(tmpwork) / calcjob.get_option('seedname')
+        seedpath = Path(tmpwork) / calcjob.get_option("seedname")
         # Register the resutls
         self.register(seedpath, tag)
 
@@ -141,6 +138,7 @@ class MockOutput(object):
             # It is not placed in the sub folder
             # Copy manually
             import shutil
+
             if tag is None:
                 # Use the first 8 digits as the name
                 tag = hash_[:8]
@@ -150,16 +148,17 @@ class MockOutput(object):
         reg[hash_] = str(rel_path)
 
         # Save the json settings
-        with open(str(self._reg_file), 'w') as fh:
+        with open(str(self._reg_file), "w") as fh:
             json.dump(reg, fh)
 
     def copy_results(self, rel_path):
         """
         Copy existing calculation to the folder
         """
-        print('Selected path:', rel_path)
+        print("Selected path:", rel_path)
         import shutil
-        res_files = (self.base_dir / rel_path).glob('*')
+
+        res_files = (self.base_dir / rel_path).glob("*")
         cwd = Path.cwd()
         for r in res_files:
             shutil.copy(str(r), str(cwd))
@@ -173,11 +172,12 @@ class MockOutput(object):
         , which define the folder of results to be copied
         """
         import os
-        overide = os.environ.get('MOCK_CALC')
+
+        overide = os.environ.get("MOCK_CALC")
         if overide:
             self.copy_results(overide)
-            print('Overiden by MOCK_CALC')
-            print('Returning results from {}'.format(Path(overide).resolve()))
+            print("Overiden by MOCK_CALC")
+            print(f"Returning results from {Path(overide).resolve()}")
             return
 
         hash_ = self.calculate_hash(seedname)
@@ -186,21 +186,15 @@ class MockOutput(object):
         known_result = reg.get(hash_, None)
         if known_result:
             self.copy_results(known_result)
-            print('Returning results from {}'.format(self.base_dir /
-                                                     known_result))
+            print(f"Returning results from {self.base_dir / known_result}")
         else:
-            raise RuntimeError('Results not registered')
+            raise RuntimeError("Results not registered")
 
 
-@click.command('mock')
-@click.option('--reg',
-              default=False,
-              is_flag=True,
-              help='Register the calculation')
-@click.option('--tag',
-              help='Tag for the folder when registering results',
-              default=None)
-@click.argument('seed')
+@click.command("mock")
+@click.option("--reg", default=False, is_flag=True, help="Register the calculation")
+@click.option("--tag", help="Tag for the folder when registering results", default=None)
+@click.argument("seed")
 def main(seed, reg, tag):
     runner = MockOutput()
     if reg:
