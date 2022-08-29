@@ -40,12 +40,11 @@ def helper_cmd():
 
 
 @helper_cmd.command(name="generate")
-@click.option("--castep-excutable",
+@click.option("--castep-executable",
               "-e",
-              help="The excutable of CASTEP to be used",
-              default="castep.serial")
+              help="The excutable of CASTEP to be used")
 @click.option("--save-as", "-s", help="override default path for saving file")
-def generate(castep_excutable, save_as):
+def generate(castep_executable, save_as):
     """
     Generate help information file.
 
@@ -57,8 +56,22 @@ def generate(castep_excutable, save_as):
 
     import subprocess as sbp
     import os
+    # Work out the executable name automatically
+    if castep_executable is None:
+        castep_executable = 'castep.serial'
+        completed = sbp.run(['which', castep_executable],
+                            stdout=sbp.PIPE,
+                            check=False)
+        if completed.returncode == 0:
+            castep_executable = 'castep.serial'
+        elif sbp.run(['which', 'castep.mpi'], stdout=sbp.PIPE,
+                     check=False).returncode == 0:
+            castep_executable = 'castep.mpi'
+        elif sbp.run(['which', 'castep'], stdout=sbp.PIPE,
+                     check=False).returncode == 0:
+            castep_executable = 'castep'
     try:
-        castep_info = sbp.check_output([castep_excutable, "--version"],
+        castep_info = sbp.check_output([castep_executable, "--version"],
                                        universal_newlines=True)
     except OSError:
         print("Not a valid CASTEP excutable. Aborted.")
@@ -86,7 +99,7 @@ def generate(castep_excutable, save_as):
     # Dictonary with short help lines
     all_keys = {}
     for key in ["basic", "inter", "expert"]:
-        c, p = get_castep_commands(castep_excutable, key)
+        c, p = get_castep_commands(castep_executable, key)
         all_keys.update(c)
         all_keys.update(p)
 
@@ -94,7 +107,8 @@ def generate(castep_excutable, save_as):
     full_dict = {}
 
     for key in progress(all_keys):
-        lines, k_type, k_level, v_type = parse_help_string(key, excutable=castep_excutable)
+        lines, k_type, k_level, v_type = parse_help_string(
+            key, excutable=castep_executable)
         full_dict[key.lower()] = dict(help_short=all_keys[key],
                                       help_full="\n".join(lines),
                                       key_type=k_type,

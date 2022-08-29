@@ -27,7 +27,30 @@ def migrate_families():
         "Finished! Note: No need to run this command again for this profile.")
 
 
-@pseudos_cmd.command(name="listfamilies")
+@pseudos_cmd.command(name="add-common-otfgs")
+def add_common_otfgs():
+    """
+    Add common OTFGs built-in to CASTEP. Skip if such group exists already.
+    """
+    from aiida_castep.data.otfg import upload_otfg_family
+    from aiida.common.exceptions import ValidationError
+    from aiida.cmdline.utils import echo
+    families = [
+        'C9', 'C19', 'NCP19', 'QC5', 'HARD', 'MS', 'C7', 'C8', 'NCP9', 'C17',
+        'NCP17', 'C18', 'NCP18'
+    ]
+    for name in families:
+        try:
+            upload_otfg_family([name], name,
+                               f'CASTEP built-in OTFG family {name}')
+        except ValidationError as error:
+            echo.echo_warning(
+                f'Family {name} cannot be added - error: {error.args}.')
+        else:
+            echo.echo_success(f'Successfully added family {name}.')
+
+
+@pseudos_cmd.command(name="list-families")
 @click.option(
     '--element',
     '-e',
