@@ -145,7 +145,7 @@ def test_cell_with_tags(gen_instance, sto_calc_inputs):
 
 def test_cell_with_spin(gen_instance, sto_calc_inputs):
     """Test input geneation with spins"""
-    import aiida.orm as orm
+    from aiida import orm
     from aiida.common.exceptions import InputValidationError
 
     sto_calc_inputs.settings = orm.Dict(dict={"SPINS": [1, 1, 1, 1, 1]})

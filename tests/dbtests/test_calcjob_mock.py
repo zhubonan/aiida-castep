@@ -3,9 +3,9 @@ Test setting up and running calculations based on mock CASTEP
 """
 from subprocess import check_output
 
-import aiida.orm as orm
 import numpy as np
 import pytest
+from aiida import orm
 from aiida.engine import run_get_node
 from aiida.plugins import CalculationFactory
 
@@ -46,7 +46,7 @@ def silicon_builder(db_test_app):
     kpoints = orm.KpointsData()
     # Use gamma and 0.25, 0.25, 0.25
     kpoints.set_kpoints_mesh((4, 4, 4), offset=(0, 0, 0))
-    c9 = OTFGData(otfg_entry="C9")
+    c9_otfg = OTFGData(otfg_entry="C9")
     CastepCalculation = CalculationFactory("castep.castep")
     code_path = check_output(["which", "castep.mock"], universal_newlines=True).strip()
     castep_mock = orm.Code(
@@ -58,7 +58,7 @@ def silicon_builder(db_test_app):
     builder.parameters = param
     builder.kpoints = kpoints
     builder.code = castep_mock
-    builder.pseudos = {"Si": c9}
+    builder.pseudos = {"Si": c9_otfg}
     builder.metadata.options.withmpi = False
     builder.metadata.options.resources = {"num_machines": 1, "tot_num_mpiprocs": 2}
     builder.metadata.options.max_wallclock_seconds = 600
@@ -87,3 +87,13 @@ def test_mock_silicon(silicon_builder):
         print(calcjob.base.repository.get_object_content("aiida.param"))
         print(calcjob.base.repository.get_object_content("aiida.cell"))
     assert calcjob.exit_status == 0
+
+
+def test_export_calc(silicon_builder, tmp_path):
+    """Test exporting the calculation"""
+    from aiida_castep.utils import export_calculation
+
+    _, calcjob = run_get_node(silicon_builder)
+    export_calculation(calcjob, tmp_path)
+    assert (tmp_path / "aiida.cell").is_file()
+    assert (tmp_path / "aiida.castep").is_file()

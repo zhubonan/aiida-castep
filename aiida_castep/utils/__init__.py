@@ -331,9 +331,9 @@ def export_calculation(node, output_dir, prefix=None):
         except AttributeError:
             seedname = None
         for objname in node.list_object_names():
-            if node.get_object(objname).type != FileType.FILE:
+            if node.get_object(objname).file_type != FileType.FILE:
                 continue
-            with node.open(objname, mode="rb") as fsource:
+            with node.base.repository.open(objname, mode="rb") as fsource:
                 name, suffix = objname.split(".")
                 if prefix and name == seedname:
                     outname = prefix + "." + suffix
