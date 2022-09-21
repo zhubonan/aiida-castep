@@ -334,9 +334,8 @@ def export_calculation(node, output_dir, prefix=None):
             if node.get_object(objname).file_type != FileType.FILE:
                 continue
             with node.base.repository.open(objname, mode="rb") as fsource:
-                name, suffix = objname.split(".")
-                if prefix and name == seedname:
-                    outname = prefix + "." + suffix
+                if prefix and Path(objname).stem == seedname:
+                    outname = prefix + Path(objname).suffix
                 else:
                     outname = objname
                 fpath = str(outpath / outname)
