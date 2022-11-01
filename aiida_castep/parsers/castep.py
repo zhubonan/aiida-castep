@@ -143,11 +143,13 @@ class CastepParser(Parser):
             return self.exit_codes.ERROR_NO_OUTPUT_FILE
 
         # The calculation is failed if there is any err file.
-        err_filenames = [fname for fname in filenames if ".err" in fname]
-        for fname in list(err_filenames):
+        err_filenames = []
+        for fname in filenames:
+            if not fname.endswith(".err"):
+                continue
             file_contents = output_folder.get_object_content(fname).split("\n")
-            if "continuing with calculation" in file_contents[-1]:
-                err_filenames.remove(fname)
+            if "continuing with calculation" not in file_contents[-1]:
+                err_filenames.append(fname)             
         if err_filenames:
             exit_code_1 = "ERROR_CASTEP_ERROR"
 
