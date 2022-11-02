@@ -124,6 +124,16 @@ def test_parse_errs(
     results, return_node = parser.parse_from_node(node, store_provenance=False)
     assert return_node.exit_status == CODES["ERROR_CASTEP_ERROR"][0]
 
+    node = generate_calc_job_node(
+        "castep.castep",
+        "H2-geom",
+        inputs=h2_calc_inputs,
+        outfile_override={"aiida.0001.err": "Error Message\nWork-around was successful, continuing with calculation."},
+    )
+    parser = generate_parser("castep.castep")
+    results, return_node = parser.parse_from_node(node, store_provenance=False)
+    assert return_node.exit_status == 0
+
 
 def test_parsing_geom(
     clear_database_before_test,
