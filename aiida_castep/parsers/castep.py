@@ -147,7 +147,7 @@ class CastepParser(Parser):
         for fname in filenames:
             if not fname.endswith(".err"):
                 continue
-            file_contents = output_folder.get_object_content(fname).split("\n")
+            file_contents = list(filter(None, output_folder.get_object_content(fname).split("\n")))
             if "continuing with calculation" not in file_contents[-1]:
                 err_filenames.append(fname)             
         if err_filenames:
