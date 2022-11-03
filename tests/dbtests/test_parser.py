@@ -128,7 +128,7 @@ def test_parse_errs(
         "castep.castep",
         "H2-geom",
         inputs=h2_calc_inputs,
-        outfile_override={"aiida.0001.err": "Error Message\nWork-around was successful, continuing with calculation."},
+        outfile_override={"aiida.0001.err": "Error Message\nWork-around was successful, continuing with calculation.\n"},
     )
     parser = generate_parser("castep.castep")
     results, return_node = parser.parse_from_node(node, store_provenance=False)
