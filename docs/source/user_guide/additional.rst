@@ -2,7 +2,7 @@
 Additional settings
 ===================
 
-An additional ``Dict`` node can be used by the calculation. The following fields can be used:
+An additional ``Dict`` node can be used by the calculation via the ``settings`` input port. The following fields can be used:
 
 * ``SPINS``: A list of initial spins for each atom.
 
@@ -13,15 +13,6 @@ An additional ``Dict`` node can be used by the calculation. The following fields
 * ``CMDLINE``: Additional parameters to be passed. By default we call ``<castep_executable> <seed>`` but some times additional parameters may be useful, e.g when we use wrapping script.
 
 * ``ADDITIONAL_RETRIEVE_LIST``: A list for additional files to be retrieved from remote work directory.
-
-Task specific calculations
-==========================
-
-The genetic ``CastepCalculation`` can be used for any calculation but one may want to use subclasses for specific tasks.
-For example, ``CastepBSCalculation`` can be used for band structure and supports additional ``bs_kpoints`` inputs.
-A similar classes is defined for *task: spectral* calculations.
-There are also supports for *pot1d* utility which output formatted potentials and *transitionstatesearch* tasks.
-also implemented.
 
 Getting help about calculations
 ===============================
