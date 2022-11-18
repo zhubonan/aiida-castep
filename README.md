@@ -5,7 +5,7 @@ AiiDA plugin for working with CASTEP
 [![pipeline status](https://github.com/zhubonan/aiida-castep/workflows/aiida-castep/badge.svg)](https://github.com/zhubonan/aiida-castep/actions)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/zhubonan/aiida-castep/dev)
 
-A plugin for [AiiDA](www.aiida.net) to work with plane-wave pseudopotential DFT code [CASTEP](www.castep.org).
+A plugin for [AiiDA](https://www.aiida.net) to work with plane-wave pseudopotential DFT code [CASTEP](http://www.castep.org).
 CASTEP has a single binary executable and calculation is primarily controlled by the *task* keyword.
 The generic `CastepCalculation` should work with all tasks, at least in terms of generating input files.
 Likewise a generic `CastepParser` class is implemented and can handle parsing most information we are interested in *singlepoint*, *geometryoptimisation*, *bandstructure/spectral* tasks.
