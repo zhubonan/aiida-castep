@@ -11,10 +11,6 @@ from aiida import __version__ as AIIDA_VERSION
 from aiida.common import AttributeDict
 from aiida.common.exceptions import NotExistent
 from aiida.common.links import LinkType
-from aiida.manage.tests.pytest_fixtures import (
-    aiida_profile,
-    clear_database_before_test,
-)
 from aiida.orm import (
     CalcJobNode,
     Code,
@@ -165,8 +161,14 @@ def db_test_app(aiida_profile):
     workdir = tempfile.mkdtemp()
     app = CastepTestApp(aiida_profile, workdir)
     yield app
-    aiida_profile.reset_db()
+    aiida_profile.reset_storage()
     shutil.rmtree(workdir)
+
+
+@pytest.fixture
+def clear_database_before_test(aiida_profile_clean):
+    """Alias for aiida_profile_clean for backwards compatibility."""
+    yield aiida_profile_clean
 
 
 @pytest.fixture
@@ -345,6 +347,22 @@ def generate_calc_job_node(db_test_app):
         node.set_attribute("error_filename", "aiida.err")
         node.set_option("resources", {"num_machines": 1, "num_mpiprocs_per_machine": 1})
         node.set_option("max_wallclock_seconds", 1800)
+        node.set_metadata_inputs(
+            {
+                "metadata": {
+                    "options": {
+                        "resources": {
+                            "num_machines": 1,
+                            "num_mpiprocs_per_machine": 1,
+                        },
+                        "max_wallclock_seconds": 1800,
+                        "input_filename": options.input_filename,
+                        "output_filename": options.output_filename,
+                        "seedname": options.seedname,
+                    }
+                }
+            }
+        )
         node.store()
 
         filepath = this_folder.parent / "data" / results_folder
