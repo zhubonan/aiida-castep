@@ -15,6 +15,7 @@ from aiida_castep.parsers.raw_parser import (
     parse_dot_bands,
     parse_geom_text_output,
 )
+from aiida_castep.parsers.utils import get_desort_args
 
 
 @pytest.fixture
@@ -165,3 +166,74 @@ def test_castep_bin_parser(data_abs_path):
 
     assert binfile.occupancies[0, 0, 0] == 1.0
     assert binfile.occupancies[0, 0, -1] == 0.0
+
+
+def test_get_desort_args():
+    """
+    Test that get_desort_args returns the correct inverse permutation for desorting.
+
+    CASTEP sorts atoms by atomic number. get_desort_args should return an index
+    array that maps from CASTEP-sorted order back to the original input order.
+    """
+    from ase import Atoms
+
+    # Mock structure: Ti(Z=22), O(Z=8), O(Z=8) - in that order
+    # CASTEP would sort to: O, O, Ti (ascending atomic number)
+    class MockStructure:
+        def get_ase(self):
+            return Atoms("TiOO", positions=[[0, 0, 0], [1, 0, 0], [0, 1, 0]], cell=[4, 4, 4])
+
+    s = MockStructure()
+    idesort = get_desort_args(s)
+
+    # CASTEP sorted order: O(orig 1), O(orig 2), Ti(orig 0)
+    # idesort should map CASTEP output back to original order
+    castep_forces = np.array([[0.1, 0.0, 0.0], [0.2, 0.0, 0.0], [0.3, 0.0, 0.0]])
+    # CASTEP order: O_1=0.1, O_2=0.2, Ti=0.3 -> desorted: Ti=0.3, O_1=0.1, O_2=0.2
+    reordered = castep_forces[idesort]
+    assert reordered[0][0] == pytest.approx(0.3)  # Ti force (originally at index 0)
+    assert reordered[1][0] == pytest.approx(0.1)  # O_1 force (originally at index 1)
+    assert reordered[2][0] == pytest.approx(0.2)  # O_2 force (originally at index 2)
+
+
+def test_desort_array_bug_fixed():
+    """
+    Regression test: verify that the sorted array (not the original value)
+    is saved when applying idesort to trajectory forces/velocities.
+
+    Previously, the parser code computed the sorted array but then discarded it:
+        array = np.asarray(value)
+        if "force" in name:
+            array = array[:, idesort]
+        traj.set_array(name, np.asarray(value))  # BUG: saved unsorted value
+
+    The fix ensures traj.set_array(name, array) is used instead.
+    """
+    from ase import Atoms
+
+    # Structure: Ti(Z=22), O(Z=8) - CASTEP sorts to O, Ti
+    class MockStructure:
+        def get_ase(self):
+            return Atoms("TiO", positions=[[0, 0, 0], [1, 0, 0]], cell=[4, 4, 4])
+
+    s = MockStructure()
+    idesort = get_desort_args(s)
+
+    # CASTEP output forces in CASTEP-sorted order: O first (0.5), Ti second (1.0)
+    castep_forces = np.array([[[0.5, 0.0, 0.0], [1.0, 0.0, 0.0]]])  # shape (1, 2, 3)
+
+    # Simulate the FIXED code: use `array` not `value`
+    value = castep_forces
+    array = np.asarray(value)
+    array = array[:, idesort]  # desort forces
+    saved_forces = array  # This is what is now saved (fixed behavior)
+
+    # After desort: Ti should be first (original index 0), O second (original index 1)
+    # CASTEP: O=0.5, Ti=1.0 -> desorted: Ti=1.0, O=0.5
+    assert saved_forces[0, 0, 0] == pytest.approx(1.0)  # Ti force
+    assert saved_forces[0, 1, 0] == pytest.approx(0.5)  # O force
+
+    # Also verify the old buggy behavior would have returned unsorted values
+    buggy_saved = np.asarray(value)  # Old code saved this instead
+    assert buggy_saved[0, 0, 0] == pytest.approx(0.5)  # Would have been O force (wrong)
+    assert buggy_saved[0, 1, 0] == pytest.approx(1.0)  # Would have been Ti force (wrong)

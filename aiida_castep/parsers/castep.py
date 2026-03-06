@@ -247,10 +247,10 @@ class CastepParser(Parser):
         if not err_filenames:
             input_structure = self.node.inputs.structure
             idesort = get_desort_args(input_structure)
-            if len(out_dict.get("charges", [])) > 1:
+            if len(out_dict.get("charges", [])) > 0:
                 new_charges = np.array(out_dict["charges"])[idesort]
                 out_dict["charges"] = new_charges
-            if len(out_dict.get("spins", [])) > 1:
+            if len(out_dict.get("spins", [])) > 0:
                 new_spins = np.array(out_dict["spins"])[idesort]
                 out_dict["spins"] = new_spins
 
@@ -320,7 +320,7 @@ class CastepParser(Parser):
                         # For forces/velocities we also need to resort the array
                         if ("force" in name) or ("velocities" in name):
                             array = array[:, idesort]
-                        traj.set_array(name, np.asarray(value))
+                        traj.set_array(name, array)
                     self.out(out_ln["trajectory"], traj)
 
             # Or may there is nothing to optimise? still save a Trajectory data
@@ -347,7 +347,7 @@ class CastepParser(Parser):
                     # For forces/velocities we also need to resort the array
                     if ("force" in name) or ("velocities" in name):
                         array = array[:, idesort]
-                    traj.set_array(name, np.asarray(value))
+                    traj.set_array(name, array)
                 self.out(out_ln["trajectory"], traj)
             # Otherwise, save data into a ArrayData node
             else:
@@ -359,7 +359,7 @@ class CastepParser(Parser):
                     array = np.asarray(value)
                     if ("force" in name) or ("velocities" in name):
                         array = array[:, idesort]
-                    out_array.set_array(name, np.asarray(value))
+                    out_array.set_array(name, array)
                 self.out(out_ln["array"], out_array)
 
         ######## ---- PROCESSING OUTPUT DATA --- ########
