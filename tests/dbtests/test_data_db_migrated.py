@@ -53,9 +53,9 @@ class BaseDataCase(TestCase):
 
     @pytest.fixture(autouse=True)
     def reset_db(self, aiida_profile):
-        aiida_profile.reset_db()
+        aiida_profile.reset_storage()
         yield
-        aiida_profile.reset_db()
+        aiida_profile.reset_storage()
 
     def create_family(self):
         """Creat families for testsing"""

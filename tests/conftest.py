@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+pytest_plugins = ["aiida.tools.pytest_fixtures"]
 
 @pytest.fixture(scope="module")
 def data_path():
